@@ -415,7 +415,7 @@ requires-dist = [
     { name = "redis", specifier = ">=6.4" },
     { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.44" },
     { name = "structlog", specifier = ">=25.4" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.38" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
 ]
 
 [package.metadata.requires-dev]
