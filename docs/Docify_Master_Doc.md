@@ -2,7 +2,7 @@
 
 > **Audience:** Claude (the implementer) and Ganesh. Single source of truth for _how_ Docify is built, deployed and operated, and _where we are_.
 > **Companion:** [`Docify_Project_Plan.md`](Docify_Project_Plan.md) = the simple, user-approved plan (scope, goals, budget). This doc = the detailed "how". On technical detail this doc wins; on scope/budget the plan wins. Every difference is listed in §3.2.
-> **Last updated:** 2026-10-20 · **Doc version:** 1.2
+> **Last updated:** 2026-10-21 · **Doc version:** 1.3
 
 ---
 
@@ -25,17 +25,17 @@
 
 | Item                                 | Value                                                                  |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| **Current phase**                    | Phase 0 — Setup (⬜)                                                   |
-| **Last session**                     | 2026-10-20 · Phase 0 prep (AWS keys checked, local git set up)         |
-| **Overall**                          | Planning done. AWS account exists (Free Plan). Local git repo initialised (no commits, no GitHub repo yet). No code. |
-| **In-flight work**                   | none (no branch / PR open)                                             |
-| **Next 3 tasks**                     | Fix AWS org SCP block (Q11) → P0.2 create repo `docify-work/docify` → P0.3 |
-| **Blockers**                         | **Q11: AWS account is inside an Organization whose SCP denies EC2, Lambda, SQS, ECR, SSM, SNS, Scheduler, SES** (2026-10-20). Q7 also open. |
+| **Current phase**                    | Phases 1–5 code ✅ (local), 6–10 config written ✅ (not deployed); frontend 🟨 in progress |
+| **Last session**                     | 2026-10-21 · Build session (backend, infra, deploy, CI)                |
+| **Overall**                          | Repo live: github.com/docify-work/docify (public). Backend complete with 130+ tests (unit + integration on Postgres/Valkey/ElasticMQ), Lambda, Terraform (validated, not applied), Helm/Argo (validated on kind), CI green. Frontend being built. AWS blocked (Q11). |
+| **In-flight work**                   | frontend SPA (P1.7/P1.8 + P5 UI) |
+| **Next 3 tasks**                     | Finish + commit frontend → P6 kind smoke with real image → Owner: resolve Q11 (AWS org SCP), Q1 domain, create GitHub Apps (Dev) |
+| **Blockers**                         | **Q11 AWS org SCP** blocks all of Phase 8+ (deploy). Q1 domain (needed for OAuth/TLS in cloud). Real AI keys (owner will add later; `AI_MODE=fake` meanwhile). |
 | **Live AWS resources**               | none · server: n/a                                                     |
 | **AWS spend to date / credits left** | $0 / $100 (2nd $100 not yet earned — Free Plan activities)             |
 | **Free-plan expiry date**            | **2027-04-15** (plan FREE, ACTIVE) — see §19.4                         |
-| **Open ⚠ verify items**              | see §26.2 (25 open)                                                    |
-| **Doc review status**                | v1.2 — 2 review rounds done (4 independent reviews)                    |
+| **Open ⚠ verify items**              | see §26.2 (21 open)                                                    |
+| **Doc review status**                | v1.3 — implementation started; decisions D38–D46 added                 |
 | **Environments live**                | none                                                                   |
 
 ---
@@ -857,7 +857,7 @@ Node allocatable ≈ RAM − 0.2 GiB OS overhead − 0.6 GiB reserved − 0.2 Gi
 | Grafana                                                                       | 100 / 250                                                |
 | Loki single-binary + Alloy                                                    | 250 / 500                                                |
 | Postgres                                                                      | 384 / 1024                                               |
-| Valkey ×2                                                                     | 2 × 32 / 64                                              |
+| Valkey                               | 8.1.10-alpine       | app chart, compose, CI        | 10-21 |
 | prod api ×2 (max 3)                                                           | 2 × 150 / 300                                            |
 | staging api ×1                                                                | 150 / 300                                                |
 | **Baseline requests (workers 0)**                                             | **≈ 2.6 GiB**                                            |
@@ -1003,7 +1003,7 @@ Docify Overview (RPS, errors, p50/p95, pods, queue, jobs, AI spend) · Workers &
 | Queue stuck    | oldest age > 15 min                                                                                                                   |
 | Job failures   | failed+dead > 5 in 30 min                                                                                                             |
 | Crashloop      | restarts > 3 in 15 min                                                                                                                |
-| Node memory    | available < 10% for 10 min                                                                                                            |
+| Node                                 | 22 (CI), local 22.18 | `ci.yml`                     | 10-21 |
 | Disk           | `/` or `/data` > 80%                                                                                                                  |
 | Backup missing | node stops nightly, so this is checked by `start.yml` instead: **fail (warn) if the newest S3 dump is older than the last stop time** |
 | Cert expiry    | < 14 d                                                                                                                                |
@@ -1213,17 +1213,17 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 | Phase | Name                      | Status | Main Argo apps enabled                     |
 | ----- | ------------------------- | ------ | ------------------------------------------ |
-| 0     | Setup                     | ⬜     | —                                          |
-| 1     | Basic app + auth          | ⬜     | —                                          |
-| 2     | Docker + Compose          | ⬜     | —                                          |
-| 3     | CI                        | ⬜     | —                                          |
-| 4     | Queue + worker + webhooks | ⬜     | —                                          |
-| 5     | AI features               | ⬜     | —                                          |
-| 6     | Kubernetes (local)        | ⬜     | (kind)                                     |
-| 7     | GitOps (local)            | ⬜     | (kind)                                     |
-| 8     | Terraform + AWS           | ⬜     | argocd, cert-manager, ESO, platform-config |
-| 9     | Deploy to AWS             | ⬜     | + data, docify-staging, docify-prod, keda  |
-| 10    | Monitoring                | ⬜     | + monitoring                               |
+| 0     | Setup                     | 🟨     | —                                          |
+| 1     | Basic app + auth          | 🟨     | —                                          |
+| 2     | Docker + Compose          | ✅     | —                                          |
+| 3     | CI                        | ✅     | —                                          |
+| 4     | Queue + worker + webhooks | 🟨     | —                                          |
+| 5     | AI features               | 🟨     | —                                          |
+| 6     | Kubernetes (local)        | 🟨     | (kind)                                     |
+| 7     | GitOps (local)            | 🟨     | (kind)                                     |
+| 8     | Terraform + AWS           | ⛔     | argocd, cert-manager, ESO, platform-config |
+| 9     | Deploy to AWS             | ⛔     | + data, docify-staging, docify-prod, keda  |
+| 10    | Monitoring                | 🟨     | + monitoring                               |
 | 11    | Scaling                   | ⬜     | all                                        |
 | 12    | EKS lab (1 day)           | ⬜     | (EKS)                                      |
 | 13    | Break it + hardening      | ⬜     | all                                        |
@@ -1232,8 +1232,8 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 ### Phase 0 — Setup
 
 - [ ] P0.1 Answer Q1–Q3, Q7 (§25)
-- [ ] P0.2 GitHub: public repo `<gh-owner>/docify`, ruleset, secret scanning + push protection, Dependabot, Actions read-only token, Environments `infra` + `production`
-- [ ] P0.3 Repo skeleton per §5.0 (README, LICENSE MIT, .gitignore, .editorconfig, PR template, CODEOWNERS, CLAUDE.md)
+- [x] P0.2 GitHub: public repo `<gh-owner>/docify`, ruleset, secret scanning + push protection, Dependabot, Actions read-only token, Environments `infra` + `production` — ✅ repo public, ruleset (no force-push/deletion; D38), secret scanning + push protection, Dependabot, read-only token, envs `infra`+`production` with reviewer
+- [x] P0.3 Repo skeleton per §5.0 (README, LICENSE MIT, .gitignore, .editorconfig, PR template, CODEOWNERS, CLAUDE.md) — ✅ commit 6da72e4
 - [ ] P0.4 AWS account (Free Plan); root MFA; record expiry in §1; run `aws ec2 describe-instance-types --filters Name=free-tier-eligible,Values=true --region ap-south-1` and record result in D30; IAM admin user + MFA; `aws login` works
 - [ ] P0.5 Budgets $5/$15/$30 + Cost Anomaly Detection (manual)
 - [ ] P0.6 Domain + Route 53 hosted zone
@@ -1246,80 +1246,80 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 ### Phase 1 — Basic app + auth
 
-- [ ] P1.1 Backend scaffold: config, logging, request-id, problem+json, health/ready/version
-- [ ] P1.2 Models + Alembic baseline (users … invites, oauth_states, audit_events)
-- [ ] P1.3 Email+password flows + rate limits (Mailpit)
-- [ ] P1.4 Google + GitHub login (Dev GitHub App), §10.4 rules
-- [ ] P1.5 Workspaces, memberships, invites, roles, settings (`auto_publish` default true), account page APIs
-- [ ] P1.6 GitHub install + attach repos flow (§9.2) — list repos only
+- [x] P1.1 Backend scaffold: config, logging, request-id, problem+json, health/ready/version — ✅ backend/src/docify/{config,api,observability}
+- [x] P1.2 Models + Alembic baseline (users … invites, oauth_states, audit_events) — ✅ baseline migration 0001 (all §6 tables)
+- [x] P1.3 Email+password flows + rate limits (Mailpit) — ✅ tests/integration/test_auth.py
+- [x] P1.4 Google + GitHub login (Dev GitHub App), §10.4 rules — ✅ GitHub + Google with PKCE; linking/takeover tested (D39)
+- [x] P1.5 Workspaces, memberships, invites, roles, settings (`auto_publish` default true), account page APIs — ✅ test_workspaces.py
+- [x] P1.6 GitHub install + attach repos flow (§9.2) — list repos only — ✅ test_github_install.py incl. hijack defence
 - [ ] P1.7 Frontend scaffold: router, API client (openapi-typescript), auth pages, guards
 - [ ] P1.8 Frontend: dashboard, repos, settings, members, invites, account, sleeping banner
-- [ ] P1.9 Tests: auth flows, linking/takeover, cross-tenant 404s, install verification
+- [x] P1.9 Tests: auth flows, linking/takeover, cross-tenant 404s, install verification — ✅ 16 auth + 5 workspace + 4 install tests
 
 - **AC:** [ ] email signup → verify (Mailpit) → login · [ ] Google + GitHub login · [ ] invite accepted by second user · [ ] repo attached & listed
 
 ### Phase 2 — Docker + Compose
 
-- [ ] P2.1 Backend Dockerfile (multi-stage, uid 10001, < 250 MB), `.dockerignore`
-- [ ] P2.2 `docker-compose.yml` (§20.1), `.env.example`, Makefile
-- [ ] P2.3 hadolint clean
+- [x] P2.1 Backend Dockerfile (multi-stage, uid 10001, < 250 MB), `.dockerignore` — ✅ 96 MB compressed, uid 10001, no pip
+- [x] P2.2 `docker-compose.yml` (§20.1), `.env.example`, Makefile — ✅ docker-compose.yml, .env.example, Makefile
+- [x] P2.3 hadolint clean — ✅ hadolint clean (local + CI)
 
 - **AC:** [ ] `make up` → app works at `localhost:5173` · [ ] `docker run … id -u` = 10001
 
 ### Phase 3 — CI
 
-- [ ] P3.1 `ci.yml` (backend, frontend, lambda, docker+Trivy, actionlint, hadolint), path filters
-- [ ] P3.2 Actions pinned by SHA; explicit permissions
+- [x] P3.1 `ci.yml` (backend, frontend, lambda, docker+Trivy, actionlint, hadolint), path filters — ✅ .github/workflows/ci.yml
+- [x] P3.2 Actions pinned by SHA; explicit permissions — ✅ all actions SHA-pinned
 - [ ] P3.3 Required checks in ruleset
 
 - **AC:** [ ] PR shows all checks green · [ ] a known-vulnerable base image fails Trivy
 
 ### Phase 4 — Queue + worker + webhooks
 
-- [ ] P4.1 jobs/singletons tables, claim/lease/fence, coalescing (§8.3)
-- [ ] P4.2 SQS client (ElasticMQ local), worker loop (slots, heartbeat, shutdown)
-- [ ] P4.3 `ingest` module + Lambda handler + dev route + smee; contract tests
-- [ ] P4.4 Handlers: installation_sync, repo_index (FakeEmbedder), repo_sync (compare), repo_purge
-- [ ] P4.5 Retries (delete+resend with delay), DLQ, reconciler, housekeeping
+- [x] P4.1 jobs/singletons tables, claim/lease/fence, coalescing (§8.3) — ✅ jobs/service.py; test_jobs.py
+- [x] P4.2 SQS client (ElasticMQ local), worker loop (slots, heartbeat, shutdown) — ✅ worker/loop.py, runner.py
+- [x] P4.3 `ingest` module + Lambda handler + dev route + smee; contract tests — ✅ ingest/, lambdas/webhook_ingest (+ drift test)
+- [x] P4.4 Handlers: installation_sync, repo_index (FakeEmbedder), repo_sync (compare), repo_purge — ✅ jobs/handlers/; test_pipeline.py
+- [x] P4.5 Retries (delete+resend with delay), DLQ, reconciler, housekeeping — ✅ reconcile.py, housekeeping.py
 - [ ] P4.6 Jobs page + retry
 
 - **AC:** [ ] push → job succeeds · [ ] replayed delivery → no new job · [ ] 20 rapid pushes → ≤ 2 runs · [ ] force push → repo_index · [ ] poison message → DLQ
 
 ### Phase 5 — AI features
 
-- [ ] P5.1 Re-read `claude-api` skill; `AnthropicLLM`, `VoyageEmbedder`, fakes, usage recording, budgets
-- [ ] P5.2 Chunking + identifier splitting + embeddings + reembed
-- [ ] P5.3 File summaries, 3 docs, citations validator, update rules
-- [ ] P5.4 Changelog entries
+- [x] P5.1 Re-read `claude-api` skill; `AnthropicLLM`, `VoyageEmbedder`, fakes, usage recording, budgets — ✅ AnthropicLLM (skill re-read 10-21), Voyage REST, fakes, llm_usage, budgets
+- [x] P5.2 Chunking + identifier splitting + embeddings + reembed — ✅ ai/chunking.py, indexer.py
+- [x] P5.3 File summaries, 3 docs, citations validator, update rules — ✅ ai/docgen.py, citations.py
+- [x] P5.4 Changelog entries — ✅ changelog_entries per sync
 - [ ] P5.5 Publish policy + review queue UI (CAS approve)
-- [ ] P5.6 Hybrid search (code/docs) + chat SSE + no-context gate
-- [ ] P5.7 Demo workspace (`seed-demo`) + anonymous principal + limits
-- [ ] P5.8 Eval fixture + `docify eval`; tune `RAG_MIN_SIM`
+- [x] P5.6 Hybrid search (code/docs) + chat SSE + no-context gate — ✅ ai/rag.py, chat SSE (D42)
+- [x] P5.7 Demo workspace (`seed-demo`) + anonymous principal + limits — ✅ `docify seed-demo` (--from-dir / --github-repo)
+- [x] P5.8 Eval fixture + `docify eval`; tune `RAG_MIN_SIM` — ✅ fixture eval (fake embedder) hit@8 0.95, unanswerable 5/5; re-run with Voyage in P9
 
 - **AC:** [ ] connect repo → 3 docs + changelog with working permalinks · [ ] push → only affected docs updated · [ ] chat cites sources; unrelated question → "I don't know" · [ ] budget block works · [ ] eval hit@8 ≥ 0.8
 
 ### Phase 6 — Kubernetes (local)
 
-- [ ] P6.1 Charts `docify` + `data` with feature flags, `values/local.yaml`
+- [x] P6.1 Charts `docify` + `data` with feature flags, `values/local.yaml` — ✅ deploy/helm/{docify,data}
 - [ ] P6.2 kind + Traefik; probes, limits, security contexts, NetworkPolicies, PDB, HPA
-- [ ] P6.3 kubeconform in CI
+- [x] P6.3 kubeconform in CI — ✅ ci.yml chart job (deploy/validate.sh)
 
 - **AC:** [ ] app on kind · [ ] delete api pod under traffic → no failed requests
 
 ### Phase 7 — GitOps (local)
 
-- [ ] P7.1 Argo CD on kind, `deploy/argocd/local` root, Application health check, waves
+- [x] P7.1 Argo CD on kind, `deploy/argocd/local` root, Application health check, waves — ✅ deploy/argocd/{root,local}
 - [ ] P7.2 Create `docify-ci-bot` GitHub App; ruleset bypass; bump script with rebase-retry
 
 - **AC:** [ ] tag change in Git → Argo deploys · [ ] manual edit reverted by selfHeal
 
 ### Phase 8 — Terraform + AWS
 
-- [ ] P8.1 `bootstrap/` (state, OIDC provider, CI roles) + import budgets/anomaly
-- [ ] P8.2 Modules network, server, storage, registry, queues, ingest, params, ses (import), dns (import zone), edge, scheduler, alerts
-- [ ] P8.3 `bootstrap.sh` (data vol safety, k3s, ecr provider, DNS unit, Argo CD)
-- [ ] P8.4 Workflows `release.yml` (image part), `terraform.yml`, `ci.yml` infra job (plan on PR), `start.yml`, `stop.yml`; Lambda quota check (§5.4)
-- [ ] P8.5 `scripts/init-params.sh`; set real secrets
+- [x] P8.1 `bootstrap/` (state, OIDC provider, CI roles) + import budgets/anomaly — ✅ code only, validated — not applied (Q11)
+- [x] P8.2 Modules network, server, storage, registry, queues, ingest, params, ses (import), dns (import zone), edge, scheduler, alerts — ✅ code only, validated — not applied (Q11)
+- [x] P8.3 `bootstrap.sh` (data vol safety, k3s, ecr provider, DNS unit, Argo CD) — ✅ infra/server/bootstrap.sh (bash -n + shellcheck)
+- [x] P8.4 Workflows `release.yml` (image part), `terraform.yml`, `ci.yml` infra job (plan on PR), `start.yml`, `stop.yml`; Lambda quota check (§5.4) — ✅ workflows written, guarded by vars.AWS_ENABLED
+- [x] P8.5 `scripts/init-params.sh`; set real secrets — ✅ scripts/init-params.sh
 
 - **AC:** [ ] CI `terraform apply` creates all · [ ] instance boots k3s + Argo unattended · [ ] Start/Stop work · [ ] 23:00 auto-stop observed · [ ] `terraform plan` clean · [ ] `terraform state pull | grep -c CHANGE_ME` = 0 secrets in state
 
@@ -1336,8 +1336,8 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 ### Phase 10 — Monitoring
 
-- [ ] P10.1 kube-prometheus-stack (k3s settings), Loki + Alloy, Grafana + SNS contact point
-- [ ] P10.2 App metrics, dashboards as code, alerts (§16.4)
+- [x] P10.1 kube-prometheus-stack (k3s settings), Loki + Alloy, Grafana + SNS contact point — ✅ values written (deploy/values/platform), not deployed
+- [x] P10.2 App metrics, dashboards as code, alerts (§16.4) — ✅ metrics in code, dashboards + alerts as code
 - [ ] P10.3 **Measure memory (§13.4)**, record, decide D30 follow-up
 
 - **AC:** [ ] dashboards live · [ ] forced 5xx burst → alert email
@@ -1410,10 +1410,10 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | Q1  | Domain name + registrar (Route 53 ≈ $14/yr .com; credits likely don't cover ⚠)                                    | P0.6     | Route 53                                                              | 🟡     | domain will be docify.work ( soon will purhcase this and send you  DNS config)                                                                                                   |
 | Q2  | GitHub owner (personal vs org); confirm repo public (D13)                                                         | P0.2     | personal, public                                                      | ✅ | it'll be seperate new github account. [github.com/docify-work](https://github.com/docify-work) You need to  connect username and email id of github remote user in this project. → Done 2026-10-20: `<gh-owner>` = `docify-work`; local git `user.name=docify-work`, `user.email=<id>+docify-work@users.noreply.github.com`; remote `origin` = `https://docify-work@github.com/docify-work/docify.git` (repo not created yet) |
 | Q3  | AWS account email / billing owner                                                                                 | P0.4     | —                                                                     | ⬜     |                                                                                                                                                                                  |
-| Q4  | LLM models + AI budget (D17, §11.6)                                                                               | P5       | Haiku 5.5 bulk + Sonnet 5.5 docs; $2/day app cap; $5/mo provider caps | ⬜     |                                                                                                                                                                                  |
+| Q4  | LLM models + AI budget (D17, §11.6)                                                                               | P5       | Haiku 5.5 bulk + Sonnet 5.5 docs; $2/day app cap; $5/mo provider caps | ✅ | 2026-10-21: **Haiku only for now** (`claude-haiku-5-5` for all tasks); no key shared yet → code runs with fake AI; test with real key later (D17) |
 | Q5  | Let friends connect their own repos? (needs public App + quotas)                                                  | P9       | no                                                                    | ⬜     |                                                                                                                                                                                  |
 | Q6  | Anonymous demo chat allowed?                                                                                      | P5       | yes, 5/day/IP, 100/day global                                         | ⬜     |                                                                                                                                                                                  |
-| Q7  | **Instance type** (D30): m7i-flex.large (Free Plan, 8 GiB, ≈ $0.10/h) vs Paid plan + t3.medium (tight) / t3.large | P0.4, P8 | **m7i-flex.large**                                                    | ⬜     |                                                                                                                                                                                  |
+| Q7  | **Instance type** (D30): m7i-flex.large (Free Plan, 8 GiB, ≈ $0.10/h) vs Paid plan + t3.medium (tight) / t3.large | P0.4, P8 | **m7i-flex.large**                                                    | ✅ | 2026-10-21: **m7i-flex.large** (D30) |
 | Q8  | Alert email address(es)                                                                                           | P10      | Ganesh                                                                | ⬜     |                                                                                                                                                                                  |
 | Q9  | Sync Plan doc with §3.2 differences?                                                                              | —        | yes, after Ganesh reviews §3.2                                        | ⬜     |                                                                                                                                                                                  |
 | Q11 | **AWS account is a member of an AWS Organization** (management account is a different account) and an SCP explicitly denies EC2, Lambda, SQS, ECR, SSM, SNS, EventBridge Scheduler, SES (S3, IAM, Route 53, CloudFront, Cost Explorer work). Who owns that org, and can the SCP be removed / the account leave the org? | P0.4 (everything) | standalone account, not in any org (D31) | ⬜ | |
@@ -1427,17 +1427,17 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 | Component                            | Version             | Pinned in                     | Date |
 | ------------------------------------ | ------------------- | ----------------------------- | ---- |
-| Python                               | 3.13.x              | `.python-version`, Dockerfile |      |
+| Python                               | 3.13.13             | `.python-version`, Dockerfile | 10-21 |
 | Node                                 | 24 LTS              | `.nvmrc`                      |      |
-| Terraform / AWS provider             | ≥ 1.11 / ~> 6       | `versions.tf`                 |      |
-| k3s                                  | latest stable at P8 | bootstrap.sh                  |      |
-| Argo CD chart                        |                     | root values                   |      |
-| cert-manager / ESO / KEDA            |                     | root values                   |      |
-| kube-prometheus-stack / Loki / Alloy |                     | root values                   |      |
-| pgvector image                       | 0.8.x-pg17          | data chart                    |      |
+| Terraform / AWS provider             | 1.16.6 / 6.69.1     | `versions.tf`, lock files     | 10-21 |
+| k3s                                  | v1.36.5+k3s1        | bootstrap.sh                  | 10-21 |
+| Argo CD chart                        | 10.10.5 (v3.5.5)    | root values                   | 10-21 |
+| cert-manager / ESO / KEDA            | v1.21.2 / 2.13.0 / 2.21.0 | root values             | 10-21 |
+| kube-prometheus-stack / Loki / Alloy | 92.11.0 / 19.0.1 / 1.14.0 | root values             | 10-21 |
+| pgvector image                       | 0.8.7-pg17          | data chart, compose, CI       | 10-21 |
 | Valkey                               | 8.x                 | app chart                     |      |
-| ecr-credential-provider              |                     | bootstrap.sh                  |      |
-| anthropic / voyageai                 |                     | uv.lock                       |      |
+| ecr-credential-provider              | v1.37.0             | bootstrap.sh                  | 10-21 |
+| anthropic / Voyage                   | 1.17.0 / REST (no SDK, D40) | uv.lock               | 10-21 |
 
 ### 26.2 ⚠ Verify register
 
@@ -1455,15 +1455,15 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | V10 | GitHub OAuth PKCE support                                                                                                         | §10.2        | P1.4              | ⬜                           |
 | V11 | Google: basic scopes need no verification in production                                                                           | §10.2        | P1.4              | ⬜                           |
 | V12 | GitHub env required reviewers free on public repos; self-approval                                                                 | D13, §14.1   | P0.2              | ⬜                           |
-| V13 | Lambda URL dual permission + TF `invoked_via_function_url`                                                                        | §5.4         | P8.2              | ⬜                           |
+| V13 | Lambda URL dual permission + TF `invoked_via_function_url`                                                                        | §5.4         | P8.2              | ✅ 2026-10-21 (provider 6.69.1 schema has `invoked_via_function_url` / `function_url_auth_type`) |
 | V14 | Lambda account concurrency quota                                                                                                  | §5.4         | P8.4              | ⬜                           |
 | V15 | CloudFront prefix-list SG weight; price class 200 incl. India                                                                     | §4.2, §12.5  | P8.2              | ⬜                           |
-| V16 | Terraform `value_wo` on `aws_ssm_parameter` (provider version)                                                                    | D15          | P8.2              | ⬜                           |
+| V16 | Terraform `value_wo` on `aws_ssm_parameter` (provider version)                                                                    | D15          | P8.2              | ✅ 2026-10-21 (`value_wo` / `value_wo_version` in provider 6.69.1) |
 | V17 | EventBridge Scheduler universal target `ec2:stopInstances`                                                                        | §12.6        | P8.2              | ⬜                           |
 | V18 | k3s kubelet-arg credential provider + swap flags for pinned version                                                               | §12.4        | P8.3              | ⬜                           |
 | V19 | Argo CD Application health Lua needed for waves (current version)                                                                 | §13.2        | P7.1              | ⬜                           |
 | V20 | KEDA aws-sqs-queue `podIdentity provider: aws, identityOwner: keda` on non-EKS; ElasticMQ support                                 | §13.3, §20.2 | P6/P9             | ⬜                           |
-| V21 | Loki chart location/maintainer (2026)                                                                                             | §13.6        | P10.1             | ⬜                           |
+| V21 | Loki chart location/maintainer (2026)                                                                                             | §13.6        | P10.1             | ✅ 2026-10-21 (Loki chart now `oci://ghcr.io/grafana-community/helm-charts`, 19.0.1) |
 | V22 | LE rate limits; k3s cert auto-renew                                                                                               | §13.5, F32   | P9.1              | ⬜                           |
 | V23 | Claude/Voyage pricing & model ids; Voyage free tokens; pgvector version                                                           | D17, D18, §6 | P5.1              | ⬜                           |
 | V25 | CloudFront appends viewer IP to `X-Forwarded-For` with AllViewerExceptHostHeader; whether `CloudFront-Viewer-Address` is included | §12.5        | P9.3              | ⬜                           |
