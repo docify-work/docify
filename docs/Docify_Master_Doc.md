@@ -126,6 +126,8 @@ Jira/Slack/Drive · MCP/agents/fine-tuning · rich-text editor · version-diff U
 | D49 | 10-21 | Accepted | **Attach limited to repos the connecting user can see** (`/user/installations/{id}/repositories` → `workspace_installations.allowed_repo_ids`, refreshed on every Configure) | review #3: an org installation token sees all repos; a member may see only some | trust installation token |
 | D50 | 10-21 | Accepted | **Client IP = `CloudFront-Viewer-Address`** (custom origin request policy with an explicit header allow-list, no Host); X-Forwarded-For only trusted locally | review #4: XFF first entry is client-controlled → rate-limit bypass. Supersedes the §12.5 XFF note (V25) | first XFF entry |
 | D51 | 10-21 | Accepted | **Per-dedupe-key `pg_advisory_xact_lock`** in enqueue/requeue (transaction-scoped, milliseconds) | review #6: twin-lookup + requeue could race into a unique violation. D32's objection was to *session* locks held during long work; this lock is released at commit | catch IntegrityError + retry |
+| D52 | 10-21 | Accepted | **kind on this laptop is for P6 only**; P7 (Argo CD) is validated statically + server-side dry-run and runs for real on the k3s server (P8/P9). Local values use relaxed probes | Docker VM (≈3.6 GiB, shared CPU) hit load ≈ 45 with kind + app; kubectl exec timed out | always-on local Argo |
+| D53 | 10-21 | Accepted | **Empty `ORIGIN_VERIFY_HEADER` = origin check off** (kind/local; config validator) | kind has no CloudFront in front | require header everywhere |
 
 ### 3.2 Differences from `Docify_Project_Plan.md`
 
@@ -1224,7 +1226,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | 3     | CI                        | ✅     | —                                          |
 | 4     | Queue + worker + webhooks | 🟨     | —                                          |
 | 5     | AI features               | 🟨     | —                                          |
-| 6     | Kubernetes (local)        | 🟨     | (kind)                                     |
+| 6     | Kubernetes (local)        | ✅     | (kind)                                     |
 | 7     | GitOps (local)            | 🟨     | (kind)                                     |
 | 8     | Terraform + AWS           | ⛔     | argocd, cert-manager, ESO, platform-config |
 | 9     | Deploy to AWS             | ⛔     | + data, docify-staging, docify-prod, keda  |
@@ -1306,10 +1308,10 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 ### Phase 6 — Kubernetes (local)
 
 - [x] P6.1 Charts `docify` + `data` with feature flags, `values/local.yaml` — ✅ deploy/helm/{docify,data}
-- [ ] P6.2 kind + Traefik; probes, limits, security contexts, NetworkPolicies, PDB, HPA
+- [x] P6.2 kind + Traefik; probes, limits, security contexts, NetworkPolicies, PDB, HPA — ✅ kind 1.34 + Traefik 42.1.0: real image, data chart (db-bootstrap ✓), migrate hook ✓, NetworkPolicies + restricted PSA ✓ (2026-10-21)
 - [x] P6.3 kubeconform in CI — ✅ ci.yml chart job (deploy/validate.sh)
 
-- **AC:** [ ] app on kind · [ ] delete api pod under traffic → no failed requests
+- **AC:** [x] app on kind (signup via Traefik ✓) · [x] delete api pod under traffic → no failed requests (150/150 OK, 2 replicas)
 
 ### Phase 7 — GitOps (local)
 
