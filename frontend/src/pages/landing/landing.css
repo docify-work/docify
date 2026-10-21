@@ -186,16 +186,3 @@
     animation: none;
   }
 }
-
-/* ---------------------------------------------------------------- hero chapter progress (transform only) */
-
-.l-fill {
-  animation-name: l-fill;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
-}
-
-@keyframes l-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}

@@ -1,13 +1,11 @@
 import { ArrowRight, Check, Play } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { GitHubIcon } from "@/components/BrandIcons";
 import { Button } from "@/components/ui";
-import { cn } from "@/lib/cn";
 import { Magnetic, SplitWords } from "./fx";
 import { EASE, useActive } from "./motion-utils";
-import { CHAPTERS, FILM } from "./remotion/config";
 
 // Start fetching the film chunk as soon as the landing chunk loads — it is the hero visual.
 const loadFilm = () => import("./DemoVideo");
@@ -35,9 +33,6 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
 }) {
   const ref = useRef<HTMLElement>(null);
   const active = useActive(ref);
-  const [scene, setScene] = useState(0);
-  const [jump, setJump] = useState({ scene: 0, key: 0 });
-  const onScene = useCallback((s: number) => setScene(s), []);
 
   return (
     <section ref={ref} id="product" className="relative isolate overflow-hidden">
@@ -47,19 +42,10 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
       <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-5 pb-20 pt-32 sm:pt-36 lg:min-h-[min(100svh,900px)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-10 lg:pb-16 lg:pt-28">
         {/* left: copy */}
         <div className="min-w-0 text-center lg:text-left">
-          <motion.span
-            {...fadeUp(0.05)}
-            className="inline-flex items-center gap-2 rounded-full border border-black/[0.08] bg-white py-1 pl-1 pr-3 text-xs text-fg-muted shadow-sm"
-          >
-            <span className="rounded-full bg-[var(--l-indigo)] px-2 py-0.5 text-[11px] font-semibold text-white">New</span>
-            <span className="sm:hidden">Docs that update on every push</span>
-            <span className="hidden sm:inline">Docs that update themselves on every push</span>
-          </motion.span>
-
-          <h1 className="mt-6 text-[clamp(2.2rem,3.6vw,3.25rem)] font-semibold leading-[1.04] tracking-[-0.045em]">
-            <SplitWords text="Your code, documented." delay={0.1} gradientWords={["documented."]} />
+          <h1 className="text-[clamp(1.6rem,7.4vw,2.9rem)] font-semibold leading-[1.06] lg:text-[clamp(2.1rem,3.1vw,2.85rem)] tracking-[-0.045em]">
+            <SplitWords text="Your code, documented." delay={0.1} gradientWords={["documented."]} className="whitespace-nowrap" />
             <br />
-            <SplitWords text="On every push." delay={0.3} />
+            <SplitWords text="On every push." delay={0.3} className="whitespace-nowrap" />
           </h1>
 
           <motion.p {...fadeUp(0.55)} className="mx-auto mt-5 max-w-md text-[15.5px] leading-relaxed text-fg-muted lg:mx-0">
@@ -104,7 +90,7 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
           </motion.div>
         </div>
 
-        {/* right: live product stage + chapter progress */}
+        {/* right: live product stage */}
         <motion.div
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
@@ -113,64 +99,12 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
         >
           <div className="mx-auto aspect-[84/68] w-full max-w-xl lg:max-w-none">
             <Suspense fallback={<div className="size-full" />}>
-              <DemoVideo active={active} jump={jump} onScene={onScene} />
+              <DemoVideo active={active} />
             </Suspense>
           </div>
-          <Chapters
-            scene={scene}
-            runKey={jump.key}
-            active={active}
-            onPick={(i) => {
-              setScene(i);
-              setJump((j) => ({ scene: i, key: j.key + 1 }));
-            }}
-          />
         </motion.div>
       </div>
     </section>
-  );
-}
-
-/** 4-step progress under the stage. The fill is a CSS animation (no per-frame React work). */
-function Chapters({ scene, runKey, active, onPick }: {
-  scene: number;
-  runKey: number;
-  active: boolean;
-  onPick: (i: number) => void;
-}) {
-  return (
-    <div role="tablist" aria-label="Product tour chapters" className="mx-auto mt-2 grid max-w-xl grid-cols-4 gap-2 px-1 sm:gap-3 sm:px-3">
-      {CHAPTERS.map((label, i) => {
-        const on = scene === i;
-        return (
-          <button
-            key={label}
-            type="button"
-            role="tab"
-            aria-selected={on}
-            title={`Jump to: ${label}`}
-            onClick={() => onPick(i)}
-            className="group cursor-pointer text-left"
-          >
-            <span className="block h-[3px] overflow-hidden rounded-full bg-black/[0.08]">
-              <span
-                key={on ? `${scene}-${runKey}` : "idle"}
-                className={cn("block h-full origin-left bg-[linear-gradient(100deg,#4f46e5,#7c3aed_45%,#0891b2)]", on && "l-fill")}
-                style={{
-                  transform: on ? undefined : `scaleX(${i < scene ? 1 : 0})`,
-                  animationDuration: `${FILM.scene / FILM.fps}s`,
-                  animationPlayState: active ? "running" : "paused",
-                }}
-              />
-            </span>
-            <span className={cn("mt-2 block truncate text-xs transition-colors", on ? "font-medium text-fg" : "text-fg-subtle group-hover:text-fg-muted")}>
-              <span className={cn("mr-1 font-mono text-[10px]", on ? "text-[var(--accent-text)]" : "")}>0{i + 1}</span>
-              {label}
-            </span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
