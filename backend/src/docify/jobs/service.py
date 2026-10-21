@@ -313,5 +313,6 @@ async def acquire_singleton(db: AsyncSession, name: str, owner: str, ttl: timede
 
 
 async def release_singleton(db: AsyncSession, name: str, owner: str) -> None:
-    await db.execute(text("UPDATE singletons SET expires_at = now() - interval '1 second' WHERE name = :n AND owner = :o"),
+    await db.execute(text("UPDATE singletons SET expires_at = now() - interval '1 second' "
+                          "WHERE name = :n AND owner = :o"),
                      {"n": name, "o": owner})

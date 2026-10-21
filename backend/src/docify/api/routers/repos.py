@@ -99,7 +99,8 @@ def _brief(v: DocumentVersion | None) -> VersionBrief | None:
 async def list_docs(ws: str, db: DB, principal: CurrentPrincipal, repo: uuid.UUID | None = None) -> list[DocOut]:
     w = await get_workspace(db, principal, ws)
     pv = aliased(DocumentVersion)
-    pending = select(pv.id).where(pv.document_id == Document.id, pv.status == "pending_review")        .correlate(Document).exists()
+    pending = (select(pv.id).where(pv.document_id == Document.id, pv.status == "pending_review")
+               .correlate(Document).exists())
     q = (select(Document, Repository.full_name, DocumentVersion, pending.label("pending"))
          .join(Repository, Repository.id == Document.repo_id)
          .outerjoin(DocumentVersion, DocumentVersion.id == Document.published_version_id)

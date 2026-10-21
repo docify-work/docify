@@ -13,7 +13,8 @@ def _base() -> str:
 def verify_email(to: str, token: str) -> Email:
     return Email(to, "Verify your Docify email", (
         "Welcome to Docify!\n\n"
-        f"Confirm your email address by opening this link (valid for 24 hours):\n{_base()}/verify-email?token={token}\n\n"
+        "Confirm your email address by opening this link (valid for 24 hours):\n"
+        f"{_base()}/verify-email?token={token}\n\n"
         "If you didn't sign up, you can ignore this email."
     ))
 

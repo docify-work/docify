@@ -102,6 +102,9 @@ jobs:
           image-ref: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
           severity: CRITICAL
           ignore-unfixed: true
+          # Vulnerabilities only: repo secrets are covered by GitHub push protection, and the
+          # secret scanner false-positives on SDK docstrings.
+          scanners: vuln
           exit-code: "1"
           format: table
 

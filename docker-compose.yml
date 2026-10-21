@@ -1,6 +1,6 @@
 # Local development stack (Master Doc §20.1).
-#   docker compose up -d                       # infra + api + worker
-#   docker compose up -d postgres valkey elasticmq mailpit   # infra only (run api/worker with uv)
+#   docker compose up -d --build   # everything in containers (the image CI ships)
+#   make infra                     # only postgres/valkey/elasticmq/mailpit; run api/worker with uv (hot reload)
 name: docify
 
 x-backend: &backend
@@ -63,21 +63,24 @@ services:
 
   migrate:
     <<: *backend
-    command: ["docify", "migrate"]
+    command: ["migrate"]
     restart: "no"
 
   api:
     <<: *backend
-    command: ["docify", "api", "--reload"]
+    command: ["api"]
     ports: ["8000:8000", "9000:9000"]
-    volumes:
-      - ./backend/src:/app/src:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
     depends_on:
       migrate: { condition: service_completed_successfully }
 
   worker:
     <<: *backend
-    command: ["docify", "worker"]
+    command: ["worker"]
     depends_on:
       migrate: { condition: service_completed_successfully }
 

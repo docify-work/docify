@@ -15,7 +15,6 @@ import os
 from typing import Any
 
 import boto3
-
 from normalise import MAX_MESSAGE_BYTES, normalise
 from verify import verify_signature
 
