@@ -91,6 +91,12 @@ class Settings(BaseSettings):
     worker_heartbeat_file: str = "/tmp/worker-heartbeat"  # noqa: S108 - emptyDir in k8s
     metrics_port: int = 9000
 
+    @field_validator("origin_verify_header", mode="before")
+    @classmethod
+    def _empty_is_none(cls, v: object) -> object:
+        # An empty env var means "no origin check" (local/kind), not "require an empty header".
+        return None if v in ("", None) else v
+
     @field_validator("database_url")
     @classmethod
     def _async_driver(cls, v: str) -> str:

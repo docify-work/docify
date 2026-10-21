@@ -47,7 +47,7 @@ localSecrets:
   dbPassword: docify-local-dev          # must match deploy/argocd/local data values
   app:
     SESSION_PEPPER: local-dev-pepper-not-a-secret-0000000000
-    ORIGIN_VERIFY_HEADER: local-dev-origin-header
+    ORIGIN_VERIFY_HEADER: ""             # no CloudFront locally → origin check off
     GITHUB_APP_PRIVATE_KEY: ""
     GITHUB_CLIENT_SECRET: ""
     GOOGLE_CLIENT_SECRET: ""
