@@ -16,7 +16,7 @@ import { Nav } from "./Nav";
 
 /** Marketing landing page: full-bleed, always dark, its own nav + footer (outside PublicLayout). */
 export default function LandingPage() {
-  usePageMeta([{ label: "Docs that write themselves" }]);
+  usePageMeta([{ label: "Your code, documented on every push" }]);
   useSmoothScroll();
   const { me } = useMe();
   const [params, setParams] = useSearchParams();
