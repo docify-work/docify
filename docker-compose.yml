@@ -1,0 +1,85 @@
+# Local development stack (Master Doc §20.1).
+#   docker compose up -d                       # infra + api + worker
+#   docker compose up -d postgres valkey elasticmq mailpit   # infra only (run api/worker with uv)
+name: docify
+
+x-backend: &backend
+  build:
+    context: ./backend
+  image: docify-backend:dev
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    ENV: local
+    DATABASE_URL: postgresql+asyncpg://docify:docify@postgres:5432/docify
+    VALKEY_URL: redis://valkey:6379/0
+    AWS_ENDPOINT_URL_SQS: http://elasticmq:9324
+    SQS_QUEUE_URL: http://elasticmq:9324/000000000000/docify-local-events
+    SQS_DLQ_URL: http://elasticmq:9324/000000000000/docify-local-events-dlq
+    AWS_ACCESS_KEY_ID: local
+    AWS_SECRET_ACCESS_KEY: local
+    SMTP_HOST: mailpit
+    SMTP_PORT: "1025"
+    LOCAL_STORAGE_DIR: /tmp/docify-storage
+    WORKER_HEARTBEAT_FILE: /tmp/worker-heartbeat
+  depends_on:
+    postgres: { condition: service_healthy }
+    valkey: { condition: service_started }
+    elasticmq: { condition: service_started }
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17
+    environment:
+      POSTGRES_USER: docify
+      POSTGRES_PASSWORD: docify
+      POSTGRES_DB: docify
+    ports: ["55432:5432"]  # host port 55432 avoids clashing with a locally installed Postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./dev/postgres-init.sql:/docker-entrypoint-initdb.d/10-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docify -d docify"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  valkey:
+    image: valkey/valkey:8.1.10-alpine
+    command: ["valkey-server", "--save", "", "--appendonly", "no", "--maxmemory", "48mb", "--maxmemory-policy", "allkeys-lru"]
+    ports: ["56379:6379"]
+
+  elasticmq:
+    image: softwaremill/elasticmq-native:1.7.1
+    ports: ["9324:9324"]
+    volumes:
+      - ./dev/elasticmq.conf:/opt/elasticmq.conf:ro
+
+  mailpit:
+    image: axllent/mailpit:v1.31.6
+    ports: ["1025:1025", "8025:8025"]
+
+  migrate:
+    <<: *backend
+    command: ["docify", "migrate"]
+    restart: "no"
+
+  api:
+    <<: *backend
+    command: ["docify", "api", "--reload"]
+    ports: ["8000:8000", "9000:9000"]
+    volumes:
+      - ./backend/src:/app/src:ro
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  worker:
+    <<: *backend
+    command: ["docify", "worker"]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+volumes:
+  pgdata:

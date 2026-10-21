@@ -1,0 +1,9 @@
+# Only what the image needs (pyproject, lock, src, alembic.ini, README).
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!alembic.ini
+!src/
+**/__pycache__
+**/*.pyc

@@ -1,0 +1,8 @@
+[project]
+name = "taskly"
+version = "0.3.0"
+requires-python = ">=3.12"
+dependencies = ["fastapi", "uvicorn", "sqlalchemy", "bcrypt", "pyjwt", "apscheduler"]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]

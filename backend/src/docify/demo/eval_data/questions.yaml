@@ -1,0 +1,28 @@
+# Retrieval eval for the Taskly fixture (Master Doc §11.7).
+# `expect` = a path suffix that should appear in the top 8 retrieved chunks; omit it for unanswerable questions.
+questions:
+  - { q: "How are passwords hashed?", expect: "app/auth.py" }
+  - { q: "How long is a JWT access token valid?", expect: "app/config.py" }
+  - { q: "How does login work?", expect: "app/routes/auth_routes.py" }
+  - { q: "What happens when someone signs up with an email that already exists?", expect: "app/routes/auth_routes.py" }
+  - { q: "How is the bearer token decoded and validated?", expect: "app/auth.py" }
+  - { q: "How do I list only completed tasks?", expect: "app/routes/tasks.py" }
+  - { q: "Which priority values are allowed for a task?", expect: "app/routes/tasks.py" }
+  - { q: "How is a task deleted?", expect: "app/routes/tasks.py" }
+  - { q: "What fields does the Task model have?", expect: "app/models.py" }
+  - { q: "When are overdue reminder emails sent?", expect: "app/services/reminders.py" }
+  - { q: "How are overdue tasks grouped by user?", expect: "app/services/reminders.py" }
+  - { q: "Which SMTP host is used for emails?", expect: "app/config.py" }
+  - { q: "How is the database session created and closed?", expect: "app/db.py" }
+  - { q: "Which database is used by default?", expect: "app/config.py" }
+  - { q: "How do I run the app locally?", expect: "README.md" }
+  - { q: "Which port does the Docker image expose?", expect: "Dockerfile" }
+  - { q: "Which dependencies does the project use?", expect: "pyproject.toml" }
+  - { q: "How are the tests run in CI?", expect: ".github/workflows/ci.yml" }
+  - { q: "Where is the health check endpoint?", expect: "app/main.py" }
+  - { q: "How is the scheduler started?", expect: "app/main.py" }
+  - { q: "How does the Kubernetes horizontal pod autoscaler scale replicas?" }
+  - { q: "Which Stripe webhook events are handled?" }
+  - { q: "How is GraphQL federation configured?" }
+  - { q: "What is the Kafka consumer group name?" }
+  - { q: "How are 3D meshes rendered in WebGL?" }

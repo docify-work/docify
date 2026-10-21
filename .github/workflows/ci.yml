@@ -1,0 +1,225 @@
+# CI (Master Doc §14.2): runs on every push to main and every PR.
+# Path filters keep it fast: only the parts that changed are checked
+# (the "all-green" job is the single required status check).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.f.outputs.backend }}
+      frontend: ${{ steps.f.outputs.frontend }}
+      chart: ${{ steps.f.outputs.chart }}
+      infra: ${{ steps.f.outputs.infra }}
+      workflows: ${{ steps.f.outputs.workflows }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: f
+        with:
+          filters: |
+            backend: ['backend/**', 'lambdas/**', '.github/workflows/ci.yml']
+            frontend: ['frontend/package.json', 'frontend/src/**', 'frontend/*.ts', 'frontend/*.json', 'frontend/index.html']
+            chart: ['deploy/**', '.github/workflows/ci.yml']
+            infra: ['infra/**', '.github/workflows/ci.yml']
+            workflows: ['.github/workflows/**']
+
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.7-pg17
+        env:
+          POSTGRES_USER: docify
+          POSTGRES_PASSWORD: docify
+          POSTGRES_DB: docify_test
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U docify" --health-interval 3s --health-timeout 3s --health-retries 20
+      valkey:
+        image: valkey/valkey:8.1.10-alpine
+        ports: ["56379:6379"]
+      elasticmq:
+        image: softwaremill/elasticmq-native:1.7.1
+        ports: ["9324:9324"]
+    env:
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_DEFAULT_REGION: ap-south-1
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install
+        run: uv sync --frozen
+      - name: Ruff
+        run: uv run ruff check src tests ../lambdas
+      - name: Mypy
+        run: uv run mypy src
+      - name: Create test queues (ElasticMQ)
+        run: |
+          uv run python - <<'PY'
+          import boto3
+          sqs = boto3.client("sqs", endpoint_url="http://localhost:9324", region_name="ap-south-1")
+          for name in ("docify-test-events-dlq", "docify-test-events"):
+              sqs.create_queue(QueueName=name, Attributes={"VisibilityTimeout": "300"})
+          PY
+      - name: Tests (unit + integration) with coverage
+        run: uv run pytest -q --cov=docify --cov-report=term --cov-fail-under=70
+      - name: Lambda tests (+ shared-code drift check)
+        run: uv run pytest -q ../lambdas/tests -p no:cacheprovider --rootdir=../lambdas
+      - name: Migrations are complete (models == migrations)
+        env:
+          DATABASE_URL: postgresql+asyncpg://docify:docify@localhost:55432/docify_test
+        run: uv run alembic check
+
+  docker:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Hadolint
+        run: docker run --rm -i hadolint/hadolint:v2.12.0 < backend/Dockerfile
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: backend
+          load: true
+          push: false
+          tags: docify-backend:ci
+          build-args: GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke the image (runs as uid 10001, CLI works)
+        run: |
+          test "$(docker run --rm --entrypoint id docify-backend:ci -u)" = "10001"
+          docker run --rm docify-backend:ci --help >/dev/null
+      - name: Trivy (fail on fixable CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: docify-backend:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test -- --run
+      - run: npm run build
+
+  chart:
+    needs: changes
+    if: needs.changes.outputs.chart == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: v3.19.0
+      - name: Install kubeconform
+        run: |
+          curl -sSfL https://github.com/yannh/kubeconform/releases/download/v0.7.0/kubeconform-linux-amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+      - name: Lint + render + kubeconform every chart/values combination
+        run: bash deploy/validate.sh
+
+  infra:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.16.6
+      - name: terraform fmt
+        run: terraform fmt -recursive -check infra/terraform
+      - name: terraform validate
+        run: |
+          for root in bootstrap envs/main envs/eks-lab; do
+            echo "== $root"
+            terraform -chdir="infra/terraform/$root" init -backend=false -input=false >/dev/null
+            terraform -chdir="infra/terraform/$root" validate
+          done
+      - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+      - name: tflint
+        run: |
+          tflint --chdir=infra/terraform --config "$PWD/infra/terraform/.tflint.hcl" --init
+          tflint --chdir=infra/terraform --config "$PWD/infra/terraform/.tflint.hcl" --recursive
+      - name: Trivy config scan (IaC misconfigurations, report only)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: infra
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+
+  actionlint:
+    needs: changes
+    if: needs.changes.outputs.workflows == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
+  all-green:
+    # Single required check: passes when every job that ran succeeded (skipped = fine).
+    if: always()
+    needs: [backend, docker, frontend, chart, infra, actionlint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            exit 1
+          fi
