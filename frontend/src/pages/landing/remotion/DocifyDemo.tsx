@@ -1,15 +1,19 @@
 /**
- * Remotion composition: a 16-second product film rendered live in the browser by @remotion/player.
- * Four scenes: push → pipeline → doc rewrite → chat with citations.
- * Everything is a pure function of the current frame (that's the Remotion model), so it loops perfectly.
+ * The hero film (Remotion). Every pixel is a pure function of the frame, so it loops perfectly.
+ *
+ *  variant "full"  (desktop, 1920×1080): headline + copy on the left, live product stage on the right,
+ *                  chapter progress under the copy. Real HTML buttons are overlaid by Hero.tsx.
+ *  variant "stage" (mobile, 1280×720):   only the stage, shown under the HTML headline.
+ *
+ * Performance: no CSS filters (blur/drop-shadow), backgrounds are radial gradients that only translate,
+ * motion is transform/opacity only.
  */
 import type { CSSProperties, ReactNode } from "react";
-import { AbsoluteFill, Easing, interpolate, Sequence, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { DEMO, DEMO_DURATION } from "./config";
-
+import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
+import { CHAPTERS, FILM, LAYOUT } from "./config";
 
 const C = {
-  bg: "#f8f8fb",
+  bg: "#fbfbfd",
   card: "#ffffff",
   border: "rgba(15,15,30,0.09)",
   fg: "#0f0f14",
@@ -24,94 +28,222 @@ const C = {
 };
 const font = '"Geist Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif';
 const mono = 'ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace';
+const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
+const GRADIENT = "linear-gradient(100deg, #4f46e5 0%, #7c3aed 45%, #0891b2 100%)";
 
-export function DocifyDemo() {
+export type FilmProps = { variant: "full" | "stage" };
+
+export function DocifyDemo({ variant }: FilmProps) {
+  const frame = useCurrentFrame();
+  // Scenes start after the intro in the full film; the stage-only film has no intro.
+  const offset = variant === "full" ? FILM.intro : 0;
+  const t = Math.max(0, frame - offset);
+  const sceneIndex = Math.min(3, Math.floor(t / FILM.scene));
+  const sceneFrame = t - sceneIndex * FILM.scene;
+
+  if (variant === "stage") {
+    return (
+      <AbsoluteFill style={{ background: C.bg, fontFamily: font, color: C.fg, overflow: "hidden", textAlign: "left" }}>
+        <Backdrop fade={false} />
+        <div style={{ position: "absolute", left: 30, top: 36, width: 840, height: 660 }}>
+          <Stage sceneIndex={sceneIndex} sceneFrame={sceneFrame} />
+        </div>
+      </AbsoluteFill>
+    );
+  }
+
+  const stageIn = interpolate(frame, [FILM.intro - 20, FILM.intro + 10], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
   return (
-    <AbsoluteFill style={{ background: C.bg, fontFamily: font, color: C.fg, overflow: "hidden" }}>
-      <Backdrop />
-      <Sequence durationInFrames={DEMO.scene}>
-        <Scene step="01" title="You push a commit"><PushScene /></Scene>
-      </Sequence>
-      <Sequence from={DEMO.scene} durationInFrames={DEMO.scene}>
-        <Scene step="02" title="Docify reacts — even while servers sleep"><PipelineScene /></Scene>
-      </Sequence>
-      <Sequence from={DEMO.scene * 2} durationInFrames={DEMO.scene}>
-        <Scene step="03" title="Only the affected doc is rewritten"><DocScene /></Scene>
-      </Sequence>
-      <Sequence from={DEMO.scene * 3} durationInFrames={DEMO.scene}>
-        <Scene step="04" title="Ask anything — answers cite the lines"><ChatScene /></Scene>
-      </Sequence>
+    <AbsoluteFill style={{ background: C.bg, fontFamily: font, color: C.fg, overflow: "hidden", textAlign: "left" }}>
+      <Backdrop fade />
+      <Copy />
+      <ChapterBar sceneIndex={sceneIndex} sceneFrame={sceneFrame} started={frame >= FILM.intro} />
+      <div
+        style={{
+          position: "absolute", left: 1060, top: 170, width: 780, height: 760,
+          opacity: stageIn, transform: `translateX(${(1 - stageIn) * 60}px)`,
+        }}
+      >
+        <Stage sceneIndex={sceneIndex} sceneFrame={sceneFrame} />
+      </div>
     </AbsoluteFill>
   );
 }
 
-/* ------------------------------------------------------------------------------------ shared */
+/* ---------------------------------------------------------------------------------- backdrop */
 
-function Backdrop() {
+function Backdrop({ fade }: { fade: boolean }) {
   const frame = useCurrentFrame();
-  const a = (frame / DEMO_DURATION) * Math.PI * 2;
+  const a = (frame / 300) * Math.PI * 2; // one slow orbit per 10 s (FILM.scene * 2 frames) → seamless loop
   return (
     <AbsoluteFill>
-      <div
-        style={{
-          position: "absolute", width: 900, height: 900, borderRadius: "50%", opacity: 0.5,
-          background: `radial-gradient(circle, rgba(79,70,229,0.18), transparent 65%)`,
-          left: 100 + Math.cos(a) * 120, top: -300 + Math.sin(a) * 80,
-        }}
-      />
-      <div
-        style={{
-          position: "absolute", width: 700, height: 700, borderRadius: "50%", opacity: 0.45,
-          background: `radial-gradient(circle, rgba(124,58,237,0.16), transparent 65%)`,
-          right: -100 + Math.sin(a) * 100, bottom: -300 + Math.cos(a) * 60,
-        }}
-      />
-      <AbsoluteFill
-        style={{
-          backgroundImage: `linear-gradient(to right, rgba(15,15,30,0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(15,15,30,0.05) 1px, transparent 1px)`,
-          backgroundSize: "64px 64px",
-          maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 100%)",
-        }}
-      />
+      <div style={{
+        position: "absolute", width: 1100, height: 1100, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(129,140,248,0.22), transparent 62%)",
+        left: -260, top: -420, transform: `translate(${Math.cos(a) * 40}px, ${Math.sin(a) * 30}px)`,
+      }} />
+      <div style={{
+        position: "absolute", width: 1100, height: 1100, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(216,180,254,0.26), transparent 62%)",
+        right: -300, top: -300, transform: `translate(${Math.sin(a) * 40}px, ${Math.cos(a) * 30}px)`,
+      }} />
+      <div style={{
+        position: "absolute", width: 1000, height: 1000, borderRadius: "50%",
+        background: "radial-gradient(circle, rgba(103,232,249,0.16), transparent 62%)",
+        left: 700, bottom: -560,
+      }} />
+      <AbsoluteFill style={{
+        backgroundImage: `linear-gradient(to right, rgba(15,15,30,0.045) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(15,15,30,0.045) 1px, transparent 1px)`,
+        backgroundSize: "64px 64px",
+        maskImage: "radial-gradient(ellipse 80% 75% at 50% 40%, #000 35%, transparent 100%)",
+      }} />
+      {/* fade into the page below */}
+      {fade && <AbsoluteFill style={{ background: `linear-gradient(to bottom, transparent 84%, ${C.bg})` }} />}
     </AbsoluteFill>
   );
 }
 
-function Scene({ step, title, children }: { step: string; title: string; children: ReactNode }) {
+/* ---------------------------------------------------------------------------------- left copy */
+
+function Copy() {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 12, DEMO.scene - 12, DEMO.scene], [0, 1, 1, 0], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp",
-  });
-  const titleY = interpolate(frame, [0, 18], [20, 0], { extrapolateRight: "clamp", easing: Easing.out(Easing.cubic) });
+  const { fps } = useVideoConfig();
+  const pill = interpolate(frame, [0, 12], [0, 1], clamp);
+  const lines = [["Your", "code", "changes."], ["Your", "docs", "keep", "up."]];
+  const sub = interpolate(frame, [24, 40], [0, 1], clamp);
+  const checks = interpolate(frame, [34, 50], [0, 1], clamp);
+  let idx = 0;
   return (
-    <AbsoluteFill style={{ opacity, padding: "56px 72px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14, transform: `translateY(${titleY}px)` }}>
-        <span style={{
-          fontFamily: mono, fontSize: 18, color: C.cyan, border: `1px solid ${C.border}`, borderRadius: 999,
-          padding: "4px 12px", background: "#ffffff",
-        }}>{step}</span>
-        <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: -0.8 }}>{title}</span>
+    <>
+      <div style={{ position: "absolute", left: LAYOUT.left, top: 210, width: 860 }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 12, padding: "6px 18px 6px 6px", borderRadius: 999,
+          background: C.card, border: `1px solid ${C.border}`, fontSize: 20, color: C.muted,
+          opacity: pill, transform: `translateY(${(1 - pill) * 12}px)`, boxShadow: "0 1px 2px rgba(15,15,30,0.05)",
+        }}>
+          <span style={{ background: C.indigo, color: "#fff", fontWeight: 600, fontSize: 17, padding: "4px 12px", borderRadius: 999 }}>New</span>
+          Docs that update themselves on every push
+        </div>
+
+        <div style={{ marginTop: 34, fontSize: 100, fontWeight: 650, lineHeight: 1, letterSpacing: -4.6 }}>
+          {lines.map((line, li) => (
+            <div key={li} style={{ display: "flex", gap: 24 }}>
+              {line.map((w) => {
+                const p = spring({ frame: frame - 4 - idx++ * 3, fps, config: { damping: 16, stiffness: 120 } });
+                const grad = w === "docs";
+                return (
+                  <span key={w + li} style={{ display: "inline-block", clipPath: "inset(-20% -15% 0 -15%)", paddingBottom: 14 }}>
+                    <span style={{
+                      display: "inline-block", transform: `translateY(${(1 - p) * 110}%)`, opacity: p,
+                      ...(grad ? { background: GRADIENT, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" } : {}),
+                    }}>{w}</span>
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+
+        <p style={{
+          marginTop: 26, fontSize: 28, lineHeight: 1.5, color: C.muted, maxWidth: 800,
+          opacity: sub, transform: `translateY(${(1 - sub) * 14}px)`,
+        }}>
+          Connect a GitHub repo. Docify writes the docs with AI, rewrites only what changed on every push, and answers
+          questions with links to the exact lines.
+        </p>
       </div>
-      <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", paddingBottom: 40 }}>{children}</div>
-    </AbsoluteFill>
+
+      {/* the real, clickable buttons are HTML overlaid at LAYOUT.ctaTop (see Hero.tsx) */}
+
+      <div style={{
+        position: "absolute", left: LAYOUT.left, top: LAYOUT.ctaTop + LAYOUT.ctaHeight + 28, display: "flex", gap: 30,
+        fontSize: 19, color: C.subtle, opacity: checks,
+      }}>
+        {["Free to try", "Read-only GitHub access", "Line-level citations"].map((c) => (
+          <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: C.emerald, fontWeight: 700 }}>✓</span>{c}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ChapterBar({ sceneIndex, sceneFrame, started }: { sceneIndex: number; sceneFrame: number; started: boolean }) {
+  const frame = useCurrentFrame();
+  const show = interpolate(frame, [36, 54], [0, 1], clamp);
+  return (
+    <div style={{ position: "absolute", left: LAYOUT.left, top: LAYOUT.chaptersTop, display: "flex", gap: LAYOUT.chapterGap, opacity: show }}>
+      {CHAPTERS.map((label, i) => {
+        const fill = !started ? 0 : i < sceneIndex ? 1 : i === sceneIndex ? sceneFrame / FILM.scene : 0;
+        const on = started && i === sceneIndex;
+        return (
+          <div key={label} style={{ width: LAYOUT.chapterWidth, height: LAYOUT.chapterHeight }}>
+            <div style={{ height: 4, borderRadius: 4, background: "rgba(15,15,30,0.08)", overflow: "hidden" }}>
+              <div style={{ height: "100%", width: "100%", background: GRADIENT, transformOrigin: "left", transform: `scaleX(${fill})` }} />
+            </div>
+            <div style={{ marginTop: 14, fontSize: 19, color: on ? C.fg : C.subtle, fontWeight: on ? 600 : 400 }}>
+              <span style={{ fontFamily: mono, fontSize: 15, color: on ? C.indigo : C.subtle, marginRight: 8 }}>0{i + 1}</span>
+              {label}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------------- stage */
+
+const CAPTIONS = [
+  "You push a commit",
+  "Docify reacts — even while servers sleep",
+  "Only the affected doc is rewritten",
+  "Ask anything — answers cite the lines",
+];
+
+function Stage({ sceneIndex, sceneFrame }: { sceneIndex: number; sceneFrame: number }) {
+  const fade = interpolate(sceneFrame, [0, 14, FILM.scene - 14, FILM.scene], [0, 1, 1, 0], clamp);
+  const lift = interpolate(sceneFrame, [0, 18], [24, 0], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const Scene = [PushScene, PipelineScene, DocScene, ChatScene][sceneIndex]!;
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100%", opacity: fade, transform: `translateY(${lift}px)` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 21, color: C.muted }}>
+        <span style={{ fontFamily: mono, fontSize: 16, color: C.cyan, background: C.card, border: `1px solid ${C.border}`, borderRadius: 999, padding: "3px 11px" }}>
+          0{sceneIndex + 1}
+        </span>
+        {CAPTIONS[sceneIndex]}
+      </div>
+      <div style={{ position: "absolute", inset: "64px 0 0 0", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <Scene f={sceneFrame} />
+      </div>
+    </div>
   );
 }
 
 function card(extra: CSSProperties = {}): CSSProperties {
   return {
-    background: "#ffffff",
-    border: `1px solid ${C.border}`, borderRadius: 20, boxShadow: "0 1px 2px rgba(15,15,30,0.04), 0 30px 60px -30px rgba(30,27,75,0.30)", ...extra,
+    background: C.card, border: `1px solid ${C.border}`, borderRadius: 22,
+    boxShadow: "0 1px 2px rgba(15,15,30,0.04), 0 30px 60px -30px rgba(30,27,75,0.30)", ...extra,
   };
 }
 
-function usePop(delay: number) {
-  const frame = useCurrentFrame();
+function usePop(f: number, delay: number) {
   const { fps } = useVideoConfig();
-  return spring({ frame: frame - delay, fps, config: { damping: 14, stiffness: 140 } });
+  return spring({ frame: f - delay, fps, config: { damping: 15, stiffness: 140 } });
 }
 
-/* ------------------------------------------------------------------------------------ 1. push */
+function Chip({ children, s = 1 }: { children: ReactNode; s?: number }) {
+  return (
+    <span style={{
+      fontFamily: mono, fontSize: 16, padding: "4px 11px", borderRadius: 8, border: "1px solid rgba(79,70,229,0.3)",
+      background: "rgba(79,70,229,0.06)", color: "#4338ca", opacity: s, transform: `translateY(${(1 - s) * 8}px)`, display: "inline-block",
+    }}>{children}</span>
+  );
+}
+
+/* 1 · push ---------------------------------------------------------------------------- */
 
 const DIFF = [
   { s: " ", t: '@router.post("/auth/login")' },
@@ -122,163 +254,150 @@ const DIFF = [
   { s: "+", t: "    if not await averify(body.password, user.hash):" },
 ];
 
-function PushScene() {
-  const frame = useCurrentFrame();
-  const p = usePop(6);
+function PushScene({ f }: { f: number }) {
+  const p = usePop(f, 4);
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={card({ width: 900, padding: 28, transform: `translateY(${(1 - p) * 60}px) scale(${0.94 + p * 0.06})`, opacity: p })}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 18, color: C.muted }}>
-          <div style={{ width: 34, height: 34, borderRadius: 999, background: `linear-gradient(135deg, ${C.indigo}, ${C.violet})` }} />
-          <span style={{ color: C.fg, fontWeight: 600 }}>ganesh</span> pushed to <span style={{ fontFamily: mono, color: C.cyan }}>main</span>
-          <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 15, color: C.subtle }}>4f2c9e1</span>
-        </div>
-        <div style={{ marginTop: 14, fontSize: 24, fontWeight: 600 }}>feat(auth): rate-limit login + async password check</div>
-        <div style={{ marginTop: 20, borderRadius: 14, border: `1px solid ${C.border}`, background: "#f7f7fa", padding: "14px 0" }}>
-          {DIFF.map((d, i) => {
-            const show = interpolate(frame, [20 + i * 8, 30 + i * 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-            const bg = d.s === "+" ? "rgba(5,150,105,0.08)" : d.s === "-" ? "rgba(220,38,38,0.07)" : "transparent";
-            const col = d.s === "+" ? C.emerald : d.s === "-" ? C.red : C.muted;
-            return (
-              <div key={i} style={{ display: "flex", gap: 16, padding: "3px 20px", fontFamily: mono, fontSize: 19, background: bg, opacity: show, transform: `translateX(${(1 - show) * -20}px)` }}>
-                <span style={{ width: 14, color: col }}>{d.s}</span>
-                <span style={{ color: col, whiteSpace: "pre" }}>{d.t}</span>
-              </div>
-            );
-          })}
-        </div>
+    <div style={card({ padding: 30, transform: `translateY(${(1 - p) * 40}px) scale(${0.96 + p * 0.04})`, opacity: p })}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 19, color: C.muted }}>
+        <div style={{ width: 34, height: 34, borderRadius: 999, background: GRADIENT }} />
+        <span style={{ color: C.fg, fontWeight: 600 }}>ganesh</span> pushed to <span style={{ fontFamily: mono, color: C.cyan }}>main</span>
+        <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 16, color: C.subtle }}>4f2c9e1</span>
+      </div>
+      <div style={{ marginTop: 14, fontSize: 25, fontWeight: 600, letterSpacing: -0.4 }}>feat(auth): rate-limit login + async password check</div>
+      <div style={{ marginTop: 20, borderRadius: 14, border: `1px solid ${C.border}`, background: "#f7f7fa", padding: "12px 0" }}>
+        {DIFF.map((d, i) => {
+          const show = interpolate(f, [18 + i * 7, 28 + i * 7], [0, 1], clamp);
+          const bg = d.s === "+" ? "rgba(5,150,105,0.08)" : d.s === "-" ? "rgba(220,38,38,0.07)" : "transparent";
+          const col = d.s === "+" ? C.emerald : d.s === "-" ? C.red : C.muted;
+          return (
+            <div key={i} style={{ display: "flex", gap: 14, padding: "3px 18px", fontFamily: mono, fontSize: 18, background: bg, opacity: show, transform: `translateX(${(1 - show) * -16}px)` }}>
+              <span style={{ width: 12, color: col }}>{d.s}</span>
+              <span style={{ color: col, whiteSpace: "pre" }}>{d.t}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 10, fontSize: 17, color: C.muted, opacity: interpolate(f, [70, 84], [0, 1], clamp) }}>
+        <span style={{ width: 10, height: 10, borderRadius: 999, background: C.emerald }} />
+        webhook delivered to Docify · 38 ms
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------------------------ 2. pipeline */
+/* 2 · pipeline ------------------------------------------------------------------------ */
 
 const NODES = [
-  { label: "GitHub", sub: "push webhook", color: C.fg },
-  { label: "Lambda", sub: "verify signature", color: C.amber },
-  { label: "SQS", sub: "durable queue", color: C.violet },
+  { label: "GitHub", sub: "webhook", color: C.fg },
+  { label: "Lambda", sub: "verify", color: C.amber },
+  { label: "SQS", sub: "queue", color: C.violet },
   { label: "Worker", sub: "diff + index", color: C.cyan },
-  { label: "Claude", sub: "rewrite docs", color: C.indigo },
+  { label: "Claude", sub: "rewrite", color: C.indigo },
 ];
 
-function PipelineScene() {
-  const frame = useCurrentFrame();
-  const W = 1136; // inner width (1280 - 2 × 72 scene padding)
-  const PAD = 110; // keep the end nodes well inside the frame
+function PipelineScene({ f }: { f: number }) {
+  const W = 780;
+  const PAD = 66; // end nodes sit well inside the stage
   const gap = (W - 2 * PAD) / (NODES.length - 1);
-  const travel = interpolate(frame, [18, 100], [0, NODES.length - 1], {
-    extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic),
-  });
+  const travel = interpolate(f, [16, 110], [0, NODES.length - 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
+  const note = interpolate(f, [92, 112], [0, 1], clamp);
   return (
-    <div style={{ position: "relative", height: 420 }}>
-      <svg width={W} height={420} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
-        <line x1={PAD} y1={160} x2={W - PAD} y2={160} stroke="rgba(15,15,30,0.12)" strokeWidth={3} strokeDasharray="8 12" strokeDashoffset={-frame * 2} />
-        <line x1={PAD} y1={160} x2={PAD + travel * gap} y2={160} stroke="url(#pipe)" strokeWidth={4} />
+    <div style={{ position: "relative", height: 400 }}>
+      <svg width={W} height={260} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
         <defs>
           <linearGradient id="pipe" x1="0" x2="1">
             <stop offset="0" stopColor={C.indigo} />
             <stop offset="1" stopColor={C.cyan} />
           </linearGradient>
         </defs>
-        <circle cx={PAD + travel * gap} cy={160} r={10} fill={C.cyan}  />
+        <line x1={PAD} y1={126} x2={W - PAD} y2={126} stroke="rgba(15,15,30,0.12)" strokeWidth={3} strokeDasharray="8 12" strokeDashoffset={-f * 2} />
+        <line x1={PAD} y1={126} x2={PAD + travel * gap} y2={126} stroke="url(#pipe)" strokeWidth={4} />
+        <circle cx={PAD + travel * gap} cy={126} r={18} fill={C.cyan} opacity={0.16} />
+        <circle cx={PAD + travel * gap} cy={126} r={9} fill={C.cyan} />
       </svg>
       {NODES.map((n, i) => {
-        const lit = interpolate(travel, [i - 0.3, i], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const lit = interpolate(travel, [i - 0.3, i], [0, 1], clamp);
         return (
-          <div key={n.label} style={{ position: "absolute", left: PAD + i * gap - 80, top: 90, width: 160, textAlign: "center" }}>
+          <div key={n.label} style={{ position: "absolute", left: PAD + i * gap - 64, top: 64, width: 128, textAlign: "center" }}>
             <div style={card({
-              width: 140, height: 140, margin: "0 auto", display: "grid", placeItems: "center", borderRadius: 32,
-              borderColor: lit > 0.5 ? n.color : C.border, boxShadow: lit > 0.5 ? `0 0 60px -10px ${n.color}` : undefined,
-              transform: `scale(${0.9 + lit * 0.1})`,
+              width: 120, height: 120, margin: "0 auto", display: "grid", placeItems: "center", borderRadius: 30,
+              borderColor: lit > 0.5 ? n.color : C.border, transform: `scale(${0.9 + lit * 0.1})`,
+              boxShadow: lit > 0.5 ? `0 0 0 6px ${n.color}14, 0 24px 40px -24px ${n.color}` : undefined,
             })}>
-              <span style={{ fontSize: 26, fontWeight: 700, color: lit > 0.5 ? n.color : C.muted }}>{n.label}</span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: lit > 0.5 ? n.color : C.muted }}>{n.label}</span>
             </div>
-            <div style={{ marginTop: 18, fontSize: 18, color: C.subtle, opacity: 0.4 + lit * 0.6 }}>{n.sub}</div>
+            <div style={{ marginTop: 14, fontSize: 17, color: C.subtle, opacity: 0.45 + lit * 0.55 }}>{n.sub}</div>
           </div>
         );
       })}
-      <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, textAlign: "center", fontSize: 20, color: C.muted, opacity: interpolate(frame, [70, 90], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
-        Queued for up to 14 days · coalesced · retried · fenced — no push is ever lost
+      <div style={{ position: "absolute", top: 290, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 12, opacity: note, transform: `translateY(${(1 - note) * 10}px)` }}>
+        {["queued up to 14 days", "coalesced", "retried", "never lost"].map((t) => (
+          <span key={t} style={{ fontSize: 17, padding: "6px 14px", borderRadius: 999, border: `1px solid ${C.border}`, background: C.card, color: C.muted }}>{t}</span>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------------------------ 3. doc rewrite */
+/* 3 · doc rewrite --------------------------------------------------------------------- */
 
-function DocScene() {
-  const frame = useCurrentFrame();
-  const p = usePop(4);
-  const oldOut = interpolate(frame, [30, 45], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+function DocScene({ f }: { f: number }) {
+  const p = usePop(f, 4);
+  const oldOut = interpolate(f, [30, 46], [1, 0], clamp);
   const newText = "Login is rate-limited to 5 attempts per minute, and passwords are checked off the event loop.";
-  const typed = Math.floor(interpolate(frame, [45, 95], [0, newText.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const badge = usePop(98);
+  const typed = Math.floor(interpolate(f, [46, 104], [0, newText.length], clamp));
+  const badge = usePop(f, 108);
   return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
-      <div style={card({ width: 960, padding: 36, opacity: p, transform: `translateY(${(1 - p) * 40}px)` })}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.6 }}>API reference</span>
-          <span style={{
-            marginLeft: "auto", fontSize: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(79,70,229,0.10)",
-            color: "#4338ca", transform: `scale(${badge})`, opacity: badge,
-          }}>v2 published · just now</span>
-        </div>
-        <div style={{ marginTop: 22, fontSize: 22, fontWeight: 600 }}>POST /auth/login</div>
-        <p style={{ marginTop: 10, fontSize: 21, lineHeight: 1.6, color: C.muted }}>Signs the user in and sets a session cookie.</p>
-        <div style={{ position: "relative", marginTop: 6, minHeight: 74 }}>
-          <p style={{ position: "absolute", fontSize: 21, lineHeight: 1.6, color: C.red, opacity: oldOut, textDecoration: "line-through" }}>
-            Passwords are verified synchronously.
-          </p>
-          <p style={{ fontSize: 21, lineHeight: 1.6, color: C.fg, background: typed > 0 ? "rgba(5,150,105,0.08)" : "transparent", borderRadius: 8, padding: "0 6px" }}>
-            {newText.slice(0, typed)}
-            {typed > 0 && typed < newText.length && <span style={{ color: C.cyan }}>▍</span>}
-            {typed >= newText.length && (
-              <span style={{ marginLeft: 10, fontFamily: mono, fontSize: 15, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(79,70,229,0.3)", color: "#4338ca" }}>
-                auth.py:14-19
-              </span>
-            )}
-          </p>
-        </div>
-        <div style={{ marginTop: 26, display: "flex", gap: 12, fontSize: 16, color: C.subtle }}>
-          {["Overview — unchanged", "Setup guide — unchanged", "Changelog +1 entry"].map((t, i) => (
-            <span key={t} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${C.border}`, opacity: interpolate(frame, [70 + i * 8, 82 + i * 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>{t}</span>
-          ))}
-        </div>
+    <div style={card({ padding: 34, opacity: p, transform: `translateY(${(1 - p) * 30}px)` })}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ fontSize: 32, fontWeight: 700, letterSpacing: -0.8 }}>API reference</span>
+        <span style={{ marginLeft: "auto", fontSize: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(79,70,229,0.10)", color: "#4338ca", transform: `scale(${badge})`, opacity: badge }}>
+          v2 published · just now
+        </span>
+      </div>
+      <div style={{ marginTop: 20, fontSize: 22, fontWeight: 600, fontFamily: mono }}>POST /auth/login</div>
+      <p style={{ marginTop: 10, fontSize: 21, lineHeight: 1.55, color: C.muted }}>Signs the user in and sets a session cookie.</p>
+      <div style={{ position: "relative", marginTop: 4, minHeight: 104 }}>
+        <p style={{ position: "absolute", fontSize: 21, lineHeight: 1.55, color: C.red, opacity: oldOut, textDecoration: "line-through" }}>
+          Passwords are verified synchronously.
+        </p>
+        <p style={{ fontSize: 21, lineHeight: 1.55, color: C.fg, background: typed > 0 ? "rgba(5,150,105,0.08)" : "transparent", borderRadius: 8, padding: "2px 8px" }}>
+          {newText.slice(0, typed)}
+          {typed > 0 && typed < newText.length && <span style={{ color: C.cyan }}>▍</span>}
+          {typed >= newText.length && <span style={{ marginLeft: 10 }}><Chip>auth.py:14-19</Chip></span>}
+        </p>
+      </div>
+      <div style={{ marginTop: 20, display: "flex", gap: 10, fontSize: 16, color: C.subtle }}>
+        {["Overview — unchanged", "Setup guide — unchanged", "Changelog +1"].map((t, i) => (
+          <span key={t} style={{ padding: "6px 12px", borderRadius: 999, border: `1px solid ${C.border}`, opacity: interpolate(f, [80 + i * 8, 92 + i * 8], [0, 1], clamp) }}>{t}</span>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------------------------ 4. chat */
+/* 4 · chat ---------------------------------------------------------------------------- */
 
-function ChatScene() {
-  const frame = useCurrentFrame();
+function ChatScene({ f }: { f: number }) {
   const q = "How does login rate limiting work?";
-  const qTyped = Math.floor(interpolate(frame, [6, 32], [0, q.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const a = "Each login attempt hits a sliding-window limiter keyed by IP + email: 5 per minute, 20 per hour per IP [1]. Over the limit, the API answers 429 with Retry-After [2].";
-  const aTyped = Math.floor(interpolate(frame, [40, 100], [0, a.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }));
-  const chips = ["routers/auth.py:41-47", "cache.py:31-55"];
+  const qTyped = Math.floor(interpolate(f, [6, 34], [0, q.length], clamp));
+  const a = "Each attempt hits a sliding-window limiter keyed by IP + email: 5 per minute, 20 per hour per IP [1]. Over the limit the API answers 429 with Retry-After [2].";
+  const aTyped = Math.floor(interpolate(f, [44, 112], [0, a.length], clamp));
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 1000, margin: "0 auto" }}>
-      <div style={{ alignSelf: "flex-end", ...card({ padding: "16px 22px", borderRadius: 18, background: "rgba(79,70,229,0.08)", borderColor: "rgba(79,70,229,0.25)" }), fontSize: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ alignSelf: "flex-end", ...card({ padding: "15px 22px", borderRadius: 18, background: "#f1f0ff", borderColor: "rgba(79,70,229,0.25)" }), fontSize: 23 }}>
         {q.slice(0, qTyped)}
         {qTyped < q.length && <span style={{ color: C.cyan }}>▍</span>}
       </div>
-      <div style={{ display: "flex", gap: 16, opacity: interpolate(frame, [34, 42], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
-        <div style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center", background: `linear-gradient(135deg, ${C.indigo}, ${C.violet})`, fontWeight: 800, fontSize: 22, color: "#fff" }}>D</div>
-        <div style={card({ padding: "18px 24px", fontSize: 23, lineHeight: 1.55, color: C.fg })}>
+      <div style={{ display: "flex", gap: 16, opacity: interpolate(f, [36, 44], [0, 1], clamp) }}>
+        <div style={{ width: 46, height: 46, flexShrink: 0, borderRadius: 13, display: "grid", placeItems: "center", background: GRADIENT, color: "#fff", fontWeight: 800, fontSize: 22 }}>D</div>
+        <div style={card({ padding: "18px 24px", fontSize: 22, lineHeight: 1.55, color: C.fg })}>
           {a.slice(0, aTyped)}
           {aTyped < a.length && <span style={{ color: C.cyan }}>▍</span>}
           <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-            {chips.map((c, i) => {
-              const s = interpolate(frame, [100 + i * 6, 108 + i * 6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-              return (
-                <span key={c} style={{ fontFamily: mono, fontSize: 16, padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(79,70,229,0.3)", background: "rgba(79,70,229,0.06)", color: "#4338ca", opacity: s, transform: `translateY(${(1 - s) * 8}px)` }}>
-                  [{i + 1}] {c}
-                </span>
-              );
-            })}
+            {["routers/auth.py:41-47", "cache.py:31-55"].map((c, i) => (
+              <Chip key={c} s={interpolate(f, [114 + i * 6, 122 + i * 6], [0, 1], clamp)}>[{i + 1}] {c}</Chip>
+            ))}
           </div>
         </div>
       </div>

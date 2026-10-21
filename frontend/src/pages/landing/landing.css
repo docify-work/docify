@@ -186,3 +186,12 @@
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------- hero film */
+
+/* On screens wider than 16:9 the film is capped to the viewport height; feather its sides into the page. */
+@media (min-aspect-ratio: 16/9) {
+  .l-hero-film {
+    mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  }
+}
