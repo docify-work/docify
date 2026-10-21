@@ -33,6 +33,9 @@ jobs:
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         id: f
         with:
+          # Compare exactly this push's range (not the moving `main` ref) so back-to-back pushes are reliable.
+          base: ${{ github.event_name == 'push' && github.event.before || '' }}
+          ref: ${{ github.sha }}
           filters: |
             backend: ['backend/**', 'lambdas/**', '.github/workflows/ci.yml']
             frontend: ['frontend/package.json', 'frontend/src/**', 'frontend/*.ts', 'frontend/*.json', 'frontend/index.html']
