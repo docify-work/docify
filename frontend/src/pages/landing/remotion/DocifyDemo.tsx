@@ -22,7 +22,7 @@ const C = {
   red: "#dc2626",
   amber: "#d97706",
 };
-const font = '"Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif';
+const font = '"Geist Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif';
 const mono = 'ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace';
 
 export function DocifyDemo() {
@@ -54,15 +54,15 @@ function Backdrop() {
     <AbsoluteFill>
       <div
         style={{
-          position: "absolute", width: 900, height: 900, borderRadius: "50%", filter: "blur(120px)", opacity: 0.16,
-          background: `radial-gradient(circle, ${C.indigo}, transparent 60%)`,
+          position: "absolute", width: 900, height: 900, borderRadius: "50%", opacity: 0.5,
+          background: `radial-gradient(circle, rgba(79,70,229,0.18), transparent 65%)`,
           left: 100 + Math.cos(a) * 120, top: -300 + Math.sin(a) * 80,
         }}
       />
       <div
         style={{
-          position: "absolute", width: 700, height: 700, borderRadius: "50%", filter: "blur(120px)", opacity: 0.14,
-          background: `radial-gradient(circle, ${C.violet}, transparent 60%)`,
+          position: "absolute", width: 700, height: 700, borderRadius: "50%", opacity: 0.45,
+          background: `radial-gradient(circle, rgba(124,58,237,0.16), transparent 65%)`,
           right: -100 + Math.sin(a) * 100, bottom: -300 + Math.cos(a) * 60,
         }}
       />
@@ -164,28 +164,29 @@ const NODES = [
 
 function PipelineScene() {
   const frame = useCurrentFrame();
-  const W = 1136;
-  const gap = W / (NODES.length - 1);
+  const W = 1136; // inner width (1280 - 2 × 72 scene padding)
+  const PAD = 110; // keep the end nodes well inside the frame
+  const gap = (W - 2 * PAD) / (NODES.length - 1);
   const travel = interpolate(frame, [18, 100], [0, NODES.length - 1], {
     extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.inOut(Easing.cubic),
   });
   return (
     <div style={{ position: "relative", height: 420 }}>
       <svg width={W} height={420} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
-        <line x1={0} y1={160} x2={W} y2={160} stroke="rgba(15,15,30,0.12)" strokeWidth={3} strokeDasharray="8 12" strokeDashoffset={-frame * 2} />
-        <line x1={0} y1={160} x2={travel * gap} y2={160} stroke="url(#pipe)" strokeWidth={4} />
+        <line x1={PAD} y1={160} x2={W - PAD} y2={160} stroke="rgba(15,15,30,0.12)" strokeWidth={3} strokeDasharray="8 12" strokeDashoffset={-frame * 2} />
+        <line x1={PAD} y1={160} x2={PAD + travel * gap} y2={160} stroke="url(#pipe)" strokeWidth={4} />
         <defs>
           <linearGradient id="pipe" x1="0" x2="1">
             <stop offset="0" stopColor={C.indigo} />
             <stop offset="1" stopColor={C.cyan} />
           </linearGradient>
         </defs>
-        <circle cx={travel * gap} cy={160} r={10} fill={C.cyan} style={{ filter: `drop-shadow(0 0 14px ${C.cyan})` }} />
+        <circle cx={PAD + travel * gap} cy={160} r={10} fill={C.cyan}  />
       </svg>
       {NODES.map((n, i) => {
         const lit = interpolate(travel, [i - 0.3, i], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
         return (
-          <div key={n.label} style={{ position: "absolute", left: i * gap - 80, top: 90, width: 160, textAlign: "center" }}>
+          <div key={n.label} style={{ position: "absolute", left: PAD + i * gap - 80, top: 90, width: 160, textAlign: "center" }}>
             <div style={card({
               width: 140, height: 140, margin: "0 auto", display: "grid", placeItems: "center", borderRadius: 32,
               borderColor: lit > 0.5 ? n.color : C.border, boxShadow: lit > 0.5 ? `0 0 60px -10px ${n.color}` : undefined,

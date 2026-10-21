@@ -1,9 +1,14 @@
 /*
- * Landing page only (loaded with the lazy landing chunk).
- * Always light: the page sets its own palette on `.landing` (the app has its own light/dark switch).
- * Every animation is transform/opacity/background-position based (GPU-friendly) and switched off for
- * `prefers-reduced-motion`.
+ * Landing page only (loaded with the lazy landing chunk). Always light.
+ *
+ * Performance rules (the page must stay smooth on modest laptops):
+ *  - continuous animations only touch `transform`/`opacity` (compositor-only, no repaint);
+ *  - no animated `filter: blur`, no `mix-blend-mode`, no animated gradients/backgrounds;
+ *  - decorative glows are static radial gradients (painted once);
+ *  - JS-driven loops pause when off-screen (see `useActive` in motion-utils.ts).
  */
+
+@import "@fontsource-variable/geist/wght.css";
 
 .landing {
   --canvas: #fbfbfd;
@@ -28,26 +33,28 @@
   background: var(--canvas);
   color: var(--fg);
   overflow-x: clip;
+  font-family: "Geist Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing h1,
+.landing h2,
+.landing h3 {
+  font-family: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.035em;
 }
 
 .landing ::selection {
-  background: rgb(79 70 229 / 0.18);
+  background: rgb(79 70 229 / 0.16);
 }
 
 /* ---------------------------------------------------------------- text */
 
 .l-gradient-text {
-  background: linear-gradient(100deg, #4f46e5 0%, #7c3aed 30%, #0891b2 60%, #4f46e5 100%);
-  background-size: 220% 100%;
+  background: linear-gradient(100deg, #4f46e5 0%, #7c3aed 45%, #0891b2 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: l-shimmer 8s ease-in-out infinite;
-}
-
-@keyframes l-shimmer {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
 }
 
 .l-eyebrow {
@@ -58,59 +65,22 @@
   color: var(--accent-text);
 }
 
-@keyframes l-sweep {
-  0% { transform: translateX(0) skewX(-12deg); }
-  60%, 100% { transform: translateX(450%) skewX(-12deg); }
-}
-
-/* ---------------------------------------------------------------- backgrounds */
+/* ---------------------------------------------------------------- backgrounds (static) */
 
 .l-grid {
   background-image:
-    linear-gradient(to right, rgb(15 15 30 / 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(15 15 30 / 0.055) 1px, transparent 1px);
+    linear-gradient(to right, rgb(15 15 30 / 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 15 30 / 0.05) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
 }
 
-.l-aurora {
-  position: absolute;
-  inset: -20% -10% auto;
-  height: 120%;
-  filter: blur(80px) saturate(120%);
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.l-aurora > span {
-  position: absolute;
-  border-radius: 9999px;
-  mix-blend-mode: multiply;
-  animation: l-float 18s ease-in-out infinite;
-}
-
-.l-aurora > span:nth-child(1) { width: 46vw; height: 46vw; left: 6%; top: 4%; background: radial-gradient(circle, rgb(129 140 248 / 0.45), transparent 65%); }
-.l-aurora > span:nth-child(2) { width: 38vw; height: 38vw; right: 4%; top: 0; background: radial-gradient(circle, rgb(216 180 254 / 0.55), transparent 65%); animation-delay: -6s; animation-duration: 22s; }
-.l-aurora > span:nth-child(3) { width: 34vw; height: 34vw; left: 36%; top: 26%; background: radial-gradient(circle, rgb(103 232 249 / 0.45), transparent 65%); animation-delay: -11s; animation-duration: 26s; }
-
-@keyframes l-float {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  33% { transform: translate3d(4%, 6%, 0) scale(1.08); }
-  66% { transform: translate3d(-5%, 2%, 0) scale(0.94); }
-}
-
-.l-noise {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-}
-
-/* Cursor spotlight (position comes from --mx/--my set in JS). */
-.l-spotlight {
-  background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 30%), rgb(99 102 241 / 0.09), transparent 40%);
-  transition: background 0.1s linear;
+/* Soft colour mesh behind the hero / CTA. One painted layer, never animated. */
+.l-mesh {
+  background:
+    radial-gradient(40% 50% at 18% 20%, rgb(129 140 248 / 0.22), transparent 70%),
+    radial-gradient(35% 45% at 85% 10%, rgb(216 180 254 / 0.28), transparent 70%),
+    radial-gradient(40% 50% at 55% 55%, rgb(103 232 249 / 0.16), transparent 70%);
 }
 
 /* ---------------------------------------------------------------- cards */
@@ -118,32 +88,18 @@
 .l-card {
   position: relative;
   border-radius: 1rem;
-  background: linear-gradient(180deg, #ffffff, #fcfcfe);
+  background: #fff;
   border: 1px solid rgb(15 15 30 / 0.08);
-  box-shadow: 0 1px 2px rgb(15 15 30 / 0.04), 0 24px 48px -28px rgb(30 27 75 / 0.28);
+  box-shadow: 0 1px 2px rgb(15 15 30 / 0.04), 0 18px 40px -28px rgb(30 27 75 / 0.25);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Spotlight border that follows the cursor inside a card. */
-.l-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: radial-gradient(400px circle at var(--cx, -200px) var(--cy, -200px), rgb(79 70 229 / 0.55), transparent 45%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: none;
+.l-card:hover {
+  border-color: rgb(79 70 229 / 0.25);
+  box-shadow: 0 1px 2px rgb(15 15 30 / 0.04), 0 24px 50px -28px rgb(79 70 229 / 0.35);
 }
 
-.l-card:hover::before {
-  opacity: 1;
-}
-
-/* Rotating conic border for the hero window and the final CTA. */
+/* Static gradient hairline border (hero window, video frame). */
 .l-glow-border {
   position: relative;
   isolation: isolate;
@@ -155,8 +111,7 @@
   inset: -1px;
   z-index: -1;
   border-radius: inherit;
-  background: conic-gradient(from var(--l-angle, 0deg), transparent 0deg, var(--l-indigo) 60deg, var(--l-cyan) 120deg, transparent 180deg, transparent 360deg);
-  animation: l-spin 6s linear infinite;
+  background: linear-gradient(135deg, rgb(79 70 229 / 0.55), rgb(124 58 237 / 0.25) 40%, rgb(8 145 178 / 0.45));
 }
 
 .l-glow-border::after {
@@ -168,17 +123,7 @@
   background: var(--surface);
 }
 
-@property --l-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes l-spin {
-  to { --l-angle: 360deg; }
-}
-
-/* ---------------------------------------------------------------- marquee */
+/* ---------------------------------------------------------------- marquee (transform only) */
 
 .l-marquee {
   mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
@@ -187,7 +132,8 @@
 .l-marquee-track {
   display: flex;
   width: max-content;
-  animation: l-marquee 38s linear infinite;
+  animation: l-marquee 40s linear infinite;
+  will-change: transform;
 }
 
 .l-marquee:hover .l-marquee-track {
@@ -198,16 +144,7 @@
   to { transform: translateX(-50%); }
 }
 
-/* ---------------------------------------------------------------- flowing SVG paths */
-
-.l-flow {
-  stroke-dasharray: 6 10;
-  animation: l-dash 1.2s linear infinite;
-}
-
-@keyframes l-dash {
-  to { stroke-dashoffset: -16; }
-}
+/* ---------------------------------------------------------------- small motifs */
 
 .l-pulse-dot {
   animation: l-pulse 2.4s ease-in-out infinite;

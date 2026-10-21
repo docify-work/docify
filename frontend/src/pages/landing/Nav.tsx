@@ -5,13 +5,12 @@ import { Link } from "react-router";
 import { LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/cn";
-import { EASE } from "./motion-utils";
+import { EASE, scrollToSection } from "./motion-utils";
 
 const LINKS = [
-  { href: "#how", label: "How it works" },
-  { href: "#demo", label: "Product" },
-  { href: "#features", label: "Features" },
-  { href: "#architecture", label: "Architecture" },
+  { id: "product", label: "Product" },
+  { id: "features", label: "Features" },
+  { id: "architecture", label: "Architecture" },
 ];
 
 export function Nav({ signedIn, demoHref }: { signedIn: boolean; demoHref: string | null }) {
@@ -43,8 +42,12 @@ export function Nav({ signedIn, demoHref }: { signedIn: boolean; demoHref: strin
         <div className="ml-6 hidden items-center gap-1 md:flex">
           {LINKS.map((l) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={l.id}
+              href={`#${l.id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection(l.id);
+              }}
               className="rounded-lg px-2.5 py-1.5 text-sm text-fg-muted transition-colors hover:bg-black/[0.04] hover:text-fg"
             >
               {l.label}

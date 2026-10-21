@@ -27,10 +27,10 @@ export function Reveal({
   const reduce = useReducedMotion();
   return (
     <motion.div
-      initial={reduce ? false : { opacity: 0, y, filter: "blur(8px)" }}
-      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      initial={reduce ? false : { opacity: 0, y }}
+      whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-10% 0px" }}
-      transition={{ duration: 0.8, ease: EASE, delay }}
+      transition={{ duration: 0.7, ease: EASE, delay }}
       className={className}
       {...rest}
     >
@@ -69,7 +69,7 @@ export function SplitWords({ text, className, delay = 0, gradientWords = [] }: {
   );
 }
 
-/** Card with a cursor-following border glow and an optional 3D tilt. */
+/** Card with a subtle 3D tilt on hover (transform only). */
 export function GlowCard({ children, className, tilt = true }: { children: ReactNode; className?: string; tilt?: boolean }) {
   const reduce = useReducedMotion();
   const rx = useMotionValue(0);
@@ -81,11 +81,9 @@ export function GlowCard({ children, className, tilt = true }: { children: React
     const r = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - r.left;
     const y = e.clientY - r.top;
-    e.currentTarget.style.setProperty("--cx", `${x}px`);
-    e.currentTarget.style.setProperty("--cy", `${y}px`);
     if (tilt && !reduce) {
-      ry.set(((x / r.width) - 0.5) * 8);
-      rx.set(-((y / r.height) - 0.5) * 8);
+      ry.set(((x / r.width) - 0.5) * 5);
+      rx.set(-((y / r.height) - 0.5) * 5);
     }
   }
   function onLeave() {

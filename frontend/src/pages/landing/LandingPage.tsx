@@ -5,24 +5,20 @@ import { getDemo } from "@/api/endpoints";
 import { Callout } from "@/components/ui";
 import { useMe } from "@/hooks/useMe";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { useAppConfig } from "@/lib/config";
 import { oauthErrorMessage } from "@/lib/messages";
 import { Architecture } from "./Architecture";
-import { FinalCta, Footer, Stats } from "./Closing";
+import { SiteFooter, Stats } from "./Closing";
 import { Features } from "./Features";
 import { useSmoothScroll } from "./motion-utils";
 import { Hero } from "./Hero";
-import { HowItWorks } from "./HowItWorks";
 import { Marquee } from "./Marquee";
 import { Nav } from "./Nav";
-import { Product } from "./Product";
 
 /** Marketing landing page: full-bleed, always dark, its own nav + footer (outside PublicLayout). */
 export default function LandingPage() {
   usePageMeta([{ label: "Docs that keep up with your code" }]);
   useSmoothScroll();
   const { me } = useMe();
-  const cfg = useAppConfig();
   const [params, setParams] = useSearchParams();
   const error = oauthErrorMessage(params.get("error"));
   const demo = useQuery({ queryKey: ["demo"], queryFn: getDemo, staleTime: 300_000, retry: false });
@@ -43,14 +39,11 @@ export default function LandingPage() {
       <main id="main">
         <Hero primaryHref={primaryHref} primaryLabel={primaryLabel} demoHref={demoHref} />
         <Marquee />
-        <HowItWorks />
-        <Product />
-        <Stats />
         <Features />
         <Architecture />
-        <FinalCta primaryHref={primaryHref} primaryLabel={primaryLabel} demoHref={demoHref} />
+        <Stats />
       </main>
-      <Footer version={`${cfg.env} · ${cfg.version}`} />
+      <SiteFooter primaryHref={primaryHref} primaryLabel={primaryLabel} demoHref={demoHref} />
     </div>
   );
 }

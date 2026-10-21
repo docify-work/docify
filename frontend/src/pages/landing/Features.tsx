@@ -1,19 +1,22 @@
 import { CheckCircle2, FileText, GitCommitHorizontal, Lock, MessagesSquare, Search, ShieldCheck, Wallet } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useState, type ReactNode } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { GlowCard, Reveal } from "./fx";
-import { EASE } from "./motion-utils";
+import { EASE, useActive } from "./motion-utils";
 
-/** Cycles 0..n-1 every `ms` (static for reduced motion). */
+/** Whether the Features section is on screen: every mini-animation below pauses when it isn't. */
+const ActiveCtx = createContext(false);
+
+/** Cycles 0..n-1 every `ms` while the section is visible (static for reduced motion). */
 function useCycle(n: number, ms: number) {
-  const reduce = useReducedMotion();
+  const active = useContext(ActiveCtx);
   const [i, setI] = useState(0);
   useEffect(() => {
-    if (reduce) return;
+    if (!active) return;
     const id = setInterval(() => setI((v) => (v + 1) % n), ms);
     return () => clearInterval(id);
-  }, [n, ms, reduce]);
+  }, [n, ms, active]);
   return i;
 }
 
@@ -39,8 +42,11 @@ function Tile({ icon, title, text, children, className }: {
 }
 
 export function Features() {
+  const ref = useRef<HTMLElement>(null);
+  const active = useActive(ref);
   return (
-    <section id="features" className="relative mx-auto max-w-6xl scroll-mt-24 px-5 py-24 sm:py-32">
+    <ActiveCtx.Provider value={active}>
+    <section ref={ref} id="features" className="relative mx-auto max-w-6xl scroll-mt-24 px-5 py-24 sm:py-32">
       <Reveal className="mx-auto max-w-2xl text-center">
         <p className="l-eyebrow">Features</p>
         <h2 className="mt-3 text-[clamp(2rem,4.5vw,3.4rem)] font-semibold leading-[1.05] tracking-[-0.03em]">
@@ -58,6 +64,7 @@ export function Features() {
         <Reveal delay={0.12} className="md:col-span-3"><Tile icon={<Wallet className="size-[18px]" />} title="AI on a budget" text="Daily and per-workspace spend caps. Hit the cap and jobs wait instead of burning money." className="h-full"><BudgetGauge /></Tile></Reveal>
       </div>
     </section>
+    </ActiveCtx.Provider>
   );
 }
 
@@ -104,7 +111,7 @@ function CommitGraph() {
   return (
     <svg viewBox="0 0 220 110" className="h-28 w-full" aria-hidden="true">
       <path d="M10 70 H210" stroke="rgb(15 15 30 / 0.12)" strokeWidth="2" />
-      <path d="M60 70 C 80 70, 80 30, 110 30 H150 C 170 30, 170 70, 190 70" stroke="var(--l-violet)" strokeOpacity="0.5" strokeWidth="2" fill="none" className="l-flow" />
+      <path d="M60 70 C 80 70, 80 30, 110 30 H150 C 170 30, 170 70, 190 70" stroke="var(--l-violet)" strokeOpacity="0.5" strokeWidth="2" fill="none" strokeDasharray="5 7" />
       {[20, 60, 110, 150, 190].map((x, i) => {
         const y = i === 2 || i === 3 ? 30 : 70;
         const on = i <= head;
@@ -129,7 +136,7 @@ function ChatBubble() {
         {phase === 0 ? (
           <motion.div key="t" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex w-fit gap-1 rounded-xl bg-black/[0.05] px-3 py-2.5">
             {[0, 1, 2].map((i) => (
-              <motion.span key={i} className="size-1.5 rounded-full bg-fg-muted" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }} />
+              <motion.span key={i} className="size-1.5 rounded-full bg-fg-muted" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: 3, delay: i * 0.12 }} />
             ))}
           </motion.div>
         ) : (

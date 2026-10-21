@@ -1,42 +1,52 @@
 /** Landing-page motion constants and hooks (kept apart from components for fast refresh). */
 import Lenis from "lenis";
-import { useReducedMotion } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useInView, useReducedMotion } from "motion/react";
+import { useEffect, type RefObject } from "react";
 
 export const EASE = [0.22, 1, 0.36, 1] as const;
+export const NAV_OFFSET = 88;
 
-/** Buttery smooth scrolling for the landing page only (destroyed on unmount). */
+let lenis: Lenis | null = null;
+
+/** Smooth scrolling for the landing page only (destroyed on unmount). */
 export function useSmoothScroll(): void {
   const reduce = useReducedMotion();
   useEffect(() => {
     if (reduce) return;
-    const lenis = new Lenis({ duration: 1.1, easing: (t) => 1 - Math.pow(1 - t, 3), smoothWheel: true });
+    lenis = new Lenis({ duration: 1.05, easing: (t) => 1 - Math.pow(1 - t, 3), smoothWheel: true });
     let frame = 0;
     const raf = (time: number) => {
-      lenis.raf(time);
+      lenis?.raf(time);
       frame = requestAnimationFrame(raf);
     };
     frame = requestAnimationFrame(raf);
     return () => {
       cancelAnimationFrame(frame);
-      lenis.destroy();
+      lenis?.destroy();
+      lenis = null;
     };
   }, [reduce]);
 }
 
-/** Sets --mx/--my (px) on the element as the pointer moves: drives `.l-spotlight`. */
-export function useSpotlight<T extends HTMLElement>() {
-  const ref = useRef<T>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const onMove = (e: globalThis.PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-      el.style.setProperty("--my", `${e.clientY - r.top}px`);
-    };
-    el.addEventListener("pointermove", onMove);
-    return () => el.removeEventListener("pointermove", onMove);
-  }, []);
-  return ref;
+/** Smoothly scroll to a section (nav links). Falls back to native smooth scroll. */
+export function scrollToSection(id: string): void {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (lenis) {
+    lenis.scrollTo(el, { offset: -NAV_OFFSET, duration: 1.2 });
+  } else {
+    const top = el.getBoundingClientRect().top + window.scrollY - NAV_OFFSET;
+    window.scrollTo({ top, behavior: "smooth" });
+  }
+  history.replaceState(null, "", `#${id}`);
+}
+
+/**
+ * True while the element is (nearly) on screen and motion is allowed.
+ * Every JS-driven loop on the page checks this, so off-screen sections cost nothing.
+ */
+export function useActive(ref: RefObject<Element | null>): boolean {
+  const reduce = useReducedMotion();
+  const inView = useInView(ref, { margin: "120px 0px" });
+  return inView && !reduce;
 }

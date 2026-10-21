@@ -1,8 +1,8 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { Reveal } from "./fx";
-import { EASE } from "./motion-utils";
+import { EASE, useActive } from "./motion-utils";
 
 type NodeId = "browser" | "cdn" | "s3" | "api" | "github" | "lambda" | "sqs" | "worker" | "pg" | "ai" | "argo";
 
@@ -37,11 +37,13 @@ const FLOW_COLOR = { web: "#4f46e5", push: "#0891b2", ops: "#ea580c" };
 
 export function Architecture() {
   const reduce = useReducedMotion();
+  const sectionRef = useRef<HTMLElement>(null);
+  const running = useActive(sectionRef); // particles only move while the diagram is on screen
   const [active, setActive] = useState<NodeId>("lambda");
   const node = NODES[active];
 
   return (
-    <section id="architecture" className="relative scroll-mt-24 overflow-hidden px-5 py-24 sm:py-32">
+    <section ref={sectionRef} id="architecture" className="relative scroll-mt-24 overflow-hidden px-5 py-24 sm:py-32">
       <div className="l-grid absolute inset-0 -z-10 opacity-60" aria-hidden="true" />
       <Reveal className="mx-auto max-w-2xl text-center">
         <p className="l-eyebrow">Under the hood</p>
@@ -74,9 +76,8 @@ export function Architecture() {
                     viewport={{ once: true }}
                     transition={{ duration: 1.2, ease: EASE, delay: 0.2 + i * 0.08 }}
                   />
-                  <path d={e.d} fill="none" stroke="#0f0f14" strokeOpacity={hot ? 0.5 : 0.12} strokeWidth="1" className="l-flow" />
-                  {!reduce && (
-                    <circle r={hot ? 4 : 3} fill={FLOW_COLOR[e.flow]} style={{ filter: `drop-shadow(0 0 6px ${FLOW_COLOR[e.flow]})` }}>
+                  {running && hot && (
+                    <circle r={4} fill={FLOW_COLOR[e.flow]}>
                       <animateMotion dur={`${1.6 + (i % 3) * 0.4}s`} repeatCount="indefinite" path={e.d} />
                     </circle>
                   )}
@@ -100,7 +101,7 @@ export function Architecture() {
                 >
                   <motion.g animate={{ scale: on ? 1.08 : 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
                     <rect x="-60" y="-30" width="120" height="60" rx="14" fill="#ffffff" stroke={on ? n.color : "rgb(15 15 30 / 0.12)"} strokeWidth={on ? 2 : 1}
-                      style={{ filter: on ? `drop-shadow(0 0 18px ${n.color})` : undefined }} />
+                      />
                     <text y="-3" textAnchor="middle" fill={on ? n.color : "#0f0f14"} fontSize="15" fontWeight="600">{n.label}</text>
                     <text y="15" textAnchor="middle" fill="#8a8a96" fontSize="11">{n.sub}</text>
                   </motion.g>
