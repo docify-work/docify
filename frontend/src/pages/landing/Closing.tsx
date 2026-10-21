@@ -14,7 +14,7 @@ const STATS = [
 
 export function Stats() {
   return (
-    <section className="border-y border-white/[0.06] bg-white/[0.015]">
+    <section className="border-y border-black/[0.06] bg-black/[0.015]">
       <div className="mx-auto grid max-w-6xl grid-cols-2 gap-px px-5 md:grid-cols-4">
         {STATS.map((s, i) => (
           <Reveal key={s.label} delay={i * 0.08} className="px-4 py-12 text-center">
@@ -38,7 +38,7 @@ export function FinalCta({ primaryHref, primaryLabel, demoHref }: {
     <section className="relative px-5 py-28 sm:py-36">
       <Reveal className="mx-auto max-w-4xl">
         <div className="l-glow-border rounded-3xl p-px">
-          <div className="relative overflow-hidden rounded-3xl bg-[#0b0b12] px-6 py-16 text-center sm:px-16">
+          <div className="relative overflow-hidden rounded-3xl bg-white px-6 py-16 text-center sm:px-16">
             <div className="l-aurora opacity-60" aria-hidden="true">
               <span />
               <span />
@@ -66,7 +66,7 @@ export function FinalCta({ primaryHref, primaryLabel, demoHref }: {
                 </Magnetic>
                 {demoHref && (
                   <Magnetic>
-                    <Button asChild variant="secondary" className="h-11 rounded-xl border-white/10 bg-white/5 px-5 text-[15px] hover:bg-white/10">
+                    <Button asChild variant="secondary" className="h-11 rounded-xl border-black/10 bg-white px-5 text-[15px] shadow-sm hover:bg-[#f5f5f8]">
                       <Link to={demoHref}>
                         <Play />
                         Live demo
@@ -85,7 +85,7 @@ export function FinalCta({ primaryHref, primaryLabel, demoHref }: {
 
 export function Footer({ version }: { version: string }) {
   return (
-    <footer className="border-t border-white/[0.06]">
+    <footer className="border-t border-black/[0.06]">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 py-8 text-sm text-fg-subtle">
         <span className="flex items-center gap-2 font-semibold text-fg">
           <LogoMark size={20} /> Docify

@@ -8,6 +8,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { SleepingBanner } from "@/components/SleepingBanner";
+import { useThemeSync } from "@/lib/theme";
 
 // Route-level code splitting: every page is its own chunk (chat/markdown stay out of the entry bundle).
 const Landing = lazy(() => import("@/pages/landing/LandingPage"));
@@ -53,6 +54,7 @@ function UnauthorizedRedirector() {
 
 export default function App() {
   const location = useLocation();
+  useThemeSync(location.pathname);
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -69,7 +71,7 @@ export default function App() {
         <Route
           index
           element={
-            <Suspense fallback={<div className="min-h-dvh bg-[#07070b]" />}>
+            <Suspense fallback={<div className="min-h-dvh bg-[#fbfbfd]" />}>
               <Landing />
             </Suspense>
           }

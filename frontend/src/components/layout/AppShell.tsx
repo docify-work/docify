@@ -1,4 +1,5 @@
 import { Menu, Search } from "lucide-react";
+import { ThemeToggleButton } from "@/components/ThemeToggle";
 import { motion } from "motion/react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { Link, Outlet, useLocation, useMatch } from "react-router";
@@ -82,6 +83,7 @@ export function AppShell() {
                 <Kbd>K</Kbd>
               </span>
             </button>
+            <ThemeToggleButton />
           </header>
 
           <main id="main" className="min-w-0 flex-1">

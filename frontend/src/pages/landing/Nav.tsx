@@ -31,7 +31,7 @@ export function Nav({ signedIn, demoHref }: { signedIn: boolean; demoHref: strin
         className={cn(
           "flex h-12 w-full max-w-6xl items-center gap-2 rounded-2xl px-3 transition-all duration-500",
           scrolled
-            ? "border border-white/10 bg-[#0b0b12]/70 shadow-[0_8px_30px_-12px_rgb(0_0_0/0.8)] backdrop-blur-xl"
+            ? "border border-black/[0.08] bg-white/75 shadow-[0_8px_30px_-14px_rgb(30_27_75/0.25)] backdrop-blur-xl"
             : "border border-transparent",
         )}
         aria-label="Main"
@@ -45,7 +45,7 @@ export function Nav({ signedIn, demoHref }: { signedIn: boolean; demoHref: strin
             <a
               key={l.href}
               href={l.href}
-              className="rounded-lg px-2.5 py-1.5 text-sm text-fg-muted transition-colors hover:bg-white/5 hover:text-fg"
+              className="rounded-lg px-2.5 py-1.5 text-sm text-fg-muted transition-colors hover:bg-black/[0.04] hover:text-fg"
             >
               {l.label}
             </a>

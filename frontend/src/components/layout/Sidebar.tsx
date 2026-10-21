@@ -16,6 +16,7 @@ import { NavLink, useLocation, useNavigate } from "react-router";
 import { loginUrl } from "@/api/client";
 import { qk, review, workspaces } from "@/api/endpoints";
 import { LogoMark } from "@/components/Logo";
+import { ThemeSegmented } from "@/components/ThemeToggle";
 import { Avatar, Badge, DropdownMenu, IconButton, MenuItem, MenuLabel, MenuSeparator, Tooltip } from "@/components/ui";
 import { useLogout, useMe } from "@/hooks/useMe";
 import { cn } from "@/lib/cn";
@@ -290,6 +291,11 @@ function UserMenu({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
       >
         Privacy
       </MenuItem>
+      <MenuSeparator />
+      <div className="flex items-center justify-between gap-3 px-2 py-1.5 text-sm">
+        <span className="text-fg-muted">Theme</span>
+        <ThemeSegmented className="w-28" />
+      </div>
       <MenuSeparator />
       <MenuItem icon={<LogOut />} onSelect={() => logout.mutate()}>
         Sign out

@@ -9,18 +9,18 @@ import { DEMO, DEMO_DURATION } from "./config";
 
 
 const C = {
-  bg: "#07070b",
-  card: "#0e0e16",
-  border: "rgba(255,255,255,0.08)",
-  fg: "#f2f2f7",
-  muted: "#a3a3b2",
-  subtle: "#6c6c7c",
-  indigo: "#6366f1",
-  violet: "#a855f7",
-  cyan: "#22d3ee",
-  emerald: "#34d399",
-  red: "#f87171",
-  amber: "#fbbf24",
+  bg: "#f8f8fb",
+  card: "#ffffff",
+  border: "rgba(15,15,30,0.09)",
+  fg: "#0f0f14",
+  muted: "#52525e",
+  subtle: "#8a8a96",
+  indigo: "#4f46e5",
+  violet: "#7c3aed",
+  cyan: "#0891b2",
+  emerald: "#059669",
+  red: "#dc2626",
+  amber: "#d97706",
 };
 const font = '"Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif';
 const mono = 'ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace';
@@ -54,22 +54,22 @@ function Backdrop() {
     <AbsoluteFill>
       <div
         style={{
-          position: "absolute", width: 900, height: 900, borderRadius: "50%", filter: "blur(120px)", opacity: 0.35,
+          position: "absolute", width: 900, height: 900, borderRadius: "50%", filter: "blur(120px)", opacity: 0.16,
           background: `radial-gradient(circle, ${C.indigo}, transparent 60%)`,
           left: 100 + Math.cos(a) * 120, top: -300 + Math.sin(a) * 80,
         }}
       />
       <div
         style={{
-          position: "absolute", width: 700, height: 700, borderRadius: "50%", filter: "blur(120px)", opacity: 0.25,
+          position: "absolute", width: 700, height: 700, borderRadius: "50%", filter: "blur(120px)", opacity: 0.14,
           background: `radial-gradient(circle, ${C.violet}, transparent 60%)`,
           right: -100 + Math.sin(a) * 100, bottom: -300 + Math.cos(a) * 60,
         }}
       />
       <AbsoluteFill
         style={{
-          backgroundImage: `linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px)`,
+          backgroundImage: `linear-gradient(to right, rgba(15,15,30,0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(15,15,30,0.05) 1px, transparent 1px)`,
           backgroundSize: "64px 64px",
           maskImage: "radial-gradient(ellipse 70% 70% at 50% 50%, #000 30%, transparent 100%)",
         }}
@@ -89,7 +89,7 @@ function Scene({ step, title, children }: { step: string; title: string; childre
       <div style={{ display: "flex", alignItems: "center", gap: 14, transform: `translateY(${titleY}px)` }}>
         <span style={{
           fontFamily: mono, fontSize: 18, color: C.cyan, border: `1px solid ${C.border}`, borderRadius: 999,
-          padding: "4px 12px", background: "rgba(255,255,255,0.03)",
+          padding: "4px 12px", background: "#ffffff",
         }}>{step}</span>
         <span style={{ fontSize: 34, fontWeight: 600, letterSpacing: -0.8 }}>{title}</span>
       </div>
@@ -100,8 +100,8 @@ function Scene({ step, title, children }: { step: string; title: string; childre
 
 function card(extra: CSSProperties = {}): CSSProperties {
   return {
-    background: "linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015))",
-    border: `1px solid ${C.border}`, borderRadius: 20, boxShadow: "0 30px 80px -30px rgba(0,0,0,0.9)", ...extra,
+    background: "#ffffff",
+    border: `1px solid ${C.border}`, borderRadius: 20, boxShadow: "0 1px 2px rgba(15,15,30,0.04), 0 30px 60px -30px rgba(30,27,75,0.30)", ...extra,
   };
 }
 
@@ -134,10 +134,10 @@ function PushScene() {
           <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 15, color: C.subtle }}>4f2c9e1</span>
         </div>
         <div style={{ marginTop: 14, fontSize: 24, fontWeight: 600 }}>feat(auth): rate-limit login + async password check</div>
-        <div style={{ marginTop: 20, borderRadius: 14, border: `1px solid ${C.border}`, background: "rgba(0,0,0,0.35)", padding: "14px 0" }}>
+        <div style={{ marginTop: 20, borderRadius: 14, border: `1px solid ${C.border}`, background: "#f7f7fa", padding: "14px 0" }}>
           {DIFF.map((d, i) => {
             const show = interpolate(frame, [20 + i * 8, 30 + i * 8], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
-            const bg = d.s === "+" ? "rgba(52,211,153,0.10)" : d.s === "-" ? "rgba(248,113,113,0.10)" : "transparent";
+            const bg = d.s === "+" ? "rgba(5,150,105,0.08)" : d.s === "-" ? "rgba(220,38,38,0.07)" : "transparent";
             const col = d.s === "+" ? C.emerald : d.s === "-" ? C.red : C.muted;
             return (
               <div key={i} style={{ display: "flex", gap: 16, padding: "3px 20px", fontFamily: mono, fontSize: 19, background: bg, opacity: show, transform: `translateX(${(1 - show) * -20}px)` }}>
@@ -172,7 +172,7 @@ function PipelineScene() {
   return (
     <div style={{ position: "relative", height: 420 }}>
       <svg width={W} height={420} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }}>
-        <line x1={0} y1={160} x2={W} y2={160} stroke="rgba(255,255,255,0.1)" strokeWidth={3} strokeDasharray="8 12" strokeDashoffset={-frame * 2} />
+        <line x1={0} y1={160} x2={W} y2={160} stroke="rgba(15,15,30,0.12)" strokeWidth={3} strokeDasharray="8 12" strokeDashoffset={-frame * 2} />
         <line x1={0} y1={160} x2={travel * gap} y2={160} stroke="url(#pipe)" strokeWidth={4} />
         <defs>
           <linearGradient id="pipe" x1="0" x2="1">
@@ -219,8 +219,8 @@ function DocScene() {
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: -0.6 }}>API reference</span>
           <span style={{
-            marginLeft: "auto", fontSize: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(99,102,241,0.15)",
-            color: "#a5a8ff", transform: `scale(${badge})`, opacity: badge,
+            marginLeft: "auto", fontSize: 16, padding: "6px 14px", borderRadius: 999, background: "rgba(79,70,229,0.10)",
+            color: "#4338ca", transform: `scale(${badge})`, opacity: badge,
           }}>v2 published · just now</span>
         </div>
         <div style={{ marginTop: 22, fontSize: 22, fontWeight: 600 }}>POST /auth/login</div>
@@ -229,11 +229,11 @@ function DocScene() {
           <p style={{ position: "absolute", fontSize: 21, lineHeight: 1.6, color: C.red, opacity: oldOut, textDecoration: "line-through" }}>
             Passwords are verified synchronously.
           </p>
-          <p style={{ fontSize: 21, lineHeight: 1.6, color: C.fg, background: typed > 0 ? "rgba(52,211,153,0.08)" : "transparent", borderRadius: 8, padding: "0 6px" }}>
+          <p style={{ fontSize: 21, lineHeight: 1.6, color: C.fg, background: typed > 0 ? "rgba(5,150,105,0.08)" : "transparent", borderRadius: 8, padding: "0 6px" }}>
             {newText.slice(0, typed)}
             {typed > 0 && typed < newText.length && <span style={{ color: C.cyan }}>▍</span>}
             {typed >= newText.length && (
-              <span style={{ marginLeft: 10, fontFamily: mono, fontSize: 15, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(99,102,241,0.4)", color: "#a5a8ff" }}>
+              <span style={{ marginLeft: 10, fontFamily: mono, fontSize: 15, padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(79,70,229,0.3)", color: "#4338ca" }}>
                 auth.py:14-19
               </span>
             )}
@@ -260,12 +260,12 @@ function ChatScene() {
   const chips = ["routers/auth.py:41-47", "cache.py:31-55"];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 22, maxWidth: 1000, margin: "0 auto" }}>
-      <div style={{ alignSelf: "flex-end", ...card({ padding: "16px 22px", borderRadius: 18, background: "rgba(99,102,241,0.18)", borderColor: "rgba(99,102,241,0.35)" }), fontSize: 24 }}>
+      <div style={{ alignSelf: "flex-end", ...card({ padding: "16px 22px", borderRadius: 18, background: "rgba(79,70,229,0.08)", borderColor: "rgba(79,70,229,0.25)" }), fontSize: 24 }}>
         {q.slice(0, qTyped)}
         {qTyped < q.length && <span style={{ color: C.cyan }}>▍</span>}
       </div>
       <div style={{ display: "flex", gap: 16, opacity: interpolate(frame, [34, 42], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
-        <div style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center", background: `linear-gradient(135deg, ${C.indigo}, ${C.violet})`, fontWeight: 800, fontSize: 22 }}>D</div>
+        <div style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, display: "grid", placeItems: "center", background: `linear-gradient(135deg, ${C.indigo}, ${C.violet})`, fontWeight: 800, fontSize: 22, color: "#fff" }}>D</div>
         <div style={card({ padding: "18px 24px", fontSize: 23, lineHeight: 1.55, color: C.fg })}>
           {a.slice(0, aTyped)}
           {aTyped < a.length && <span style={{ color: C.cyan }}>▍</span>}
@@ -273,7 +273,7 @@ function ChatScene() {
             {chips.map((c, i) => {
               const s = interpolate(frame, [100 + i * 6, 108 + i * 6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
               return (
-                <span key={c} style={{ fontFamily: mono, fontSize: 16, padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.4)", background: "rgba(99,102,241,0.1)", color: "#a5a8ff", opacity: s, transform: `translateY(${(1 - s) * 8}px)` }}>
+                <span key={c} style={{ fontFamily: mono, fontSize: 16, padding: "5px 12px", borderRadius: 8, border: "1px solid rgba(79,70,229,0.3)", background: "rgba(79,70,229,0.06)", color: "#4338ca", opacity: s, transform: `translateY(${(1 - s) * 8}px)` }}>
                   [{i + 1}] {c}
                 </span>
               );

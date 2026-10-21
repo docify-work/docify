@@ -49,7 +49,7 @@ export function HowItWorks() {
       <div ref={ref} className="relative mx-auto mt-20 max-w-3xl">
         {/* the line that draws itself as you scroll */}
         <svg className="absolute left-[27px] top-0 h-full w-[2px] overflow-visible" preserveAspectRatio="none" aria-hidden="true">
-          <line x1="1" y1="0" x2="1" y2="100%" stroke="rgb(255 255 255 / 0.08)" strokeWidth="2" />
+          <line x1="1" y1="0" x2="1" y2="100%" stroke="rgb(15 15 30 / 0.08)" strokeWidth="2" />
           <motion.line
             x1="1"
             y1="0"
@@ -94,7 +94,7 @@ function Step({ index, total, progress, icon, title, text, chip }: {
     <li className="relative flex gap-6">
       <motion.div
         style={{ scale }}
-        className="relative z-10 grid size-14 shrink-0 place-items-center rounded-2xl border border-white/10 bg-[#0f0f18] text-fg"
+        className="relative z-10 grid size-14 shrink-0 place-items-center rounded-2xl border border-black/10 bg-white text-fg"
       >
         <motion.span
           style={{ opacity: glow }}
@@ -108,7 +108,7 @@ function Step({ index, total, progress, icon, title, text, chip }: {
           <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
         </div>
         <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-fg-muted">{text}</p>
-        <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 font-mono text-[11px] text-fg-subtle">
+        <span className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-black/[0.08] bg-black/[0.03] px-2.5 py-1 font-mono text-[11px] text-fg-subtle">
           <GitBranch className="size-3" />
           {chip}
         </span>

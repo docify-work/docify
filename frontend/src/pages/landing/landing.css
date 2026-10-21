@@ -1,43 +1,43 @@
 /*
  * Landing page only (loaded with the lazy landing chunk).
- * Always dark: the page sets its own palette on `.landing` so the app's light/dark tokens stay untouched.
+ * Always light: the page sets its own palette on `.landing` (the app has its own light/dark switch).
  * Every animation is transform/opacity/background-position based (GPU-friendly) and switched off for
  * `prefers-reduced-motion`.
  */
 
 .landing {
-  --canvas: #07070b;
-  --surface: #0e0e14;
-  --surface-2: #14141c;
-  --surface-3: #1c1c26;
-  --border: #20202b;
-  --border-strong: #2e2e3c;
-  --fg: #f2f2f7;
-  --fg-muted: #a3a3b2;
-  --fg-subtle: #6c6c7c;
-  --accent: #6366f1;
-  --accent-hover: #7c7ff5;
-  --accent-soft: #1b1c3a;
-  --accent-text: #a5a8ff;
-  --l-indigo: #6366f1;
-  --l-violet: #a855f7;
-  --l-cyan: #22d3ee;
-  --l-emerald: #34d399;
-  --l-amber: #fbbf24;
-  color-scheme: dark;
+  --canvas: #fbfbfd;
+  --surface: #ffffff;
+  --surface-2: #f5f5f8;
+  --surface-3: #ececf2;
+  --border: #e6e6ec;
+  --border-strong: #d4d4dc;
+  --fg: #0f0f14;
+  --fg-muted: #52525e;
+  --fg-subtle: #8a8a96;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef0ff;
+  --accent-text: #4338ca;
+  --l-indigo: #4f46e5;
+  --l-violet: #7c3aed;
+  --l-cyan: #0891b2;
+  --l-emerald: #059669;
+  --l-amber: #d97706;
+  color-scheme: light;
   background: var(--canvas);
   color: var(--fg);
   overflow-x: clip;
 }
 
 .landing ::selection {
-  background: rgb(99 102 241 / 0.45);
+  background: rgb(79 70 229 / 0.18);
 }
 
 /* ---------------------------------------------------------------- text */
 
 .l-gradient-text {
-  background: linear-gradient(100deg, #fff 0%, #c7c9ff 30%, #a5a8ff 50%, #67e8f9 75%, #fff 100%);
+  background: linear-gradient(100deg, #4f46e5 0%, #7c3aed 30%, #0891b2 60%, #4f46e5 100%);
   background-size: 220% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -67,8 +67,8 @@
 
 .l-grid {
   background-image:
-    linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+    linear-gradient(to right, rgb(15 15 30 / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 15 30 / 0.055) 1px, transparent 1px);
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
 }
@@ -77,21 +77,21 @@
   position: absolute;
   inset: -20% -10% auto;
   height: 120%;
-  filter: blur(70px) saturate(140%);
-  opacity: 0.7;
+  filter: blur(80px) saturate(120%);
+  opacity: 0.55;
   pointer-events: none;
 }
 
 .l-aurora > span {
   position: absolute;
   border-radius: 9999px;
-  mix-blend-mode: screen;
+  mix-blend-mode: multiply;
   animation: l-float 18s ease-in-out infinite;
 }
 
-.l-aurora > span:nth-child(1) { width: 46vw; height: 46vw; left: 6%; top: 4%; background: radial-gradient(circle, rgb(99 102 241 / 0.55), transparent 65%); }
-.l-aurora > span:nth-child(2) { width: 38vw; height: 38vw; right: 4%; top: 0; background: radial-gradient(circle, rgb(168 85 247 / 0.45), transparent 65%); animation-delay: -6s; animation-duration: 22s; }
-.l-aurora > span:nth-child(3) { width: 34vw; height: 34vw; left: 36%; top: 26%; background: radial-gradient(circle, rgb(34 211 238 / 0.32), transparent 65%); animation-delay: -11s; animation-duration: 26s; }
+.l-aurora > span:nth-child(1) { width: 46vw; height: 46vw; left: 6%; top: 4%; background: radial-gradient(circle, rgb(129 140 248 / 0.45), transparent 65%); }
+.l-aurora > span:nth-child(2) { width: 38vw; height: 38vw; right: 4%; top: 0; background: radial-gradient(circle, rgb(216 180 254 / 0.55), transparent 65%); animation-delay: -6s; animation-duration: 22s; }
+.l-aurora > span:nth-child(3) { width: 34vw; height: 34vw; left: 36%; top: 26%; background: radial-gradient(circle, rgb(103 232 249 / 0.45), transparent 65%); animation-delay: -11s; animation-duration: 26s; }
 
 @keyframes l-float {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
@@ -103,13 +103,13 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.06;
+  opacity: 0.025;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
 /* Cursor spotlight (position comes from --mx/--my set in JS). */
 .l-spotlight {
-  background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 30%), rgb(99 102 241 / 0.16), transparent 40%);
+  background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 30%), rgb(99 102 241 / 0.09), transparent 40%);
   transition: background 0.1s linear;
 }
 
@@ -118,10 +118,9 @@
 .l-card {
   position: relative;
   border-radius: 1rem;
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.015));
-  border: 1px solid rgb(255 255 255 / 0.07);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 20px 50px -24px rgb(0 0 0 / 0.8);
-  backdrop-filter: blur(8px);
+  background: linear-gradient(180deg, #ffffff, #fcfcfe);
+  border: 1px solid rgb(15 15 30 / 0.08);
+  box-shadow: 0 1px 2px rgb(15 15 30 / 0.04), 0 24px 48px -28px rgb(30 27 75 / 0.28);
 }
 
 /* Spotlight border that follows the cursor inside a card. */
@@ -131,7 +130,7 @@
   inset: -1px;
   border-radius: inherit;
   padding: 1px;
-  background: radial-gradient(400px circle at var(--cx, -200px) var(--cy, -200px), rgb(165 168 255 / 0.55), transparent 45%);
+  background: radial-gradient(400px circle at var(--cx, -200px) var(--cy, -200px), rgb(79 70 229 / 0.55), transparent 45%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;

@@ -1,6 +1,7 @@
 /*
  * Docify design tokens.
- * Semantic colours are CSS variables that flip with `prefers-color-scheme`, exposed to Tailwind
+ * Semantic colours are CSS variables that flip with `<html data-theme="dark">` (set by public/theme-init.js +
+ * src/lib/theme.ts: public pages are always light; the app follows the user's Light/Dark/System choice), exposed to Tailwind
  * through `@theme inline` — so pages use `bg-surface`, `text-fg-muted`, `border-border` … and never `dark:`.
  * Palette: one neutral (zinc-like, slightly cool) + one accent (indigo).
  */
@@ -36,37 +37,35 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #0d0d10;
-    --surface: #141418;
-    --surface-2: #1b1b21;
-    --surface-3: #24242b;
-    --border: #26262e;
-    --border-strong: #34343e;
-    --fg: #ececf1;
-    --fg-muted: #a1a1ac;
-    --fg-subtle: #6e6e7a;
-    --accent: #6366f1;
-    --accent-hover: #7c7ff5;
-    --accent-fg: #ffffff;
-    --accent-soft: #1e1f3a;
-    --accent-text: #a5a8ff;
-    --success: #4ade80;
-    --success-soft: #0f2a1a;
-    --warning: #fbbf24;
-    --warning-soft: #2b2110;
-    --danger: #f87171;
-    --danger-hover: #fca5a5;
-    --danger-soft: #2e1415;
-    --info: #38bdf8;
-    --info-soft: #0c2533;
-    --ring: #818cf8;
-    --overlay: rgb(0 0 0 / 0.55);
-    --shadow-color: 0 0% 0%;
-    --code-bg: #18181d;
-    color-scheme: dark;
-  }
+:root[data-theme="dark"] {
+  --canvas: #0d0d10;
+  --surface: #141418;
+  --surface-2: #1b1b21;
+  --surface-3: #24242b;
+  --border: #26262e;
+  --border-strong: #34343e;
+  --fg: #ececf1;
+  --fg-muted: #a1a1ac;
+  --fg-subtle: #6e6e7a;
+  --accent: #6366f1;
+  --accent-hover: #7c7ff5;
+  --accent-fg: #ffffff;
+  --accent-soft: #1e1f3a;
+  --accent-text: #a5a8ff;
+  --success: #4ade80;
+  --success-soft: #0f2a1a;
+  --warning: #fbbf24;
+  --warning-soft: #2b2110;
+  --danger: #f87171;
+  --danger-hover: #fca5a5;
+  --danger-soft: #2e1415;
+  --info: #38bdf8;
+  --info-soft: #0c2533;
+  --ring: #818cf8;
+  --overlay: rgb(0 0 0 / 0.55);
+  --shadow-color: 0 0% 0%;
+  --code-bg: #18181d;
+  color-scheme: dark;
 }
 
 @theme inline {

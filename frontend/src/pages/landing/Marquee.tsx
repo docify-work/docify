@@ -22,7 +22,7 @@ const ITEMS = [
 export function Marquee() {
   const row = [...ITEMS, ...ITEMS];
   return (
-    <section aria-label="Built with" className="relative border-y border-white/[0.06] bg-white/[0.015] py-8">
+    <section aria-label="Built with" className="relative border-y border-black/[0.06] bg-black/[0.015] py-8">
       <Reveal>
         <p className="mb-6 text-center text-xs font-medium uppercase tracking-[0.18em] text-fg-subtle">
           Production-grade from day one — built on
@@ -34,7 +34,7 @@ export function Marquee() {
             <span
               key={i}
               aria-hidden={i >= ITEMS.length}
-              className="mx-1.5 inline-flex shrink-0 items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.03] px-4 py-2 text-sm text-fg-muted transition-colors hover:border-white/20 hover:text-fg"
+              className="mx-1.5 inline-flex shrink-0 items-center gap-2 rounded-full border border-black/[0.07] bg-black/[0.03] px-4 py-2 text-sm text-fg-muted transition-colors hover:border-black/20 hover:text-fg"
             >
               <span className="text-[var(--accent-text)]">{it.icon}</span>
               {it.label}

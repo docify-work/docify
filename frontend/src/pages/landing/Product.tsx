@@ -22,19 +22,19 @@ export function Product() {
       <Reveal delay={0.1} className="relative mx-auto mt-14 max-w-5xl">
         <div className="pointer-events-none absolute -inset-10 rounded-[40px] bg-gradient-to-r from-[var(--l-indigo)]/30 via-[var(--l-violet)]/20 to-[var(--l-cyan)]/30 blur-3xl" aria-hidden="true" />
         <div ref={ref} className="l-glow-border relative rounded-[20px] p-[2px]">
-          <div className="aspect-video overflow-hidden rounded-[18px] bg-[#07070b]">
+          <div className="aspect-video overflow-hidden rounded-[18px] bg-white">
             {near ? (
-              <Suspense fallback={<div className="size-full animate-pulse bg-white/[0.02]" />}>
+              <Suspense fallback={<div className="size-full animate-pulse bg-black/[0.02]" />}>
                 <DemoVideo />
               </Suspense>
             ) : (
-              <div className="size-full bg-white/[0.02]" />
+              <div className="size-full bg-black/[0.02]" />
             )}
           </div>
         </div>
         <div className="mt-5 flex justify-center gap-2">
           {CHAPTERS.map((c, i) => (
-            <span key={c} className="rounded-full border border-white/[0.07] bg-white/[0.03] px-3 py-1 text-xs text-fg-subtle">
+            <span key={c} className="rounded-full border border-black/[0.07] bg-black/[0.03] px-3 py-1 text-xs text-fg-subtle">
               <span className="mr-1.5 font-mono text-[var(--accent-text)]">0{i + 1}</span>
               {c}
             </span>

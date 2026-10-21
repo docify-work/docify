@@ -67,7 +67,7 @@ function DocBuilder() {
   const step = useCycle(7, 700);
   const lines = [88, 72, 95, 60, 80];
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-black/30 p-4">
+    <div className="rounded-xl border border-black/[0.06] bg-[#f7f7fa] p-4">
       <div className="mb-3 flex gap-2">
         {["Overview", "Setup", "API"].map((t, i) => (
           <span key={t} className={cn("rounded-md px-2 py-0.5 text-[11px] transition-colors duration-500", step % 3 === i ? "bg-[var(--l-indigo)]/25 text-[var(--accent-text)]" : "text-fg-subtle")}>
@@ -75,12 +75,12 @@ function DocBuilder() {
           </span>
         ))}
       </div>
-      <div className="h-4 w-1/3 rounded bg-white/15" />
+      <div className="h-4 w-1/3 rounded bg-black/15" />
       <div className="mt-3 space-y-2">
         {lines.map((w, i) => (
           <div key={i} className="flex items-center gap-2">
             <motion.div
-              className="h-2.5 rounded bg-white/[0.09]"
+              className="h-2.5 rounded bg-black/[0.09]"
               initial={false}
               animate={{ width: step > i ? `${w}%` : "0%" }}
               transition={{ duration: 0.6, ease: EASE }}
@@ -103,19 +103,19 @@ function CommitGraph() {
   const head = useCycle(5, 1100);
   return (
     <svg viewBox="0 0 220 110" className="h-28 w-full" aria-hidden="true">
-      <path d="M10 70 H210" stroke="rgb(255 255 255 / 0.12)" strokeWidth="2" />
+      <path d="M10 70 H210" stroke="rgb(15 15 30 / 0.12)" strokeWidth="2" />
       <path d="M60 70 C 80 70, 80 30, 110 30 H150 C 170 30, 170 70, 190 70" stroke="var(--l-violet)" strokeOpacity="0.5" strokeWidth="2" fill="none" className="l-flow" />
       {[20, 60, 110, 150, 190].map((x, i) => {
         const y = i === 2 || i === 3 ? 30 : 70;
         const on = i <= head;
         return (
           <g key={x}>
-            <motion.circle cx={x} cy={y} r={7} initial={false} animate={{ fill: on ? "#6366f1" : "#1c1c26", scale: i === head ? 1.25 : 1 }} stroke="#a5a8ff" strokeWidth={i === head ? 2 : 0} style={{ transformBox: "fill-box", transformOrigin: "center" }} />
+            <motion.circle cx={x} cy={y} r={7} initial={false} animate={{ fill: on ? "#6366f1" : "#e4e4ec", scale: i === head ? 1.25 : 1 }} stroke="#4338ca" strokeWidth={i === head ? 2 : 0} style={{ transformBox: "fill-box", transformOrigin: "center" }} />
             {i === head && <circle cx={x} cy={y} r={12} fill="none" stroke="#6366f1" className="l-pulse-dot" />}
           </g>
         );
       })}
-      <text x="10" y="102" fill="#6c6c7c" fontSize="10" fontFamily="monospace">main · docs v{head + 1}</text>
+      <text x="10" y="102" fill="#8a8a96" fontSize="10" fontFamily="monospace">main · docs v{head + 1}</text>
     </svg>
   );
 }
@@ -127,13 +127,13 @@ function ChatBubble() {
       <div className="ml-auto w-fit rounded-xl rounded-br-sm bg-[var(--l-indigo)]/25 px-3 py-1.5">Where is auth handled?</div>
       <AnimatePresence mode="wait">
         {phase === 0 ? (
-          <motion.div key="t" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex w-fit gap-1 rounded-xl bg-white/[0.05] px-3 py-2.5">
+          <motion.div key="t" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex w-fit gap-1 rounded-xl bg-black/[0.05] px-3 py-2.5">
             {[0, 1, 2].map((i) => (
               <motion.span key={i} className="size-1.5 rounded-full bg-fg-muted" animate={{ y: [0, -3, 0] }} transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }} />
             ))}
           </motion.div>
         ) : (
-          <motion.div key="a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-fit max-w-[95%] rounded-xl rounded-bl-sm bg-white/[0.05] px-3 py-2 leading-relaxed text-fg-muted">
+          <motion.div key="a" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="w-fit max-w-[95%] rounded-xl rounded-bl-sm bg-black/[0.05] px-3 py-2 leading-relaxed text-fg-muted">
             In <span className="font-mono text-[var(--accent-text)]">auth/service.py</span>, sessions are created after Argon2 checks.
             <span className="ml-1 rounded border border-[var(--l-indigo)]/40 px-1 font-mono text-[10px] text-[var(--accent-text)]">[1]</span>
           </motion.div>
@@ -154,7 +154,7 @@ function SearchDemo() {
   const q = QUERIES[i]!;
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-[12px]">
+      <div className="flex items-center gap-2 rounded-lg border border-black/[0.08] bg-[#f7f7fa] px-3 py-2 text-[12px]">
         <Search className="size-3.5 text-fg-subtle" />
         <AnimatePresence mode="wait">
           <motion.span key={q.q} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="l-caret">
@@ -165,7 +165,7 @@ function SearchDemo() {
       <AnimatePresence mode="popLayout">
         {q.hits.map((h, k) => (
           <motion.div key={q.q + h} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }} transition={{ delay: 0.15 + k * 0.08 }}
-            className="flex items-center justify-between rounded-md bg-white/[0.03] px-3 py-1.5 font-mono text-[11px] text-fg-muted">
+            className="flex items-center justify-between rounded-md bg-black/[0.03] px-3 py-1.5 font-mono text-[11px] text-fg-muted">
             {h}
             <span className="text-[var(--l-emerald)]">{(0.92 - k * 0.11).toFixed(2)}</span>
           </motion.div>
@@ -178,7 +178,7 @@ function SearchDemo() {
 function ApproveDemo() {
   const on = useCycle(2, 1600) === 1;
   return (
-    <div className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-black/30 px-4 py-3">
+    <div className="flex items-center justify-between rounded-xl border border-black/[0.06] bg-[#f7f7fa] px-4 py-3">
       <div>
         <div className="text-[12px] font-medium">Require approval</div>
         <div className="text-[11px] text-fg-subtle">{on ? "Admins review each change" : "Changes publish instantly"}</div>
@@ -193,10 +193,10 @@ function ApproveDemo() {
 function Redaction() {
   const masked = useCycle(2, 1800) === 1;
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-black/40 p-4 font-mono text-[12px] leading-6">
+    <div className="rounded-xl border border-black/[0.06] bg-[#f7f7fa] p-4 font-mono text-[12px] leading-6">
       <div className="text-fg-subtle"># settings.py</div>
       <div>
-        <span className="text-[#c4b5fd]">AWS_KEY</span> = <span className="text-[var(--l-amber)]">"</span>
+        <span className="text-[#7c3aed]">AWS_KEY</span> = <span className="text-[var(--l-amber)]">"</span>
         <AnimatePresence mode="wait">
           <motion.span key={String(masked)} initial={{ opacity: 0, filter: "blur(4px)" }} animate={{ opacity: 1, filter: "blur(0px)" }} exit={{ opacity: 0, filter: "blur(4px)" }}
             className={masked ? "rounded bg-[var(--l-emerald)]/15 px-1 text-[var(--l-emerald)]" : "text-[var(--l-amber)]"}>
@@ -220,7 +220,7 @@ function BudgetGauge() {
   return (
     <div className="flex items-center gap-6">
       <svg viewBox="0 0 120 70" className="h-24 w-40" aria-hidden="true">
-        <path d={`M14 62 A ${R} ${R} 0 0 1 106 62`} stroke="rgb(255 255 255 / 0.08)" strokeWidth="10" fill="none" strokeLinecap="round" />
+        <path d={`M14 62 A ${R} ${R} 0 0 1 106 62`} stroke="rgb(15 15 30 / 0.08)" strokeWidth="10" fill="none" strokeLinecap="round" />
         <motion.path d={`M14 62 A ${R} ${R} 0 0 1 106 62`} stroke={blocked ? "#fbbf24" : "url(#bg)"} strokeWidth="10" fill="none" strokeLinecap="round"
           strokeDasharray={L} initial={false} animate={{ strokeDashoffset: L * (1 - v) }} transition={{ duration: 0.9, ease: EASE }} />
         <defs>

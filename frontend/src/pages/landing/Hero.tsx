@@ -36,12 +36,12 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
           initial={{ opacity: 0, y: 12, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.7, ease: EASE, delay: 0.1 }}
-          className="group relative mx-auto inline-flex items-center gap-2 overflow-hidden rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-3 text-xs text-fg-muted backdrop-blur"
+          className="group relative mx-auto inline-flex items-center gap-2 overflow-hidden rounded-full border border-black/10 bg-black/[0.04] py-1 pl-1 pr-3 text-xs text-fg-muted backdrop-blur"
         >
           <span className="rounded-full bg-[var(--l-indigo)] px-2 py-0.5 text-[11px] font-semibold text-white">New</span>
           Docs that update themselves on every push
           <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-          <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/15 to-transparent [animation:l-sweep_3.5s_ease-in-out_infinite]" />
+          <span className="pointer-events-none absolute inset-y-0 -left-1/2 w-1/3 -skew-x-12 bg-gradient-to-r from-transparent via-white/80 to-transparent [animation:l-sweep_3.5s_ease-in-out_infinite]" />
         </motion.a>
 
         <h1 className="mx-auto mt-7 max-w-4xl text-[clamp(2.6rem,7vw,5.6rem)] font-semibold leading-[0.98] tracking-[-0.04em]">
@@ -76,7 +76,7 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
           </Magnetic>
           {demoHref && (
             <Magnetic>
-              <Button asChild variant="secondary" className="h-11 rounded-xl border-white/10 bg-white/5 px-5 text-[15px] backdrop-blur hover:bg-white/10">
+              <Button asChild variant="secondary" className="h-11 rounded-xl border-black/10 bg-white/80 px-5 text-[15px] shadow-sm backdrop-blur hover:bg-white">
                 <Link to={demoHref}>
                   <Play />
                   Explore the live demo
@@ -151,22 +151,22 @@ function HeroWindow() {
   const updated = tick >= 10;
 
   return (
-    <div className="l-glow-border rounded-2xl p-px shadow-[0_40px_120px_-40px_rgb(99_102_241/0.6)]">
-      <div className="overflow-hidden rounded-2xl bg-[#0b0b12]">
+    <div className="l-glow-border rounded-2xl p-px shadow-[0_40px_100px_-40px_rgb(79_70_229/0.35)]">
+      <div className="overflow-hidden rounded-2xl bg-white">
         {/* window chrome */}
-        <div className="flex h-10 items-center gap-2 border-b border-white/[0.06] px-4">
+        <div className="flex h-10 items-center gap-2 border-b border-black/[0.06] px-4">
           <span className="size-2.5 rounded-full bg-[#ff5f57]" />
           <span className="size-2.5 rounded-full bg-[#febc2e]" />
           <span className="size-2.5 rounded-full bg-[#28c840]" />
-          <div className="mx-auto flex items-center gap-2 rounded-md bg-white/[0.04] px-3 py-1 font-mono text-[11px] text-fg-subtle">
+          <div className="mx-auto flex items-center gap-2 rounded-md bg-black/[0.04] px-3 py-1 font-mono text-[11px] text-fg-subtle">
             <span className="size-1.5 rounded-full bg-[var(--l-emerald)]" />
             docify.work/w/acme/docs/authentication
           </div>
         </div>
 
-        <div className="grid gap-px bg-white/[0.04] text-left md:grid-cols-[1fr_auto_1.1fr]">
+        <div className="grid gap-px bg-black/[0.04] text-left md:grid-cols-[1fr_auto_1.1fr]">
           {/* code */}
-          <div className="bg-[#0b0b12] p-5">
+          <div className="bg-white p-5">
             <div className="mb-3 flex items-center gap-2 text-xs text-fg-subtle">
               <GitHubIcon className="size-3.5" /> acme/api · <span className="font-mono">src/auth.py</span>
               <AnimatePresence>
@@ -196,7 +196,7 @@ function HeroWindow() {
                     className={cn(
                       "relative whitespace-pre",
                       line.k === "dec" && "text-[var(--l-amber)]",
-                      line.k === "def" && "text-[#c4b5fd]",
+                      line.k === "def" && "text-[#7c3aed]",
                       !line.k && "text-fg-muted",
                     )}
                   >
@@ -208,7 +208,7 @@ function HeroWindow() {
           </div>
 
           {/* beam */}
-          <div className="relative hidden w-20 items-center justify-center bg-[#0b0b12] md:flex">
+          <div className="relative hidden w-20 items-center justify-center bg-white md:flex">
             <svg viewBox="0 0 80 200" className="h-48 w-20" aria-hidden="true">
               <defs>
                 <linearGradient id="beam" x1="0" x2="1">
@@ -233,14 +233,14 @@ function HeroWindow() {
             <motion.div
               animate={{ rotate: reading >= 0 ? 360 : 0 }}
               transition={{ duration: 3, repeat: reading >= 0 ? Infinity : 0, ease: "linear" }}
-              className="absolute grid size-9 place-items-center rounded-xl border border-white/10 bg-[#11111a] shadow-[0_0_30px_-4px_var(--l-indigo)]"
+              className="absolute grid size-9 place-items-center rounded-xl border border-black/10 bg-white shadow-[0_0_30px_-4px_var(--l-indigo)]"
             >
               <Sparkles className="size-4 text-[var(--accent-text)]" />
             </motion.div>
           </div>
 
           {/* generated doc */}
-          <div className="relative bg-[#0d0d15] p-5">
+          <div className="relative bg-white p-5">
             <div className="mb-3 flex items-center gap-2 text-xs text-fg-subtle">
               <FileText className="size-3.5" /> Generated docs
               <AnimatePresence>
@@ -275,7 +275,7 @@ function HeroWindow() {
                     </p>
                   )}
                   {d.kind === "code" && (
-                    <div className="rounded-lg border border-white/[0.06] bg-black/40 px-3 py-2 font-mono text-[11.5px] text-[var(--l-emerald)]">
+                    <div className="rounded-lg border border-black/[0.06] bg-[#f7f7fa] px-3 py-2 font-mono text-[11.5px] text-[var(--l-emerald)]">
                       {d.text}
                     </div>
                   )}
