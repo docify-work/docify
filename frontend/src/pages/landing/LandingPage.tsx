@@ -7,7 +7,7 @@ import { useMe } from "@/hooks/useMe";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { oauthErrorMessage } from "@/lib/messages";
 import { Architecture } from "./Architecture";
-import { SiteFooter, Stats } from "./Closing";
+import { SiteFooter } from "./Closing";
 import { Features } from "./Features";
 import { useSmoothScroll } from "./motion-utils";
 import { Hero } from "./Hero";
@@ -16,7 +16,7 @@ import { Nav } from "./Nav";
 
 /** Marketing landing page: full-bleed, always dark, its own nav + footer (outside PublicLayout). */
 export default function LandingPage() {
-  usePageMeta([{ label: "Docs that keep up with your code" }]);
+  usePageMeta([{ label: "Docs that write themselves" }]);
   useSmoothScroll();
   const { me } = useMe();
   const [params, setParams] = useSearchParams();
@@ -41,7 +41,6 @@ export default function LandingPage() {
         <Marquee />
         <Features />
         <Architecture />
-        <Stats />
       </main>
       <SiteFooter primaryHref={primaryHref} primaryLabel={primaryLabel} demoHref={demoHref} />
     </div>

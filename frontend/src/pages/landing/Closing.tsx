@@ -4,32 +4,8 @@ import { Link } from "react-router";
 import { GitHubIcon } from "@/components/BrandIcons";
 import { LogoMark } from "@/components/Logo";
 import { Button } from "@/components/ui";
-import { CountUp, Magnetic, Reveal } from "./fx";
+import { Magnetic, Reveal } from "./fx";
 import { scrollToSection } from "./motion-utils";
-
-const STATS = [
-  { to: 185, suffix: "+", label: "automated tests on every push" },
-  { to: 0, suffix: "", label: "failed requests while killing pods" },
-  { to: 14, suffix: " days", label: "a push can wait safely in the queue" },
-  { to: 96, suffix: " MB", label: "hardened container image" },
-];
-
-export function Stats() {
-  return (
-    <section className="border-t border-black/[0.06] bg-white">
-      <div className="mx-auto grid max-w-6xl grid-cols-2 px-5 md:grid-cols-4">
-        {STATS.map((s, i) => (
-          <Reveal key={s.label} delay={i * 0.06} className="px-4 py-12 text-center">
-            <div className="text-[clamp(2rem,4vw,3rem)] font-semibold tracking-tight">
-              <CountUp to={s.to} suffix={s.suffix} className="l-gradient-text" />
-            </div>
-            <div className="mt-2 text-sm text-fg-muted">{s.label}</div>
-          </Reveal>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 const REPO = "https://github.com/docify-work/docify";
 
@@ -64,9 +40,9 @@ export function SiteFooter({ primaryHref, primaryLabel, demoHref }: {
           <div className="max-w-2xl">
             <p className="l-eyebrow">Get started</p>
             <h2 className="mt-3 text-[clamp(2rem,4.6vw,3.6rem)] font-semibold leading-[1.02]">
-              Docs that never go stale.
+              Ship the code.
               <br />
-              <span className="l-gradient-text">Set up in two minutes.</span>
+              <span className="l-gradient-text">Docify writes the docs.</span>
             </h2>
             <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-fg-muted">
               Install the GitHub App, pick a repo and get an overview, setup guide and API reference — kept current on

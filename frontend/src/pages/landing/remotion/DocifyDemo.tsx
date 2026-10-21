@@ -105,7 +105,7 @@ function PushScene({ f }: { f: number }) {
     <div style={card({ padding: 30, transform: `translateY(${(1 - p) * 40}px) scale(${0.96 + p * 0.04})`, opacity: p })}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 19, color: C.muted }}>
         <div style={{ width: 34, height: 34, borderRadius: 999, background: GRADIENT }} />
-        <span style={{ color: C.fg, fontWeight: 600 }}>ganesh</span> pushed to <span style={{ fontFamily: mono, color: C.cyan }}>main</span>
+        <span style={{ color: C.fg, fontWeight: 600 }}>New commit</span> on <span style={{ fontFamily: mono, color: C.cyan }}>main</span>
         <span style={{ marginLeft: "auto", fontFamily: mono, fontSize: 16, color: C.subtle }}>4f2c9e1</span>
       </div>
       <div style={{ marginTop: 14, fontSize: 25, fontWeight: 600, letterSpacing: -0.4 }}>feat(auth): rate-limit login + async password check</div>

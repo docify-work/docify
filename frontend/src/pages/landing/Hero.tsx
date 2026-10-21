@@ -57,9 +57,9 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
           </motion.span>
 
           <h1 className="mt-6 text-[clamp(2.2rem,3.6vw,3.25rem)] font-semibold leading-[1.04] tracking-[-0.045em]">
-            <SplitWords text="Your code changes." delay={0.1} />
+            <SplitWords text="Docs that write themselves." delay={0.1} gradientWords={["themselves."]} />
             <br />
-            <SplitWords text="Your docs keep up." delay={0.3} gradientWords={["docs"]} />
+            <SplitWords text="And never go stale." delay={0.35} />
           </h1>
 
           <motion.p {...fadeUp(0.55)} className="mx-auto mt-5 max-w-md text-[15.5px] leading-relaxed text-fg-muted lg:mx-0">
