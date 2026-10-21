@@ -1,0 +1,4575 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "Docify API",
+  "description": "Docify keeps documentation for your GitHub repositories up to date with AI.",
+  "version": "0.1.0"
+ },
+ "paths": {
+  "/api/health": {
+   "get": {
+    "tags": [
+     "health"
+    ],
+    "summary": "Liveness: the process is up",
+    "operationId": "health_api_health_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "type": "object",
+         "title": "Response Health Api Health Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/ready": {
+   "get": {
+    "tags": [
+     "health"
+    ],
+    "summary": "Readiness: DB reachable (internal only)",
+    "operationId": "ready_api_ready_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/version": {
+   "get": {
+    "tags": [
+     "health"
+    ],
+    "summary": "Version",
+    "operationId": "version_api_version_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/VersionOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/config": {
+   "get": {
+    "tags": [
+     "health"
+    ],
+    "summary": "Feature flags the SPA needs",
+    "operationId": "public_config_api_config_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PublicConfigOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/demo": {
+   "get": {
+    "tags": [
+     "health"
+    ],
+    "summary": "Demo",
+    "operationId": "demo_api_demo_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DemoOut"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/signup": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Signup",
+    "operationId": "signup_api_auth_signup_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SignupIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/verify-email": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Verify Email",
+    "operationId": "verify_email_api_auth_verify_email_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TokenIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/resend-verification": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Resend",
+    "operationId": "resend_api_auth_resend_verification_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EmailIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/login": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Login",
+    "operationId": "login_api_auth_login_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LoginIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/logout": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Logout",
+    "operationId": "logout_api_auth_logout_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/forgot-password": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Forgot",
+    "operationId": "forgot_api_auth_forgot_password_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EmailIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/reset-password": {
+   "post": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Reset",
+    "operationId": "reset_api_auth_reset_password_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ResetPasswordIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/{provider}/start": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "Begin OAuth login or account linking (browser redirect)",
+    "operationId": "oauth_start_api_auth__provider__start_get",
+    "parameters": [
+     {
+      "name": "provider",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "enum": [
+        "github",
+        "google"
+       ],
+       "type": "string",
+       "title": "Provider"
+      }
+     },
+     {
+      "name": "purpose",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "login",
+        "link"
+       ],
+       "type": "string",
+       "default": "login",
+       "title": "Purpose"
+      }
+     },
+     {
+      "name": "redirect_to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "maxLength": 300
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Redirect To"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/auth/{provider}/callback": {
+   "get": {
+    "tags": [
+     "auth"
+    ],
+    "summary": "OAuth redirect target",
+    "operationId": "oauth_callback_api_auth__provider__callback_get",
+    "parameters": [
+     {
+      "name": "provider",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "enum": [
+        "github",
+        "google"
+       ],
+       "type": "string",
+       "title": "Provider"
+      }
+     },
+     {
+      "name": "code",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Code"
+      }
+     },
+     {
+      "name": "state",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "State"
+      }
+     },
+     {
+      "name": "error",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Error"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/me": {
+   "get": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Get Me",
+    "operationId": "get_me_api_me_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeOut"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Delete Me",
+    "operationId": "delete_me_api_me_delete",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Patch Me",
+    "operationId": "patch_me_api_me_patch",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/PatchMeIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MeOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/me/password": {
+   "post": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Change Password",
+    "operationId": "change_password_api_me_password_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChangePasswordIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/me/identities": {
+   "get": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Identities",
+    "operationId": "identities_api_me_identities_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/IdentityOut"
+         },
+         "type": "array",
+         "title": "Response Identities Api Me Identities Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/me/identities/{identity_id}": {
+   "delete": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Unlink",
+    "operationId": "unlink_api_me_identities__identity_id__delete",
+    "parameters": [
+     {
+      "name": "identity_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Identity Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/me/sessions": {
+   "get": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Sessions",
+    "operationId": "sessions_api_me_sessions_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/SessionOut"
+         },
+         "type": "array",
+         "title": "Response Sessions Api Me Sessions Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/me/sessions/{session_id}": {
+   "delete": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Revoke Session",
+    "operationId": "revoke_session_api_me_sessions__session_id__delete",
+    "parameters": [
+     {
+      "name": "session_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Session Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces": {
+   "get": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "List Workspaces",
+    "operationId": "list_workspaces_api_workspaces_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/WorkspaceOut"
+         },
+         "type": "array",
+         "title": "Response List Workspaces Api Workspaces Get"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Create Workspace",
+    "operationId": "create_workspace_api_workspaces_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkspaceIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkspaceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}": {
+   "get": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Get Ws",
+    "operationId": "get_ws_api_workspaces__ws__get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkspaceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "patch": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Patch Ws",
+    "operationId": "patch_ws_api_workspaces__ws__patch",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/WorkspacePatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkspaceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Delete Ws",
+    "operationId": "delete_ws_api_workspaces__ws__delete",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/members": {
+   "get": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Members",
+    "operationId": "members_api_workspaces__ws__members_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/MemberOut"
+         },
+         "title": "Response Members Api Workspaces  Ws  Members Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/members/{user_id}": {
+   "patch": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Change Role",
+    "operationId": "change_role_api_workspaces__ws__members__user_id__patch",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "User Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MemberPatch"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Remove Member",
+    "operationId": "remove_member_api_workspaces__ws__members__user_id__delete",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "user_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "User Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/leave": {
+   "post": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Leave",
+    "operationId": "leave_api_workspaces__ws__leave_post",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/invites": {
+   "get": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "List Invites",
+    "operationId": "list_invites_api_workspaces__ws__invites_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/InviteOut"
+         },
+         "title": "Response List Invites Api Workspaces  Ws  Invites Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Create Invite",
+    "operationId": "create_invite_api_workspaces__ws__invites_post",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/InviteIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InviteOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/invites/{invite_id}": {
+   "delete": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Revoke Invite",
+    "operationId": "revoke_invite_api_workspaces__ws__invites__invite_id__delete",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "invite_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Invite Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/invites/{token}": {
+   "get": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "View Invite",
+    "operationId": "view_invite_api_invites__token__get",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Token"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InvitePublicOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/invites/{token}/accept": {
+   "post": {
+    "tags": [
+     "workspaces"
+    ],
+    "summary": "Accept Invite",
+    "operationId": "accept_invite_api_invites__token__accept_post",
+    "parameters": [
+     {
+      "name": "token",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Token"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/WorkspaceOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/github/install-url": {
+   "get": {
+    "tags": [
+     "github"
+    ],
+    "summary": "Install Url",
+    "operationId": "install_url_api_workspaces__ws__github_install_url_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/InstallUrlOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/github/setup": {
+   "get": {
+    "tags": [
+     "github"
+    ],
+    "summary": "GitHub App Setup URL (browser redirect)",
+    "operationId": "setup_api_github_setup_get",
+    "parameters": [
+     {
+      "name": "installation_id",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "integer"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Installation Id"
+      }
+     },
+     {
+      "name": "setup_action",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Setup Action"
+      }
+     },
+     {
+      "name": "state",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "State"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/github/installations": {
+   "get": {
+    "tags": [
+     "github"
+    ],
+    "summary": "Installations",
+    "operationId": "installations_api_workspaces__ws__github_installations_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/InstallationOut"
+         },
+         "title": "Response Installations Api Workspaces  Ws  Github Installations Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/github/installations/{installation_id}/repos": {
+   "post": {
+    "tags": [
+     "github"
+    ],
+    "summary": "Attach Repos",
+    "operationId": "attach_repos_api_workspaces__ws__github_installations__installation_id__repos_post",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "installation_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Installation Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AttachReposIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/RepoOut"
+         },
+         "title": "Response Attach Repos Api Workspaces  Ws  Github Installations  Installation Id  Repos Post"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/repos": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "List Repos",
+    "operationId": "list_repos_api_workspaces__ws__repos_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/RepoOut"
+         },
+         "title": "Response List Repos Api Workspaces  Ws  Repos Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/repos/{repo_id}": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Get Repo",
+    "operationId": "get_repo_api_repos__repo_id__get",
+    "parameters": [
+     {
+      "name": "repo_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Repo Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RepoOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Remove Repo",
+    "operationId": "remove_repo_api_repos__repo_id__delete",
+    "parameters": [
+     {
+      "name": "repo_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Repo Id"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/repos/{repo_id}/resync": {
+   "post": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Resync",
+    "operationId": "resync_api_repos__repo_id__resync_post",
+    "parameters": [
+     {
+      "name": "repo_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Repo Id"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/repos/{repo_id}/reindex": {
+   "post": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Reindex",
+    "operationId": "reindex_api_repos__repo_id__reindex_post",
+    "parameters": [
+     {
+      "name": "repo_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Repo Id"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/docs": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "List Docs",
+    "operationId": "list_docs_api_workspaces__ws__docs_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "repo",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Repo"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DocOut"
+         },
+         "title": "Response List Docs Api Workspaces  Ws  Docs Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/docs/{doc_id}": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Get Doc",
+    "operationId": "get_doc_api_docs__doc_id__get",
+    "parameters": [
+     {
+      "name": "doc_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Doc Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DocDetailOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/docs/{doc_id}/versions": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Doc Versions",
+    "operationId": "doc_versions_api_docs__doc_id__versions_get",
+    "parameters": [
+     {
+      "name": "doc_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Doc Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/DocVersionOut"
+         },
+         "title": "Response Doc Versions Api Docs  Doc Id  Versions Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/repos/{repo_id}/changelog": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Changelog",
+    "operationId": "changelog_api_repos__repo_id__changelog_get",
+    "parameters": [
+     {
+      "name": "repo_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Repo Id"
+      }
+     },
+     {
+      "name": "cursor",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Cursor"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 100,
+       "minimum": 1,
+       "default": 20,
+       "title": "Limit"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_ChangelogOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/review": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Review Queue",
+    "operationId": "review_queue_api_workspaces__ws__review_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ReviewItemOut"
+         },
+         "title": "Response Review Queue Api Workspaces  Ws  Review Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/review/{kind}/{item_id}/{decision}": {
+   "post": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Review Decide",
+    "operationId": "review_decide_api_review__kind___item_id___decision__post",
+    "parameters": [
+     {
+      "name": "kind",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Kind"
+      }
+     },
+     {
+      "name": "item_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Item Id"
+      }
+     },
+     {
+      "name": "decision",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Decision"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/jobs": {
+   "get": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "List Jobs",
+    "operationId": "list_jobs_api_workspaces__ws__jobs_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "cursor",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Cursor"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "maximum": 100,
+       "minimum": 1,
+       "default": 30,
+       "title": "Limit"
+      }
+     },
+     {
+      "name": "status",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Page_JobOut_"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/jobs/{job_id}/retry": {
+   "post": {
+    "tags": [
+     "repos"
+    ],
+    "summary": "Retry",
+    "operationId": "retry_api_jobs__job_id__retry_post",
+    "parameters": [
+     {
+      "name": "job_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Job Id"
+      }
+     }
+    ],
+    "responses": {
+     "202": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/search": {
+   "get": {
+    "tags": [
+     "search & chat"
+    ],
+    "summary": "Search",
+    "operationId": "search_api_workspaces__ws__search_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     },
+     {
+      "name": "q",
+      "in": "query",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "minLength": 2,
+       "maxLength": 300,
+       "title": "Q"
+      }
+     },
+     {
+      "name": "scope",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "enum": [
+        "code",
+        "docs"
+       ],
+       "type": "string",
+       "default": "code",
+       "title": "Scope"
+      }
+     },
+     {
+      "name": "repo",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string",
+         "format": "uuid"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Repo"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SearchOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/chat": {
+   "post": {
+    "tags": [
+     "search & chat"
+    ],
+    "summary": "Ask a question; streams Server-Sent Events",
+    "operationId": "chat_api_workspaces__ws__chat_post",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ChatIn"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {}
+       },
+       "text/event-stream": {}
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/workspaces/{ws}/chat/threads": {
+   "get": {
+    "tags": [
+     "search & chat"
+    ],
+    "summary": "Threads",
+    "operationId": "threads_api_workspaces__ws__chat_threads_get",
+    "parameters": [
+     {
+      "name": "ws",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "title": "Ws"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "array",
+         "items": {
+          "$ref": "#/components/schemas/ThreadOut"
+         },
+         "title": "Response Threads Api Workspaces  Ws  Chat Threads Get"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/chat/threads/{thread_id}": {
+   "get": {
+    "tags": [
+     "search & chat"
+    ],
+    "summary": "Get Thread",
+    "operationId": "get_thread_api_chat_threads__thread_id__get",
+    "parameters": [
+     {
+      "name": "thread_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Thread Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ThreadDetailOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   },
+   "delete": {
+    "tags": [
+     "search & chat"
+    ],
+    "summary": "Delete Thread",
+    "operationId": "delete_thread_api_chat_threads__thread_id__delete",
+    "parameters": [
+     {
+      "name": "thread_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string",
+       "format": "uuid",
+       "title": "Thread Id"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AttachReposIn": {
+    "properties": {
+     "github_repo_ids": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "maxItems": 20,
+      "minItems": 1,
+      "title": "Github Repo Ids"
+     }
+    },
+    "type": "object",
+    "required": [
+     "github_repo_ids"
+    ],
+    "title": "AttachReposIn"
+   },
+   "ChangePasswordIn": {
+    "properties": {
+     "current_password": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 256
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Current Password"
+     },
+     "new_password": {
+      "type": "string",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "New Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "new_password"
+    ],
+    "title": "ChangePasswordIn"
+   },
+   "ChangelogOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "repo_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Repo Id"
+     },
+     "from_sha": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "From Sha"
+     },
+     "to_sha": {
+      "type": "string",
+      "title": "To Sha"
+     },
+     "content_md": {
+      "type": "string",
+      "title": "Content Md"
+     },
+     "pr_numbers": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Pr Numbers"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "repo_id",
+     "from_sha",
+     "to_sha",
+     "content_md",
+     "pr_numbers",
+     "status",
+     "created_at"
+    ],
+    "title": "ChangelogOut"
+   },
+   "ChatIn": {
+    "properties": {
+     "message": {
+      "type": "string",
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Message"
+     },
+     "thread_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Thread Id"
+     },
+     "repo_ids": {
+      "anyOf": [
+       {
+        "items": {
+         "type": "string",
+         "format": "uuid"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Repo Ids"
+     }
+    },
+    "type": "object",
+    "required": [
+     "message"
+    ],
+    "title": "ChatIn"
+   },
+   "ChatMessageOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "user",
+       "assistant"
+      ],
+      "title": "Role"
+     },
+     "content": {
+      "type": "string",
+      "title": "Content"
+     },
+     "sources": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/ChatSource"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sources"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "role",
+     "content",
+     "sources",
+     "created_at"
+    ],
+    "title": "ChatMessageOut"
+   },
+   "ChatSource": {
+    "properties": {
+     "n": {
+      "type": "integer",
+      "title": "N"
+     },
+     "repo": {
+      "type": "string",
+      "title": "Repo"
+     },
+     "path": {
+      "type": "string",
+      "title": "Path"
+     },
+     "start_line": {
+      "type": "integer",
+      "title": "Start Line"
+     },
+     "end_line": {
+      "type": "integer",
+      "title": "End Line"
+     },
+     "commit_sha": {
+      "type": "string",
+      "title": "Commit Sha"
+     },
+     "url": {
+      "type": "string",
+      "title": "Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "n",
+     "repo",
+     "path",
+     "start_line",
+     "end_line",
+     "commit_sha",
+     "url"
+    ],
+    "title": "ChatSource"
+   },
+   "DemoOut": {
+    "properties": {
+     "workspace_slug": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Workspace Slug"
+     },
+     "available": {
+      "type": "boolean",
+      "title": "Available"
+     }
+    },
+    "type": "object",
+    "required": [
+     "workspace_slug",
+     "available"
+    ],
+    "title": "DemoOut"
+   },
+   "DocDetailOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "repo_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Repo Id"
+     },
+     "repo_full_name": {
+      "type": "string",
+      "title": "Repo Full Name"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "published": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/VersionBrief"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "has_pending_review": {
+      "type": "boolean",
+      "title": "Has Pending Review"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     },
+     "content_md": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Content Md"
+     },
+     "source_paths": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Source Paths"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "repo_id",
+     "repo_full_name",
+     "kind",
+     "title",
+     "published",
+     "has_pending_review",
+     "updated_at",
+     "content_md",
+     "source_paths"
+    ],
+    "title": "DocDetailOut"
+   },
+   "DocOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "repo_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Repo Id"
+     },
+     "repo_full_name": {
+      "type": "string",
+      "title": "Repo Full Name"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "published": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/VersionBrief"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "has_pending_review": {
+      "type": "boolean",
+      "title": "Has Pending Review"
+     },
+     "updated_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Updated At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "repo_id",
+     "repo_full_name",
+     "kind",
+     "title",
+     "published",
+     "has_pending_review",
+     "updated_at"
+    ],
+    "title": "DocOut"
+   },
+   "DocVersionOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "version": {
+      "type": "integer",
+      "title": "Version"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "commit_sha": {
+      "type": "string",
+      "title": "Commit Sha"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     },
+     "partial": {
+      "type": "boolean",
+      "title": "Partial"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "content_md": {
+      "type": "string",
+      "title": "Content Md"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "version",
+     "status",
+     "commit_sha",
+     "model",
+     "partial",
+     "created_at",
+     "content_md"
+    ],
+    "title": "DocVersionOut"
+   },
+   "EmailIn": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email"
+    ],
+    "title": "EmailIn"
+   },
+   "GithubRepoOption": {
+    "properties": {
+     "github_repo_id": {
+      "type": "integer",
+      "title": "Github Repo Id"
+     },
+     "full_name": {
+      "type": "string",
+      "title": "Full Name"
+     },
+     "private": {
+      "type": "boolean",
+      "title": "Private"
+     },
+     "default_branch": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Default Branch"
+     },
+     "attached_workspace": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Attached Workspace"
+     }
+    },
+    "type": "object",
+    "required": [
+     "github_repo_id",
+     "full_name",
+     "private",
+     "default_branch",
+     "attached_workspace"
+    ],
+    "title": "GithubRepoOption"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "IdentityOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "provider": {
+      "type": "string",
+      "title": "Provider"
+     },
+     "login": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Login"
+     },
+     "email": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Email"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "provider",
+     "login",
+     "email",
+     "created_at"
+    ],
+    "title": "IdentityOut"
+   },
+   "InstallUrlOut": {
+    "properties": {
+     "url": {
+      "type": "string",
+      "title": "Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "url"
+    ],
+    "title": "InstallUrlOut"
+   },
+   "InstallationOut": {
+    "properties": {
+     "installation_id": {
+      "type": "integer",
+      "title": "Installation Id"
+     },
+     "account_login": {
+      "type": "string",
+      "title": "Account Login"
+     },
+     "account_type": {
+      "type": "string",
+      "title": "Account Type"
+     },
+     "suspended": {
+      "type": "boolean",
+      "title": "Suspended"
+     },
+     "repos": {
+      "items": {
+       "$ref": "#/components/schemas/GithubRepoOption"
+      },
+      "type": "array",
+      "title": "Repos"
+     }
+    },
+    "type": "object",
+    "required": [
+     "installation_id",
+     "account_login",
+     "account_type",
+     "suspended",
+     "repos"
+    ],
+    "title": "InstallationOut"
+   },
+   "InviteIn": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role",
+      "default": "member"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email"
+    ],
+    "title": "InviteIn"
+   },
+   "InviteOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role"
+     },
+     "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Expires At"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "email",
+     "role",
+     "expires_at",
+     "created_at"
+    ],
+    "title": "InviteOut"
+   },
+   "InvitePublicOut": {
+    "properties": {
+     "workspace_name": {
+      "type": "string",
+      "title": "Workspace Name"
+     },
+     "workspace_slug": {
+      "type": "string",
+      "title": "Workspace Slug"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role"
+     },
+     "expired": {
+      "type": "boolean",
+      "title": "Expired"
+     }
+    },
+    "type": "object",
+    "required": [
+     "workspace_name",
+     "workspace_slug",
+     "email",
+     "role",
+     "expired"
+    ],
+    "title": "InvitePublicOut"
+   },
+   "JobOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "type": {
+      "type": "string",
+      "title": "Type"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "attempts": {
+      "type": "integer",
+      "title": "Attempts"
+     },
+     "max_attempts": {
+      "type": "integer",
+      "title": "Max Attempts"
+     },
+     "repo_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Repo Id"
+     },
+     "repo_full_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Repo Full Name"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "started_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Started At"
+     },
+     "finished_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finished At"
+     },
+     "run_after": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Run After"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "type",
+     "status",
+     "attempts",
+     "max_attempts",
+     "repo_id",
+     "repo_full_name",
+     "error",
+     "created_at",
+     "started_at",
+     "finished_at",
+     "run_after"
+    ],
+    "title": "JobOut"
+   },
+   "LoginIn": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "LoginIn"
+   },
+   "MeOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "avatar_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Avatar Url"
+     },
+     "email_verified": {
+      "type": "boolean",
+      "title": "Email Verified"
+     },
+     "has_password": {
+      "type": "boolean",
+      "title": "Has Password"
+     },
+     "identities": {
+      "items": {
+       "$ref": "#/components/schemas/IdentityOut"
+      },
+      "type": "array",
+      "title": "Identities"
+     },
+     "workspaces": {
+      "items": {
+       "$ref": "#/components/schemas/MembershipBrief"
+      },
+      "type": "array",
+      "title": "Workspaces"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "email",
+     "name",
+     "avatar_url",
+     "email_verified",
+     "has_password",
+     "identities",
+     "workspaces"
+    ],
+    "title": "MeOut"
+   },
+   "MemberOut": {
+    "properties": {
+     "user_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "User Id"
+     },
+     "email": {
+      "type": "string",
+      "title": "Email"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "avatar_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Avatar Url"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role"
+     },
+     "joined_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Joined At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "user_id",
+     "email",
+     "name",
+     "avatar_url",
+     "role",
+     "joined_at"
+    ],
+    "title": "MemberOut"
+   },
+   "MemberPatch": {
+    "properties": {
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role"
+     }
+    },
+    "type": "object",
+    "required": [
+     "role"
+    ],
+    "title": "MemberPatch"
+   },
+   "MembershipBrief": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "slug": {
+      "type": "string",
+      "title": "Slug"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "admin",
+       "member"
+      ],
+      "title": "Role"
+     },
+     "is_public_demo": {
+      "type": "boolean",
+      "title": "Is Public Demo"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "slug",
+     "name",
+     "role",
+     "is_public_demo"
+    ],
+    "title": "MembershipBrief"
+   },
+   "Ok": {
+    "properties": {
+     "ok": {
+      "type": "boolean",
+      "title": "Ok",
+      "default": true
+     },
+     "message": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Message"
+     }
+    },
+    "type": "object",
+    "title": "Ok"
+   },
+   "Page_ChangelogOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/ChangelogOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "next_cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Cursor"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items"
+    ],
+    "title": "Page[ChangelogOut]"
+   },
+   "Page_JobOut_": {
+    "properties": {
+     "items": {
+      "items": {
+       "$ref": "#/components/schemas/JobOut"
+      },
+      "type": "array",
+      "title": "Items"
+     },
+     "next_cursor": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Next Cursor"
+     }
+    },
+    "type": "object",
+    "required": [
+     "items"
+    ],
+    "title": "Page[JobOut]"
+   },
+   "PatchMeIn": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     }
+    },
+    "type": "object",
+    "title": "PatchMeIn"
+   },
+   "PublicConfigOut": {
+    "properties": {
+     "env": {
+      "type": "string",
+      "title": "Env"
+     },
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "github_enabled": {
+      "type": "boolean",
+      "title": "Github Enabled"
+     },
+     "google_enabled": {
+      "type": "boolean",
+      "title": "Google Enabled"
+     },
+     "github_app_slug": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Github App Slug"
+     },
+     "demo_workspace_slug": {
+      "type": "string",
+      "title": "Demo Workspace Slug"
+     }
+    },
+    "type": "object",
+    "required": [
+     "env",
+     "version",
+     "github_enabled",
+     "google_enabled",
+     "github_app_slug",
+     "demo_workspace_slug"
+    ],
+    "title": "PublicConfigOut"
+   },
+   "RepoOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "workspace_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Workspace Id"
+     },
+     "full_name": {
+      "type": "string",
+      "title": "Full Name"
+     },
+     "owner": {
+      "type": "string",
+      "title": "Owner"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "default_branch": {
+      "type": "string",
+      "title": "Default Branch"
+     },
+     "private": {
+      "type": "boolean",
+      "title": "Private"
+     },
+     "archived": {
+      "type": "boolean",
+      "title": "Archived"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "last_processed_sha": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Processed Sha"
+     },
+     "last_synced_at": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Last Synced At"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "html_url": {
+      "type": "string",
+      "title": "Html Url"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "workspace_id",
+     "full_name",
+     "owner",
+     "name",
+     "default_branch",
+     "private",
+     "archived",
+     "status",
+     "last_processed_sha",
+     "last_synced_at",
+     "error",
+     "html_url",
+     "created_at"
+    ],
+    "title": "RepoOut"
+   },
+   "ResetPasswordIn": {
+    "properties": {
+     "token": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 10,
+      "title": "Token"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Password"
+     }
+    },
+    "type": "object",
+    "required": [
+     "token",
+     "password"
+    ],
+    "title": "ResetPasswordIn"
+   },
+   "ReviewItemOut": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "doc",
+       "changelog"
+      ],
+      "title": "Kind"
+     },
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "repo_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Repo Id"
+     },
+     "repo_full_name": {
+      "type": "string",
+      "title": "Repo Full Name"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "content_md": {
+      "type": "string",
+      "title": "Content Md"
+     },
+     "base_content_md": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Base Content Md"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "id",
+     "repo_id",
+     "repo_full_name",
+     "title",
+     "content_md",
+     "base_content_md",
+     "created_at"
+    ],
+    "title": "ReviewItemOut"
+   },
+   "SearchHitOut": {
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "code",
+       "doc",
+       "changelog"
+      ],
+      "title": "Kind"
+     },
+     "repo_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Repo Id"
+     },
+     "repo_full_name": {
+      "type": "string",
+      "title": "Repo Full Name"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "snippet": {
+      "type": "string",
+      "title": "Snippet"
+     },
+     "url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Url"
+     },
+     "path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Path"
+     },
+     "start_line": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start Line"
+     },
+     "end_line": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End Line"
+     },
+     "doc_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Doc Id"
+     },
+     "score": {
+      "type": "number",
+      "title": "Score"
+     }
+    },
+    "type": "object",
+    "required": [
+     "kind",
+     "repo_id",
+     "repo_full_name",
+     "title",
+     "snippet",
+     "url",
+     "score"
+    ],
+    "title": "SearchHitOut"
+   },
+   "SearchOut": {
+    "properties": {
+     "query": {
+      "type": "string",
+      "title": "Query"
+     },
+     "scope": {
+      "type": "string",
+      "enum": [
+       "code",
+       "docs"
+      ],
+      "title": "Scope"
+     },
+     "hits": {
+      "items": {
+       "$ref": "#/components/schemas/SearchHitOut"
+      },
+      "type": "array",
+      "title": "Hits"
+     }
+    },
+    "type": "object",
+    "required": [
+     "query",
+     "scope",
+     "hits"
+    ],
+    "title": "SearchOut"
+   },
+   "SessionOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "last_seen_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Last Seen At"
+     },
+     "ip": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Ip"
+     },
+     "user_agent": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "User Agent"
+     },
+     "current": {
+      "type": "boolean",
+      "title": "Current"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "created_at",
+     "last_seen_at",
+     "ip",
+     "user_agent",
+     "current"
+    ],
+    "title": "SessionOut"
+   },
+   "SignupIn": {
+    "properties": {
+     "email": {
+      "type": "string",
+      "format": "email",
+      "title": "Email"
+     },
+     "password": {
+      "type": "string",
+      "maxLength": 256,
+      "minLength": 1,
+      "title": "Password"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 200
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     }
+    },
+    "type": "object",
+    "required": [
+     "email",
+     "password"
+    ],
+    "title": "SignupIn"
+   },
+   "ThreadDetailOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "messages": {
+      "items": {
+       "$ref": "#/components/schemas/ChatMessageOut"
+      },
+      "type": "array",
+      "title": "Messages"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "title",
+     "created_at",
+     "messages"
+    ],
+    "title": "ThreadDetailOut"
+   },
+   "ThreadOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "title",
+     "created_at"
+    ],
+    "title": "ThreadOut"
+   },
+   "TokenIn": {
+    "properties": {
+     "token": {
+      "type": "string",
+      "maxLength": 200,
+      "minLength": 10,
+      "title": "Token"
+     }
+    },
+    "type": "object",
+    "required": [
+     "token"
+    ],
+    "title": "TokenIn"
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   },
+   "VersionBrief": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "version": {
+      "type": "integer",
+      "title": "Version"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "commit_sha": {
+      "type": "string",
+      "title": "Commit Sha"
+     },
+     "model": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Model"
+     },
+     "partial": {
+      "type": "boolean",
+      "title": "Partial"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "version",
+     "status",
+     "commit_sha",
+     "model",
+     "partial",
+     "created_at"
+    ],
+    "title": "VersionBrief"
+   },
+   "VersionOut": {
+    "properties": {
+     "version": {
+      "type": "string",
+      "title": "Version"
+     },
+     "env": {
+      "type": "string",
+      "title": "Env"
+     }
+    },
+    "type": "object",
+    "required": [
+     "version",
+     "env"
+    ],
+    "title": "VersionOut"
+   },
+   "WorkspaceIn": {
+    "properties": {
+     "name": {
+      "type": "string",
+      "maxLength": 120,
+      "minLength": 2,
+      "title": "Name"
+     },
+     "slug": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 50
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Slug"
+     }
+    },
+    "type": "object",
+    "required": [
+     "name"
+    ],
+    "title": "WorkspaceIn"
+   },
+   "WorkspaceOut": {
+    "properties": {
+     "id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Id"
+     },
+     "slug": {
+      "type": "string",
+      "title": "Slug"
+     },
+     "name": {
+      "type": "string",
+      "title": "Name"
+     },
+     "role": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "admin",
+         "member"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Role"
+     },
+     "is_public_demo": {
+      "type": "boolean",
+      "title": "Is Public Demo"
+     },
+     "settings": {
+      "$ref": "#/components/schemas/WorkspaceSettings"
+     },
+     "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "title": "Created At"
+     },
+     "repo_count": {
+      "type": "integer",
+      "title": "Repo Count",
+      "default": 0
+     },
+     "member_count": {
+      "type": "integer",
+      "title": "Member Count",
+      "default": 0
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "slug",
+     "name",
+     "role",
+     "is_public_demo",
+     "settings",
+     "created_at"
+    ],
+    "title": "WorkspaceOut"
+   },
+   "WorkspacePatch": {
+    "properties": {
+     "name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "maxLength": 120,
+        "minLength": 2
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "settings": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/WorkspaceSettingsPatch"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "type": "object",
+    "title": "WorkspacePatch"
+   },
+   "WorkspaceSettings": {
+    "properties": {
+     "auto_publish": {
+      "type": "boolean",
+      "title": "Auto Publish",
+      "default": true
+     },
+     "chat_enabled": {
+      "type": "boolean",
+      "title": "Chat Enabled",
+      "default": true
+     }
+    },
+    "type": "object",
+    "title": "WorkspaceSettings"
+   },
+   "WorkspaceSettingsPatch": {
+    "properties": {
+     "auto_publish": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Auto Publish"
+     },
+     "chat_enabled": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Chat Enabled"
+     }
+    },
+    "type": "object",
+    "title": "WorkspaceSettingsPatch"
+   }
+  }
+ }
+}

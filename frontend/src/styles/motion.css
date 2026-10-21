@@ -1,0 +1,124 @@
+/* Motion primitives. Radix sets data-state=open|closed and waits for exit animations to finish. */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translate(var(--pop-x, 0), var(--pop-y, -2px)) scale(0.97); }
+  to { opacity: 1; transform: translate(0, 0) scale(1); }
+}
+@keyframes pop-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.98); }
+}
+/* Dialogs are centred with the `translate` property, so these only animate `transform`. */
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dialog-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(4px) scale(0.985); }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slide-out-right {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slide-out-left {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes caret {
+  to { visibility: hidden; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Floating content: tooltip, popover, dropdown, command list */
+.ui-pop[data-side="top"] { --pop-y: 2px; }
+.ui-pop[data-side="bottom"] { --pop-y: -2px; }
+.ui-pop[data-side="left"] { --pop-x: 2px; --pop-y: 0; }
+.ui-pop[data-side="right"] { --pop-x: -2px; --pop-y: 0; }
+.ui-pop[data-state="open"],
+.ui-pop[data-state="delayed-open"],
+.ui-pop[data-state="instant-open"] {
+  animation: pop-in var(--duration-fast) var(--ease-out);
+}
+.ui-pop[data-state="closed"] {
+  animation: pop-out 110ms ease-in forwards;
+}
+.ui-pop {
+  transform-origin: var(--radix-popper-transform-origin, center);
+}
+
+.ui-overlay[data-state="open"] { animation: fade-in var(--duration-base) var(--ease-out); }
+.ui-overlay[data-state="closed"] { animation: fade-out var(--duration-fast) ease-in forwards; }
+
+.ui-dialog[data-state="open"] { animation: dialog-in var(--duration-base) var(--ease-out); }
+.ui-dialog[data-state="closed"] { animation: dialog-out var(--duration-fast) ease-in forwards; }
+
+.ui-drawer-right[data-state="open"] { animation: slide-in-right var(--duration-slow) var(--ease-out); }
+.ui-drawer-right[data-state="closed"] { animation: slide-out-right var(--duration-base) ease-in forwards; }
+.ui-drawer-left[data-state="open"] { animation: slide-in-left var(--duration-slow) var(--ease-out); }
+.ui-drawer-left[data-state="closed"] { animation: slide-out-left var(--duration-base) ease-in forwards; }
+
+/* List stagger on first paint: rows set --i (index); capped by the component. */
+.ui-stagger > * {
+  animation: rise var(--duration-base) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 18ms);
+}
+
+.ui-skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: var(--animate-shimmer);
+}
+
+/* Streaming caret in chat: after an empty placeholder, or at the end of the last rendered block. */
+.ui-caret::after,
+.ui-streaming .md > :last-child::after {
+  content: "";
+  display: inline-block;
+  width: 0.45em;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  border-radius: 1px;
+  background: var(--accent);
+  animation: var(--animate-caret);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ui-skeleton { animation: none; }
+}
