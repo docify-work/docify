@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { lazy, useEffect } from "react";
-import { Route, Routes, useNavigate } from "react-router";
+import { lazy, Suspense, useEffect } from "react";
+import { Route, Routes, useLocation, useNavigate } from "react-router";
 import { loginUrl, setUnauthorizedHandler } from "@/api/client";
 import { qk } from "@/api/endpoints";
 import { RequireAdmin, RequireAuth, RequireMember } from "@/components/Guards";
@@ -10,7 +10,7 @@ import { WorkspaceLayout } from "@/components/layout/WorkspaceLayout";
 import { SleepingBanner } from "@/components/SleepingBanner";
 
 // Route-level code splitting: every page is its own chunk (chat/markdown stay out of the entry bundle).
-const Landing = lazy(() => import("@/pages/Landing"));
+const Landing = lazy(() => import("@/pages/landing/LandingPage"));
 const Login = lazy(() => import("@/pages/auth/Login"));
 const Signup = lazy(() => import("@/pages/auth/Signup"));
 const VerifyEmail = lazy(() => import("@/pages/auth/VerifyEmail"));
@@ -52,6 +52,7 @@ function UnauthorizedRedirector() {
 }
 
 export default function App() {
+  const location = useLocation();
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -60,11 +61,20 @@ export default function App() {
       >
         Skip to content
       </a>
-      <SleepingBanner />
+      {/* The landing page works without the backend, so it never shows the banner. */}
+      {location.pathname !== "/" && <SleepingBanner />}
       <UnauthorizedRedirector />
       <Routes>
+        {/* The landing page is full-bleed with its own nav/footer. */}
+        <Route
+          index
+          element={
+            <Suspense fallback={<div className="min-h-dvh bg-[#07070b]" />}>
+              <Landing />
+            </Suspense>
+          }
+        />
         <Route element={<PublicLayout />}>
-          <Route index element={<Landing />} />
           <Route path="login" element={<Login />} />
           <Route path="signup" element={<Signup />} />
           <Route path="verify-email" element={<VerifyEmail />} />
