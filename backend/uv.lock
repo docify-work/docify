@@ -413,7 +413,7 @@ requires-dist = [
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.10" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "redis", specifier = ">=6.4" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.44" },
+    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.1.5" },
     { name = "structlog", specifier = ">=25.4" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.38" },
 ]
