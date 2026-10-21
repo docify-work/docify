@@ -91,8 +91,10 @@ async def _check_github(gh: GitHubApp, stats: dict[str, int], out: list[uuid.UUI
             out.append((await service.enqueue(db, "installation_sync", workspace_id=None, installation_id=inst_id,
                                               payload={"reason": "reconcile"})).job_id)
             stats["installations"] += 1
+        # github_repo_id < 0 = demo repo seeded from a local folder (`seed-demo --from-dir`): not on GitHub.
         repos = (await db.execute(select(Repository).where(Repository.status == "ready",
-                                                           Repository.archived.is_(False)))).scalars().all()
+                                                           Repository.archived.is_(False),
+                                                           Repository.github_repo_id > 0))).scalars().all()
     for repo in repos:
         try:
             client = await gh.for_installation(repo.installation_id)
