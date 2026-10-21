@@ -1,0 +1,28 @@
+{{- if .Values.api.autoscaling.enabled }}
+# CPU-based HPA for the api (§13.3: prod 2..3, staging disabled).
+# Needs metrics-server (bundled with k3s).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "api") | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api
+  minReplicas: {{ .Values.api.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.api.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.api.autoscaling.targetCPUUtilizationPercentage }}
+  behavior:
+    scaleDown:
+      # Avoid flapping: wait for 5 min of low load before removing a pod.
+      stabilizationWindowSeconds: 300
+{{- end }}

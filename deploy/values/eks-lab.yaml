@@ -1,0 +1,82 @@
+# =============================================================================
+# Docify EKS LAB (P12, one day, then destroyed - R12).
+#
+# Same chart, different platform: shows that moving to EKS + RDS is a values
+# change, not a rewrite (§24). The lab reuses the STAGING identity (SSM
+# params /docify/staging/*, queue docify-staging-events, staging GitHub App),
+# so no extra AWS resources are needed besides the lab itself.
+#
+# Differences vs k3s:
+#   - DB is RDS PostgreSQL 17 (DATABASE_URL host below), reached via VPC CIDR
+#   - AWS credentials come from EKS Pod Identity (agent at 169.254.170.23),
+#     not IMDS
+#   - ingress = AWS Load Balancer Controller (ALB, ACM cert auto-discovered
+#     by host), not Traefik + cert-manager
+# =============================================================================
+env: staging
+
+image:
+  ecrRepository: docify/backend
+  # Set to the sha being demoed (normally = current staging tag).
+  tag: "0000000000000000000000000000000000000000"
+
+config:
+  PUBLIC_BASE_URL: "https://eks-lab.docify.work"
+  EMAIL_FROM: "Docify Lab <no-reply@docify.work>"
+
+database:
+  # RDS endpoint from `terraform output` of envs/eks-lab (P12.1).
+  host: "docify-eks-lab.REPLACE-ME.ap-south-1.rds.amazonaws.com"
+  port: 5432
+
+serviceAccount:
+  create: true
+  name: docify           # Pod Identity association targets this SA
+
+api:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6        # higher than k3s to force node scale-out (P12 AC)
+  pdb:
+    enabled: true
+
+keda:
+  enabled: true
+  minReplicas: 0
+  maxReplicas: 3
+
+ingress:
+  enabled: true
+  className: alb
+  host: eks-lab.docify.work
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /api/health
+  tls:
+    # ALB terminates TLS with an ACM cert (matched by host); no K8s secret.
+    enabled: false
+
+certificate:
+  enabled: false
+
+networkPolicies:
+  enabled: true           # needs VPC CNI network policy support enabled
+  # ALB (target-type ip) connects from VPC addresses, not from a namespace.
+  ingressSources:
+    - ipBlock:
+        cidr: 10.20.0.0/16
+  postgres:
+    external:
+      enabled: true
+      cidrs:
+        - 10.20.0.0/16
+  awsCredentialCIDRs:
+    - 169.254.170.23/32   # EKS Pod Identity agent
+  httpsEgressCIDRs:
+    - 0.0.0.0/0
+
+serviceMonitor:
+  enabled: false

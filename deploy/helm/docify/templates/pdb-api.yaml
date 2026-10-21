@@ -1,0 +1,15 @@
+{{- if .Values.api.pdb.enabled }}
+# prod only (§13.3): a drain/eviction must leave at least one api pod running.
+# Not used in staging: with 1 replica, minAvailable 1 would block node drains.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "api") | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.api.pdb.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "api") | nindent 6 }}
+{{- end }}

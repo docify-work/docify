@@ -1,0 +1,55 @@
+# =============================================================================
+# Local (kind) root app-of-apps. Same ideas as deploy/argocd/root, smaller:
+#   wave -5  traefik (+ keda, optional)
+#   wave  5  data          (deploy/helm/data + deploy/values/data-local.yaml)
+#   wave 10  docify-local  (deploy/helm/docify + deploy/values/local.yaml)
+# Argo CD pulls from GitHub, so local changes must be pushed to the branch
+# set in global.targetRevision before Argo sees them (P7 demo: bump
+# image.tag in deploy/values/local.yaml -> push -> Argo rolls out).
+# =============================================================================
+
+global:
+  repoURL: https://github.com/docify-work/docify.git
+  targetRevision: main
+  project: default
+  retry:
+    limit: 10
+    backoff:
+      duration: 30s
+      factor: 2
+      maxDuration: 5m
+
+apps:
+  traefik:
+    enabled: true
+    wave: -5
+    namespace: traefik
+    repoURL: https://traefik.github.io/charts
+    chart: traefik
+    version: 42.1.0              # Traefik v3.7.15
+    valueFiles: [deploy/values/platform/traefik-kind.yaml]
+
+  # KEDA's SQS scaler against ElasticMQ is unverified (V20); docify-local
+  # runs one fixed worker (keda.enabled=false in values/local.yaml).
+  keda:
+    enabled: false
+    wave: -5
+    namespace: keda
+    repoURL: https://kedacore.github.io/charts
+    chart: keda
+    version: 2.21.0
+    valueFiles: [deploy/values/platform/keda.yaml]
+
+  data:
+    enabled: true
+    wave: 5
+    namespace: data
+    path: deploy/helm/data
+    valueFiles: [deploy/values/data-local.yaml]
+
+  docify:
+    enabled: true
+    wave: 10
+    namespace: docify-local
+    path: deploy/helm/docify
+    valueFiles: [deploy/values/local.yaml]

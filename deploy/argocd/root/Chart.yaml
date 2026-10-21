@@ -1,0 +1,9 @@
+apiVersion: v2
+name: docify-root
+description: >-
+  Argo CD app-of-apps root for the k3s cluster (D12, §13.2). Renders one
+  Argo CD Application per component; each is switched on/off with
+  apps.<name>.enabled (phase gating) and ordered with sync waves.
+type: application
+version: 0.1.0
+appVersion: "1.0"

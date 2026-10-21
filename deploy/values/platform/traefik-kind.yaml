@@ -1,0 +1,36 @@
+# =============================================================================
+# Traefik for kind ONLY (chart traefik/traefik 42.1.0 = Traefik v3.7.15).
+# On k3s Traefik is bundled with the distribution (D09) - this file is not
+# used there.
+#
+# kind publishes container port 30080 of the node on localhost:8080
+# (deploy/kind/kind-config.yaml) -> Service type NodePort with fixed
+# nodePort 30080 for the "web" (HTTP) entrypoint.
+# =============================================================================
+
+service:
+  spec:
+    type: NodePort
+
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    # No TLS locally; keep the entrypoint but don't expose it.
+    expose:
+      default: false
+
+ingressClass:
+  enabled: true
+  isDefaultClass: true
+  name: traefik
+
+providers:
+  kubernetesIngress:
+    enabled: true
+  kubernetesCRD:
+    enabled: false
+
+resources:
+  requests: { cpu: 20m, memory: 48Mi }
+  limits: { memory: 128Mi }

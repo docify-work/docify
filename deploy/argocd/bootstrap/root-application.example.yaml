@@ -1,0 +1,51 @@
+# =============================================================================
+# The ROOT Application (app-of-apps entry point) for the k3s cluster.
+#
+# NOT synced from Git and NOT applied from this file as-is: it is the template
+# for infra/server/bootstrap.sh, which (after `helm install argocd`) renders it
+# with the real values from Terraform and runs `kubectl apply -f -` (§12.4
+# step 6). Keeping the real values only on the server means the AWS account id
+# and hosted zone id never land in this public repo.
+#
+# Replace the two placeholders (bootstrap.sh does this):
+#   <aws-account-id>   12-digit AWS account id
+#   <hosted-zone-id>   Route 53 hosted zone id of docify.work
+#
+# Everything else (which apps are enabled, versions, waves) comes from
+# deploy/argocd/root/values.yaml in Git, so phase gating is a normal PR.
+# =============================================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  # No resources-finalizer: deleting the root must never cascade-delete the
+  # whole platform.
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  source:
+    repoURL: https://github.com/docify-work/docify.git
+    targetRevision: main
+    path: deploy/argocd/root
+    helm:
+      releaseName: root
+      parameters:
+        - name: global.aws.accountId
+          value: "<aws-account-id>"
+          forceString: true
+        - name: global.aws.hostedZoneId
+          value: "<hosted-zone-id>"
+          forceString: true
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

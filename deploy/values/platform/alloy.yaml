@@ -1,0 +1,109 @@
+# =============================================================================
+# Grafana Alloy (chart grafana/alloy 1.14.0 = Alloy v1.21.0) - log shipper
+# (D10: replaces Promtail, EOL 2026-03). DaemonSet that tails container logs
+# from the node's /var/log/pods and pushes them to Loki.
+# Loki labels (§16.1): namespace, app, container, level.
+# Needs a hostPath mount -> monitoring namespace is PSA "privileged" (§13.1).
+# =============================================================================
+
+controller:
+  type: daemonset
+
+alloy:
+  # Read /var/log from the node (container log files live there).
+  mounts:
+    varlog: true
+  # Node name, so each Alloy only discovers pods on its own node.
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  enableReporting: false
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+    limits: { memory: 128Mi }
+  configMap:
+    create: true
+    content: |
+      // 1. Find the pods running on this node.
+      discovery.kubernetes "pods" {
+        role = "pod"
+        selectors {
+          role  = "pod"
+          field = "spec.nodeName=" + sys.env("NODE_NAME")
+        }
+      }
+
+      // 2. Turn pod metadata into Loki labels + the log file path.
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.pods.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label  = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+          target_label  = "app"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label  = "container"
+        }
+        // /var/log/pods/<ns>_<pod>_<uid>/<container>/<n>.log
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          separator     = "/"
+          replacement   = "/var/log/pods/*$1/*.log"
+          target_label  = "__path__"
+        }
+      }
+
+      local.file_match "pod_logs" {
+        path_targets = discovery.relabel.pod_logs.output
+      }
+
+      // 3. Tail the files.
+      loki.source.file "pod_logs" {
+        targets    = local.file_match.pod_logs.targets
+        forward_to = [loki.process.pod_logs.receiver]
+      }
+
+      // 4. Parse: CRI line format, then (docify only) the JSON "level" field.
+      loki.process "pod_logs" {
+        stage.cri {}
+
+        stage.match {
+          selector = "{namespace=~\"docify-.*\"}"
+          stage.json {
+            expressions = { level = "level" }
+          }
+          stage.labels {
+            values = { level = "" }
+          }
+        }
+
+        // The per-file label would create a stream per container restart.
+        stage.label_drop {
+          values = ["filename"]
+        }
+
+        forward_to = [loki.write.default.receiver]
+      }
+
+      // 5. Ship to Loki (single tenant, no auth inside the cluster).
+      loki.write "default" {
+        endpoint {
+          url = "http://loki.monitoring.svc:3100/loki/api/v1/push"
+        }
+      }
+
+configReloader:
+  resources:
+    requests: { cpu: 5m, memory: 16Mi }
+    limits: { memory: 32Mi }
+
+# Alloy CRDs (PodLogs etc.) are not used.
+crds:
+  create: false

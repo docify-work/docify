@@ -1,0 +1,144 @@
+# =============================================================================
+# Root app-of-apps values (k3s on EC2). §13.2, §23.
+#
+# PHASE GATING - flip "enabled" and push; Argo CD does the rest:
+#   P8  (now)  argocd, certManager, externalSecrets, platformConfig
+#   P9         + keda, data, docifyStaging, docifyProd
+#   P10        + monitoring   (then set serviceMonitor.enabled=true in
+#                              deploy/values/{staging,prod}.yaml)
+#
+# SYNC WAVES (lower first; the root waits for each wave to be Healthy thanks
+# to the Application health check in deploy/values/platform/argocd.yaml):
+#   -10 argocd · -5 cert-manager, ESO, KEDA · -4 platform-config
+#     0 monitoring · 5 data · 10 docify-staging, docify-prod
+#
+# ACCOUNT-SPECIFIC VALUES are not in Git (public repo). The root Application
+# is created by infra/server/bootstrap.sh (rendered by Terraform) and passes
+# the real values as Helm parameters, e.g.
+#   global.aws.accountId, global.aws.hostedZoneId
+# This chart forwards them to the child apps as Helm parameters.
+# See deploy/argocd/bootstrap/root-application.example.yaml.
+# =============================================================================
+
+global:
+  repoURL: https://github.com/docify-work/docify.git
+  targetRevision: main
+  project: default
+  domain: docify.work
+  aws:
+    region: ap-south-1
+    accountId: "000000000000"            # placeholder - injected at deploy time
+    hostedZoneId: "Z00000000000000000000"  # placeholder - injected at deploy time
+  # Every Application gets the same retry policy (§13.2). Hooks don't count
+  # towards app health, so retries also cover e.g. migrate starting before
+  # db-bootstrap finished.
+  retry:
+    limit: 10
+    backoff:
+      duration: 30s
+      factor: 2
+      maxDuration: 5m
+
+apps:
+  # ---------------------------------------------------------------- wave -10
+  # Argo CD manages itself (same release name/namespace as the bootstrap
+  # `helm install argocd`, so it adopts the existing install).
+  argocd:
+    enabled: true
+    wave: -10
+    namespace: argocd
+    repoURL: https://argoproj.github.io/argo-helm
+    chart: argo-cd
+    version: 10.10.5            # Argo CD v3.5.5
+    releaseName: argocd
+    valueFiles: [deploy/values/platform/argocd.yaml]
+
+  # ---------------------------------------------------------------- wave -5
+  certManager:
+    enabled: true
+    wave: -5
+    namespace: cert-manager
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    version: v1.21.2
+    releaseName: cert-manager
+    valueFiles: [deploy/values/platform/cert-manager.yaml]
+
+  externalSecrets:
+    enabled: true
+    wave: -5
+    namespace: external-secrets
+    repoURL: https://charts.external-secrets.io
+    chart: external-secrets
+    version: 2.13.0
+    releaseName: external-secrets
+    valueFiles: [deploy/values/platform/external-secrets.yaml]
+
+  keda:
+    enabled: false              # P9
+    wave: -5
+    namespace: keda
+    repoURL: https://kedacore.github.io/charts
+    chart: keda
+    version: 2.21.0
+    releaseName: keda
+    valueFiles: [deploy/values/platform/keda.yaml]
+
+  # ---------------------------------------------------------------- wave -4
+  platformConfig:
+    enabled: true
+    wave: -4
+    path: deploy/helm/platform-config
+
+  # ---------------------------------------------------------------- wave 0
+  monitoring:
+    enabled: false              # P10
+    wave: 0
+    namespace: monitoring
+    kubePrometheusStack:
+      repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      version: 92.11.0
+      releaseName: kube-prometheus-stack
+      valueFiles: [deploy/values/platform/kube-prometheus-stack.yaml]
+    loki:
+      # Loki's Helm chart moved to the grafana-community OCI registry
+      # (V21). Argo CD needs an OCI-enabled Helm repo entry for it, which
+      # deploy/values/platform/argocd.yaml declares.
+      repoURL: ghcr.io/grafana-community/helm-charts
+      chart: loki
+      version: 19.0.1           # Loki 3.7.9
+      releaseName: loki
+      valueFiles: [deploy/values/platform/loki.yaml]
+    alloy:
+      repoURL: https://grafana.github.io/helm-charts
+      chart: alloy
+      version: 1.14.0           # Alloy v1.21.0
+      releaseName: alloy
+      valueFiles: [deploy/values/platform/alloy.yaml]
+    # Dashboards, alert rules, contact point, Grafana admin ExternalSecret,
+    # monitoring NetworkPolicies (kustomize directory).
+    configPath: deploy/values/platform/dashboards
+
+  # ---------------------------------------------------------------- wave 5
+  data:
+    enabled: false              # P9
+    wave: 5
+    namespace: data
+    path: deploy/helm/data
+    valueFiles: []              # chart defaults = cloud mode
+
+  # ---------------------------------------------------------------- wave 10
+  docifyStaging:
+    enabled: false              # P9
+    wave: 10
+    namespace: docify-staging
+    path: deploy/helm/docify
+    valueFiles: [deploy/values/staging.yaml]
+
+  docifyProd:
+    enabled: false              # P9
+    wave: 10
+    namespace: docify-prod
+    path: deploy/helm/docify
+    valueFiles: [deploy/values/prod.yaml]

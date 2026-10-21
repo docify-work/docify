@@ -1,0 +1,67 @@
+{{- if .Values.networkPolicies.enabled }}
+# api :8000 only from the ingress controller (Traefik in kube-system on k3s).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: api-ingress
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "api") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        {{- toYaml .Values.networkPolicies.ingressSources | nindent 8 }}
+      ports:
+        - { protocol: TCP, port: 8000 }
+---
+# :9000 /metrics on api + worker only from the monitoring namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: metrics-ingress
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/component
+        operator: In
+        values: ["api", "worker"]
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicies.monitoringNamespace }}
+      ports:
+        - { protocol: TCP, port: 9000 }
+{{- if .Values.valkey.enabled }}
+---
+# Valkey :6379 only from pods in this namespace (§5.5).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: valkey-ingress
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "valkey") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - { protocol: TCP, port: 6379 }
+{{- end }}
+{{- end }}

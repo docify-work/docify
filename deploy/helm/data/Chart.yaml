@@ -1,0 +1,12 @@
+apiVersion: v2
+name: data
+description: >-
+  Shared data tier for Docify (namespace "data"): one Postgres 17 + pgvector
+  StatefulSet on a static hostPath volume, idempotent db-bootstrap hook that
+  creates one database + role per environment, nightly pg_dumpall to S3, and
+  NetworkPolicies. Own small chart on official images (no Bitnami, D11).
+type: application
+version: 0.1.0
+appVersion: "17"
+kubeVersion: ">=1.29.0-0"
+home: https://github.com/docify-work/docify

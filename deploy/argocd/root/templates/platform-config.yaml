@@ -1,0 +1,37 @@
+{{- $app := .Values.apps.platformConfig }}
+{{- if $app.enabled }}
+# Cluster-scoped CRs (ClusterIssuers, ClusterSecretStore) + deny-imds
+# policies (§13.2). In-repo chart -> single-source, path-based.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  {{- include "root.appMetadata" (dict "ctx" . "name" "platform-config" "wave" $app.wave "finalizer" true) | nindent 2 }}
+spec:
+  project: {{ .Values.global.project }}
+  destination:
+    server: https://kubernetes.default.svc
+    # Cluster-scoped objects mostly; namespaced deny-imds set their own ns.
+    namespace: argocd
+  source:
+    repoURL: {{ .Values.global.repoURL }}
+    targetRevision: {{ .Values.global.targetRevision }}
+    path: {{ $app.path }}
+    helm:
+      releaseName: platform-config
+      parameters:
+        - name: aws.region
+          value: {{ .Values.global.aws.region | quote }}
+        - name: aws.hostedZoneId
+          value: {{ .Values.global.aws.hostedZoneId | quote }}
+          forceString: true
+        - name: domain
+          value: {{ .Values.global.domain | quote }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      {{- toYaml .Values.global.retry | nindent 6 }}
+    syncOptions:
+      - PruneLast=true
+{{- end }}

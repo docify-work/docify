@@ -1,0 +1,142 @@
+# Postgres 17 + pgvector, single replica (D02). A StatefulSet (not a
+# Deployment) so Kubernetes never runs two pods on the same data directory,
+# even briefly during an update.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+    app.kubernetes.io/name: postgres
+spec:
+  replicas: 1
+  serviceName: postgres-headless
+  selector:
+    matchLabels:
+      {{- include "data.postgresSelector" . | nindent 6 }}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        {{- include "data.postgresSelector" . | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: {{ .Values.postgres.terminationGracePeriodSeconds }}
+      securityContext:
+        # uid/gid 999 = "postgres" user in the official image; /data/postgres
+        # is chowned 999:999 by bootstrap.sh.
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          # Tuning via command-line flags (§5.5) - visible in `ps` and in Git,
+          # no custom postgresql.conf to manage.
+          args:
+            - postgres
+            {{- range $k, $v := .Values.postgres.settings }}
+            - -c
+            - {{ printf "%s=%v" $k $v | quote }}
+            {{- end }}
+          env:
+            # Sub-directory: initdb wants an empty dir it owns; the mount
+            # root may contain lost+found or have other ownership.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+            # Only used by initdb on the very first start (empty volume).
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-passwords
+                  key: POSTGRES_PASSWORD
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          startupProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
+            periodSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres", "-h", "127.0.0.1", "-p", "5432"]
+            periodSeconds: 10
+            timeoutSeconds: 5
+          lifecycle:
+            preStop:
+              exec:
+                # Kubernetes sends SIGTERM = Postgres "smart" shutdown, which
+                # waits for every pooled client to disconnect (it never
+                # would) -> SIGKILL -> crash recovery on next start. A "fast"
+                # shutdown rolls back open transactions and exits cleanly.
+                command: ["/bin/sh", "-c", "pg_ctl -D \"$PGDATA\" -m fast -w -t 50 stop || true"]
+          resources:
+            {{- toYaml .Values.postgres.resources | nindent 12 }}
+          securityContext:
+            {{- include "data.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: run
+              mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Values.persistence.claimName }}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.postgres.shmSize }}
+---
+# Governing (headless) Service required by the StatefulSet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-headless
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "data.postgresSelector" . | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
+---
+# Stable address used by the apps: postgres.data.svc:5432
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "data.postgresSelector" . | nindent 4 }}
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres

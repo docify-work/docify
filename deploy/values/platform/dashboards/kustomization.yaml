@@ -1,0 +1,43 @@
+# Monitoring "config" source of the monitoring Argo CD app (kustomize, built
+# by Argo CD natively). Turns the JSON/YAML files in this folder into
+# ConfigMaps that Grafana's sidecars load:
+#   label grafana_dashboard=1  -> dashboards   (folder from grafana_folder)
+#   label grafana_alert=1      -> alert rules, contact point, policy
+# Edit a dashboard in the Grafana UI -> "Export JSON" -> overwrite the file
+# here -> PR. Preview locally: kubectl kustomize deploy/values/platform/dashboards
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: monitoring
+
+generatorOptions:
+  # Stable names (the sidecar watches by label; hashes only add churn).
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: dashboard-docify-overview
+    files:
+      - docify-overview.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Docify
+  - name: dashboard-docify-workers-jobs
+    files:
+      - workers-jobs.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      annotations:
+        grafana_folder: Docify
+  - name: grafana-alerting-docify
+    files:
+      - alerting.yaml
+    options:
+      labels:
+        grafana_alert: "1"
+
+resources:
+  - externalsecret-grafana.yaml
+  - networkpolicy.yaml

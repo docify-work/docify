@@ -1,0 +1,28 @@
+{{- if and .Values.certificate.enabled .Values.ingress.enabled .Values.ingress.tls.enabled }}
+{{- if not .Values.ingress.host }}
+{{- fail "certificate.enabled requires ingress.host" }}
+{{- end }}
+# Origin TLS certificate from Let's Encrypt via DNS-01 / Route 53 (D08, §13.5).
+# cert-manager writes it to ingress.tls.secretName; Traefik serves it.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: docify-origin
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    # CRD comes from the cert-manager app; skip dry-run if not there yet.
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  secretName: {{ .Values.ingress.tls.secretName }}
+  dnsNames:
+    - {{ .Values.ingress.host | quote }}
+  issuerRef:
+    group: cert-manager.io
+    kind: {{ .Values.certificate.issuerKind }}
+    name: {{ .Values.certificate.issuerName }}
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+{{- end }}

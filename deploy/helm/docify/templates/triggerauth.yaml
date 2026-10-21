@@ -1,0 +1,16 @@
+{{- if .Values.keda.enabled }}
+# How KEDA authenticates to SQS. identityOwner: keda = the KEDA operator uses
+# its own AWS credentials (EC2 instance role via IMDS on k3s; Pod Identity on
+# EKS) instead of the worker's. ⚠ V20 - verify on k3s in P9.
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-aws
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  podIdentity:
+    {{- toYaml .Values.keda.podIdentity | nindent 4 }}
+{{- end }}

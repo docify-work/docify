@@ -1,0 +1,16 @@
+apiVersion: v2
+name: docify
+description: >-
+  Docify application chart: api, worker, valkey, migrate hook, cronjobs,
+  ingress/certificate, autoscaling, network policies and secrets wiring.
+  One chart for every environment (local kind, staging, prod, EKS lab);
+  everything environment-specific lives in deploy/values/<env>.yaml.
+type: application
+# Chart version: bump when templates change. The app version is NOT tracked
+# here - the release workflow bumps image.tag in deploy/values/<env>.yaml.
+version: 0.1.0
+appVersion: "0.0.0"
+kubeVersion: ">=1.29.0-0"
+home: https://github.com/docify-work/docify
+sources:
+  - https://github.com/docify-work/docify

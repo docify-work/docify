@@ -1,0 +1,78 @@
+# =============================================================================
+# Loki (chart oci://ghcr.io/grafana-community/helm-charts/loki 19.0.1 = Loki
+# 3.7.9) - §13.6. V21: the chart moved from grafana/helm-charts to the
+# grafana-community OCI registry.
+# Monolithic ("single binary"): one pod, filesystem storage on a local-path
+# PVC (/data), 7-day retention enforced by the compactor.
+# Budget (§13.4): Loki + Alloy ~250/500 Mi.
+# =============================================================================
+
+deploymentMode: Monolithic
+
+loki:
+  # Single tenant -> no X-Scope-OrgID header needed by Alloy/Grafana.
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2026-01-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  # Retention = 168 h (7 d, §16.1): limits_config.retention_period +
+  # compactor.retention_enabled (the compactor does the deleting).
+  limits_config:
+    retention_period: 168h
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+    max_query_lookback: 168h
+  compactor:
+    working_directory: /var/loki/compactor
+    retention_enabled: true
+    retention_delete_delay: 2h
+    delete_request_store: filesystem
+  ingester:
+    chunk_encoding: snappy
+  # No usage stats to grafana.com.
+  analytics:
+    reporting_enabled: false
+
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    storageClass: local-path
+    size: 5Gi
+  resources:
+    requests: { cpu: 50m, memory: 192Mi }
+    limits: { memory: 384Mi }
+
+# Everything below is for the scalable modes or extras - all off.
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+gateway:
+  enabled: false
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+lokiCanary:
+  enabled: false
+test:
+  enabled: false
+minio:
+  enabled: false
+# Loki ruler sidecar (alerting on logs) - unused, saves a container.
+sidecar:
+  rules:
+    enabled: false

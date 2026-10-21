@@ -1,0 +1,40 @@
+# =============================================================================
+# platform-config values. Rendered by the platform-config Argo CD app.
+# aws.hostedZoneId is injected by the root Application (like aws.accountId);
+# the placeholder below only exists so the chart renders in CI.
+# =============================================================================
+aws:
+  region: ap-south-1
+  # Route 53 hosted zone of docify.work. Injected at deploy time (root app
+  # parameter); not committed to keep infra identifiers out of the public repo.
+  hostedZoneId: "Z00000000000000000000"
+
+domain: docify.work
+
+clusterIssuers:
+  enabled: true
+  # ACME account email for expiry notices (Q8). Placeholder until answered;
+  # LE accepts any valid address format.
+  email: "alerts@docify.work"
+  issuers:
+    letsencrypt-staging:
+      server: https://acme-staging-v02.api.letsencrypt.org/directory
+    letsencrypt-prod:
+      server: https://acme-v02.api.letsencrypt.org/directory
+
+clusterSecretStore:
+  enabled: true
+  name: aws-parameter-store
+  # Only these SSM prefixes exist for Docify; ESO can read any path the
+  # instance role allows (/docify/*).
+
+# -- deny-imds: platform namespaces whose pods must NOT reach the EC2 instance
+#    role through IMDS (D16). Namespaces that DO need it are simply not
+#    listed: cert-manager (Route 53), external-secrets (SSM), keda (SQS).
+#    data and docify-* handle IMDS in their own charts; monitoring ships its
+#    own policy with the monitoring app (Grafana needs SNS) because that
+#    namespace doesn't exist yet when this app syncs (wave -4 < 0).
+denyImds:
+  namespaces:
+    - argocd
+  imdsCIDR: 169.254.169.254/32

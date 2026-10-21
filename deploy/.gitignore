@@ -1,0 +1,2 @@
+# Real local secrets for kind (see deploy/values/local.yaml) - never commit.
+values/*.secrets.yaml

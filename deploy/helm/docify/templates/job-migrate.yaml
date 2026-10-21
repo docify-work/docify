@@ -1,0 +1,52 @@
+# Database migrations (`alembic upgrade head`) before every rollout (D28).
+#
+# Argo CD: a Sync hook at wave -1 -> runs after the ExternalSecrets/ConfigMap
+# (wave -2) exist and before the Deployments (wave 0) change. If it fails,
+# the sync stops and the old pods keep serving (F33).
+# BeforeHookCreation keeps the last Job around for `kubectl logs`.
+#
+# Plain Helm (kind, P6 without Argo): Argo ignores helm.sh/hook when its own
+# hook annotation is present; Helm runs it as a post-install/upgrade hook
+# (Secrets must exist first, so "pre-" would fail on first install).
+#
+# `docify migrate` retries the DB connection for up to 5 min itself, which
+# covers the race with the data app's db-bootstrap hook (§13.2).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  # Fixed name: BeforeHookCreation deletes the previous run first.
+  name: migrate
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "migrate") | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+    helm.sh/hook-weight: "-1"
+spec:
+  backoffLimit: {{ .Values.migrate.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrate.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "docify.selectorLabels" (dict "ctx" . "component" "migrate") | nindent 8 }}
+        {{- include "docify.netLabels.app" . | nindent 8 }}
+    spec:
+      {{- include "docify.podCommon" . | nindent 6 }}
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: {{ include "docify.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toJson .Values.migrate.command }}
+          {{- include "docify.envFrom" . | nindent 10 }}
+          resources:
+            {{- toYaml .Values.migrate.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            {{- include "docify.tmpVolumeMount" . | nindent 12 }}
+      volumes:
+        {{- include "docify.tmpVolume" . | nindent 8 }}

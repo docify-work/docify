@@ -1,0 +1,54 @@
+{{- $app := .Values.apps.monitoring }}
+{{- if $app.enabled }}
+# Monitoring (§13.6, P10): one Application, several sources:
+#   kube-prometheus-stack (Prometheus, operator, KSM, node-exporter, Grafana)
+#   loki (single binary) + alloy (log shipper DaemonSet)
+#   a kustomize dir with dashboards, alert rules, SNS contact point,
+#   Grafana admin ExternalSecret and the namespace's NetworkPolicies
+#   + this repo as "ref: values" for the chart values files.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  {{- include "root.appMetadata" (dict "ctx" . "name" "monitoring" "wave" $app.wave "finalizer" true) | nindent 2 }}
+spec:
+  project: {{ .Values.global.project }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $app.namespace }}
+  sources:
+    {{- $kps := $app.kubePrometheusStack }}
+    - repoURL: {{ $kps.repoURL }}
+      chart: {{ $kps.chart }}
+      targetRevision: {{ $kps.version | quote }}
+      helm:
+        releaseName: {{ $kps.releaseName }}
+        valueFiles:
+          {{- range $kps.valueFiles }}
+          - $values/{{ . }}
+          {{- end }}
+        parameters:
+          # Used by the SNS contact point (topic ARN) - see
+          # deploy/values/platform/dashboards/alerting.yaml.
+          - name: grafana.env.AWS_ACCOUNT_ID
+            value: {{ .Values.global.aws.accountId | quote }}
+            forceString: true
+    {{- range $src := list $app.loki $app.alloy }}
+    - repoURL: {{ $src.repoURL }}
+      chart: {{ $src.chart }}
+      targetRevision: {{ $src.version | quote }}
+      helm:
+        releaseName: {{ $src.releaseName }}
+        valueFiles:
+          {{- range $src.valueFiles }}
+          - $values/{{ . }}
+          {{- end }}
+    {{- end }}
+    - repoURL: {{ .Values.global.repoURL }}
+      targetRevision: {{ .Values.global.targetRevision }}
+      path: {{ $app.configPath }}
+    - repoURL: {{ .Values.global.repoURL }}
+      targetRevision: {{ .Values.global.targetRevision }}
+      ref: values
+  {{- $psa := include "root.psa.privileged" . | fromYaml }}
+  {{- include "root.syncPolicy" (dict "ctx" . "ssa" true "nsLabels" $psa) | nindent 2 }}
+{{- end }}

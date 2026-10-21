@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "api") | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "docify.selectorLabels" (dict "ctx" . "component" "api") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+    # Scraped by the ServiceMonitor; NetworkPolicy only lets the monitoring
+    # namespace reach it.
+    - name: metrics
+      port: 9000
+      targetPort: metrics
+      protocol: TCP

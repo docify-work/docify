@@ -1,0 +1,54 @@
+# =============================================================================
+# Docify PROD (k3s namespace docify-prod) - overrides for
+# deploy/helm/docify/values.yaml. Rendered by the docify-prod Argo CD app.
+#
+# PUBLIC REPO: no account ids, IPs or secrets here (see staging.yaml header).
+# image.tag is bumped ONLY by promote.yml after the `production` approval (D33).
+# =============================================================================
+env: prod
+
+image:
+  ecrRepository: docify/backend
+  tag: "0000000000000000000000000000000000000000"
+
+config:
+  PUBLIC_BASE_URL: "https://docify.work"
+  EMAIL_FROM: "Docify <no-reply@docify.work>"
+  # Filled in P9.4 (prod GitHub App "Docify" + Google client).
+  GITHUB_APP_ID: ""
+  GITHUB_APP_SLUG: ""
+  GITHUB_CLIENT_ID: ""
+  GOOGLE_CLIENT_ID: ""
+
+api:
+  autoscaling:
+    enabled: true         # replicas omitted from the Deployment (§13.2)
+    minReplicas: 2
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    enabled: true         # prod only
+    minAvailable: 1
+
+keda:
+  enabled: true
+  minReplicas: 0
+  maxReplicas: 3          # prod max 3 (§5.3)
+
+ingress:
+  className: traefik
+  host: origin.docify.work
+
+certificate:
+  enabled: true
+  # Switch to letsencrypt-prod once a staging-issuer cert works (P9.1).
+  issuerName: letsencrypt-staging
+
+serviceMonitor:
+  enabled: false          # P10
+
+frontend:
+  env: prod
+  githubAppSlug: ""
+  googleEnabled: true
+  demoWorkspaceSlug: demo

@@ -1,0 +1,95 @@
+{{- /*
+Local root: upstream charts use multi-source (chart + this repo as $values),
+in-repo charts use a single path-based source with value files relative to
+the chart directory - same patterns as deploy/argocd/root.
+*/ -}}
+{{- $ctx := . }}
+{{- define "local.syncPolicy" -}}
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+  retry:
+    {{- toYaml .ctx.Values.global.retry | nindent 4 }}
+  syncOptions:
+    - CreateNamespace=true
+    - PruneLast=true
+    {{- if .ssa }}
+    - ServerSideApply=true
+    {{- end }}
+  {{- with .psa }}
+  managedNamespaceMetadata:
+    labels:
+      pod-security.kubernetes.io/enforce: {{ . }}
+      pod-security.kubernetes.io/warn: restricted
+  {{- end }}
+{{- end }}
+
+{{- range $key := list "traefik" "keda" }}
+{{- $app := get $ctx.Values.apps $key }}
+{{- if $app.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $key }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $app.wave | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ $ctx.Values.global.project }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $app.namespace }}
+  sources:
+    - repoURL: {{ $app.repoURL }}
+      chart: {{ $app.chart }}
+      targetRevision: {{ $app.version | quote }}
+      helm:
+        releaseName: {{ $key }}
+        valueFiles:
+          {{- range $app.valueFiles }}
+          - $values/{{ . }}
+          {{- end }}
+    - repoURL: {{ $ctx.Values.global.repoURL }}
+      targetRevision: {{ $ctx.Values.global.targetRevision }}
+      ref: values
+  {{- include "local.syncPolicy" (dict "ctx" $ctx "ssa" true "psa" "baseline") | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{- range $key := list "data" "docify" }}
+{{- $app := get $ctx.Values.apps $key }}
+{{- if $app.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ ternary "data" $app.namespace (eq $key "data") }}
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $app.wave | quote }}
+  {{- if ne $key "data" }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  {{- end }}
+spec:
+  project: {{ $ctx.Values.global.project }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $app.namespace }}
+  source:
+    repoURL: {{ $ctx.Values.global.repoURL }}
+    targetRevision: {{ $ctx.Values.global.targetRevision }}
+    path: {{ $app.path }}
+    helm:
+      releaseName: {{ $key }}
+      valueFiles:
+        {{- range $app.valueFiles }}
+        - {{ range (splitList "/" $app.path) }}../{{ end }}{{ . }}
+        {{- end }}
+  {{- include "local.syncPolicy" (dict "ctx" $ctx "ssa" false "psa" (ternary "baseline" "restricted" (eq $key "data"))) | nindent 2 }}
+{{- end }}
+{{- end }}

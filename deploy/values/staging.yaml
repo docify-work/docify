@@ -1,0 +1,57 @@
+# =============================================================================
+# Docify STAGING (k3s namespace docify-staging) - overrides for
+# deploy/helm/docify/values.yaml. Rendered by the docify-staging Argo CD app.
+#
+# PUBLIC REPO: no account ids, IPs or secrets here. aws.accountId stays the
+# placeholder; the root Argo CD Application injects the real value as a Helm
+# parameter at deploy time (see deploy/README.md "Account id injection").
+# =============================================================================
+env: staging
+
+image:
+  # Built as <aws.accountId>.dkr.ecr.ap-south-1.amazonaws.com/docify/backend
+  ecrRepository: docify/backend
+  # Bumped by release.yml (bot commit) on every merge to main. Do not edit by hand.
+  tag: "0000000000000000000000000000000000000000"
+
+config:
+  PUBLIC_BASE_URL: "https://staging.docify.work"
+  EMAIL_FROM: "Docify Staging <no-reply@docify.work>"
+  # Filled in P9.4 when the "Docify Staging" GitHub App + Google client exist
+  # (ids are not secret).
+  GITHUB_APP_ID: ""
+  GITHUB_APP_SLUG: ""
+  GITHUB_CLIENT_ID: ""
+  GOOGLE_CLIENT_ID: ""
+
+api:
+  replicas: 1             # staging: no HPA, one pod (§13.3)
+  autoscaling:
+    enabled: false
+  pdb:
+    enabled: false
+
+keda:
+  enabled: true
+  minReplicas: 0
+  maxReplicas: 1          # staging max 1 (memory, §13.4)
+
+ingress:
+  className: traefik
+  host: origin-staging.docify.work
+
+certificate:
+  enabled: true
+  # Switch to letsencrypt-prod once a staging-issuer cert works (P9.1).
+  issuerName: letsencrypt-staging
+
+# Flip to true in P10 (needs the monitoring app's ServiceMonitor CRD).
+serviceMonitor:
+  enabled: false
+
+# Read by release.yml to build the SPA's config.json (not by the chart).
+frontend:
+  env: staging
+  githubAppSlug: ""
+  googleEnabled: true
+  demoWorkspaceSlug: demo

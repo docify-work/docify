@@ -1,0 +1,209 @@
+{{- /*
+DEV ONLY (kind, §20.2 / D24): in-namespace replacements for AWS services.
+  elasticmq  SQS-compatible queue + DLQ   -> AWS_ENDPOINT_URL_SQS
+  mailpit    SMTP sink with a web UI      -> SMTP_HOST / port-forward 8025
+Both are disabled by default and only enabled in deploy/values/local.yaml.
+*/}}
+{{- $root := . }}
+{{- if .Values.devServices.elasticmq.enabled }}
+{{- $q := include "docify.queueName" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticmq-config
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "elasticmq") | nindent 4 }}
+data:
+  # Same queue settings as the real SQS queues (§8.5).
+  elasticmq.conf: |
+    include classpath("application.conf")
+    node-address {
+      protocol = http
+      host = elasticmq
+      port = 9324
+      context-path = ""
+    }
+    rest-sqs {
+      enabled = true
+      bind-port = 9324
+      bind-hostname = "0.0.0.0"
+      sqs-limits = strict
+    }
+    rest-stats.enabled = false
+    queues {
+      {{ $q }}-dlq {
+        defaultVisibilityTimeout = 300 seconds
+      }
+      {{ $q }} {
+        defaultVisibilityTimeout = 300 seconds
+        receiveMessageWait = 20 seconds
+        deadLettersQueue {
+          name = "{{ $q }}-dlq"
+          maxReceiveCount = 5
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticmq
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "elasticmq") | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "elasticmq") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "docify.selectorLabels" (dict "ctx" . "component" "elasticmq") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: elasticmq
+          image: {{ .Values.devServices.elasticmq.image }}
+          ports:
+            - name: sqs
+              containerPort: 9324
+          readinessProbe:
+            tcpSocket: { port: sqs }
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.devServices.elasticmq.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: config
+              mountPath: /opt/elasticmq.conf
+              subPath: elasticmq.conf
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: elasticmq-config
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticmq
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "elasticmq") | nindent 4 }}
+spec:
+  selector:
+    {{- include "docify.selectorLabels" (dict "ctx" . "component" "elasticmq") | nindent 4 }}
+  ports:
+    - name: sqs
+      port: 9324
+      targetPort: sqs
+{{- if .Values.networkPolicies.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: elasticmq-ingress
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "elasticmq") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - { protocol: TCP, port: 9324 }
+{{- end }}
+{{- end }}
+{{- if .Values.devServices.mailpit.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "mailpit") | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "mailpit") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "docify.selectorLabels" (dict "ctx" . "component" "mailpit") | nindent 8 }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: mailpit
+          image: {{ .Values.devServices.mailpit.image }}
+          ports:
+            - name: smtp
+              containerPort: 1025
+            - name: ui
+              containerPort: 8025
+          readinessProbe:
+            tcpSocket: { port: smtp }
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.devServices.mailpit.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "mailpit") | nindent 4 }}
+spec:
+  selector:
+    {{- include "docify.selectorLabels" (dict "ctx" . "component" "mailpit") | nindent 4 }}
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: smtp
+    - name: ui
+      port: 8025
+      targetPort: ui
+{{- if .Values.networkPolicies.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mailpit-ingress
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "mailpit") | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    # SMTP from app pods; the UI is reached with `kubectl port-forward`
+    # (which bypasses NetworkPolicy).
+    - from:
+        - podSelector: {}
+      ports:
+        - { protocol: TCP, port: 1025 }
+{{- end }}
+{{- end }}

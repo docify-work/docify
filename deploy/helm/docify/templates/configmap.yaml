@@ -1,0 +1,28 @@
+# Non-secret backend configuration (§15.1). Wave -2 so the migrate hook
+# (wave -1) can already read it. Keys with an empty value are left out, so
+# the backend's own default applies (e.g. no AWS_ENDPOINT_URL_SQS in the cloud).
+{{- $cfg := deepCopy .Values.config }}
+{{- $_ := set $cfg "ENV" .Values.env }}
+{{- $_ := set $cfg "AWS_REGION" .Values.aws.region }}
+{{- $_ := set $cfg "SQS_QUEUE_URL" (include "docify.queueURL" .) }}
+{{- $_ := set $cfg "SQS_DLQ_URL" (include "docify.dlqURL" .) }}
+{{- if eq (toString $cfg.STORAGE_BACKEND) "s3" }}
+{{- $_ := set $cfg "S3_REPO_CACHE_BUCKET" (include "docify.repoCacheBucket" .) }}
+{{- end }}
+{{- if not $cfg.VALKEY_URL }}
+{{- $_ := set $cfg "VALKEY_URL" "redis://valkey:6379/0" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: docify-config
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+data:
+  {{- range $k, $v := $cfg }}
+  {{- if ne (toString $v) "" }}
+  {{ $k }}: {{ toString $v | quote }}
+  {{- end }}
+  {{- end }}

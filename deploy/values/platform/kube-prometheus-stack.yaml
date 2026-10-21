@@ -1,0 +1,168 @@
+# =============================================================================
+# kube-prometheus-stack (chart prometheus-community 92.11.0) - §13.6, P10.
+# Prometheus + operator + kube-state-metrics + node-exporter + Grafana,
+# tuned for one k3s node that is awake only a few hours a day.
+# Budget (§13.4): Prometheus stack ~450/800 Mi, Grafana ~100/250 Mi.
+# Dashboards/alerts/contact point: deploy/values/platform/dashboards/.
+# =============================================================================
+
+crds:
+  enabled: true
+
+# Alerts are evaluated by Grafana and sent to SNS (D35) -> no Alertmanager.
+alertmanager:
+  enabled: false
+
+# k3s embeds these components in the k3s binary; there are no separate
+# endpoints to scrape (§13.6).
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# Keep the recording rules the bundled dashboards need; drop rule groups for
+# components we don't scrape.
+defaultRules:
+  create: true
+  rules:
+    alertmanager: false
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
+    windows: false
+
+windowsMonitoring:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    retention: 7d
+    # Hard cap so Prometheus can never fill /data (R9).
+    retentionSize: 4GB
+    scrapeInterval: 60s
+    evaluationInterval: 60s
+    # Pick up ServiceMonitors/PodMonitors/rules from every namespace without
+    # requiring the Helm release label (docify charts don't carry it).
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    resources:
+      requests: { cpu: 100m, memory: 300Mi }
+      limits: { memory: 600Mi }
+    # k3s local-path provisioner writes under /data/local-path (EBS data
+    # volume, §12.4).
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: local-path
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+  # Scrape cert-manager (for the "cert expiry" alert). Declared here because
+  # cert-manager syncs before the ServiceMonitor CRD exists.
+  additionalServiceMonitors:
+    - name: cert-manager
+      namespaceSelector:
+        matchNames: ["cert-manager"]
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: cert-manager
+          app.kubernetes.io/component: controller
+      endpoints:
+        - targetPort: 9402
+          path: /metrics
+          interval: 60s
+
+prometheusOperator:
+  resources:
+    requests: { cpu: 20m, memory: 48Mi }
+    limits: { memory: 96Mi }
+  prometheusConfigReloader:
+    resources:
+      requests: { cpu: 5m, memory: 16Mi }
+      limits: { memory: 32Mi }
+
+kube-state-metrics:
+  resources:
+    requests: { cpu: 10m, memory: 48Mi }
+    limits: { memory: 96Mi }
+
+prometheus-node-exporter:
+  resources:
+    requests: { cpu: 10m, memory: 24Mi }
+    limits: { memory: 48Mi }
+
+grafana:
+  enabled: true
+  # Service "grafana" -> `kubectl -n monitoring port-forward svc/grafana 3000:80` (R3).
+  fullnameOverride: grafana
+  # Admin password comes from SSM via ExternalSecret "grafana-admin"
+  # (deploy/values/platform/dashboards/externalsecret-grafana.yaml).
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # Dashboards/alerts are code; nothing worth persisting.
+  persistence:
+    enabled: false
+  defaultDashboardsTimezone: Asia/Kolkata
+  env:
+    AWS_REGION: ap-south-1
+    # Injected by the root app (Helm parameter); used in the SNS topic ARN.
+    AWS_ACCOUNT_ID: "000000000000"
+  grafana.ini:
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+      check_for_plugin_updates: false
+    unified_alerting:
+      enabled: true
+    # The SNS contact point uses the AWS SDK default chain (instance role).
+    aws:
+      allowed_auth_providers: default
+  sidecar:
+    resources:
+      requests: { cpu: 5m, memory: 32Mi }
+      limits: { memory: 96Mi }
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: monitoring
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: true
+    # Alert rules + contact point + notification policy as code (§16.4).
+    alerts:
+      enabled: true
+      label: grafana_alert
+      labelValue: "1"
+      searchNamespace: monitoring
+    datasources:
+      enabled: true
+      # Fixed uid -> alert rules can reference it.
+      uid: prometheus
+      alertmanager:
+        enabled: false
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki.monitoring.svc:3100
+      jsonData:
+        maxLines: 1000
+  resources:
+    requests: { cpu: 20m, memory: 96Mi }
+    limits: { memory: 192Mi }
+  # No `helm test` pod (Argo CD would show it as an orphan/unknown).
+  testFramework:
+    enabled: false

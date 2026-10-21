@@ -1,0 +1,9 @@
+apiVersion: v2
+name: docify-root-local
+description: >-
+  Argo CD app-of-apps root for the local kind cluster (P7, §20.2):
+  Traefik, (optional) KEDA, the data chart in local mode and the docify
+  chart with deploy/values/local.yaml. No AWS, no cert-manager, no ESO.
+type: application
+version: 0.1.0
+appVersion: "1.0"

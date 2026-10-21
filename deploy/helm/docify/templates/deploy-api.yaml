@@ -1,0 +1,100 @@
+# api: FastAPI/Uvicorn. :8000 app traffic (via Traefik), :9000 /metrics
+# (Prometheus only, never in the Ingress, §7).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "api") | nindent 4 }}
+spec:
+  {{- if not .Values.api.autoscaling.enabled }}
+  # replicas is omitted when the HPA owns it, otherwise Argo CD selfHeal and
+  # the HPA would fight over the field (§13.2).
+  replicas: {{ .Values.api.replicas }}
+  {{- end }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "docify.selectorLabels" (dict "ctx" . "component" "api") | nindent 6 }}
+  strategy:
+    # Zero-downtime rollout: start one new pod, wait until it is Ready, then
+    # remove an old one (§13.3).
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "docify.selectorLabels" (dict "ctx" . "component" "api") | nindent 8 }}
+        {{- include "docify.netLabels.app" . | nindent 8 }}
+        {{- include "docify.netLabels.aws" . | nindent 8 }}
+      annotations:
+        # Roll pods when non-secret config changes.
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.api.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "docify.podCommon" . | nindent 6 }}
+      terminationGracePeriodSeconds: {{ .Values.api.terminationGracePeriodSeconds }}
+      containers:
+        - name: api
+          image: {{ include "docify.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: {{ toJson .Values.api.command }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+            - name: metrics
+              containerPort: 9000
+              protocol: TCP
+          {{- include "docify.envFrom" . | nindent 10 }}
+          # Probes hit the pod directly, so no X-Origin-Verify header is
+          # needed (§4.2).
+          startupProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: {{ .Values.api.probes.startup.periodSeconds }}
+            failureThreshold: {{ .Values.api.probes.startup.failureThreshold }}
+            timeoutSeconds: {{ .Values.api.probes.startup.timeoutSeconds }}
+          livenessProbe:
+            httpGet: { path: /api/health, port: http }
+            periodSeconds: {{ .Values.api.probes.liveness.periodSeconds }}
+            failureThreshold: {{ .Values.api.probes.liveness.failureThreshold }}
+            timeoutSeconds: {{ .Values.api.probes.liveness.timeoutSeconds }}
+          readinessProbe:
+            # /api/ready pings the DB, so the pod leaves the Service if the
+            # DB is down (F23).
+            httpGet: { path: /api/ready, port: http }
+            periodSeconds: {{ .Values.api.probes.readiness.periodSeconds }}
+            failureThreshold: {{ .Values.api.probes.readiness.failureThreshold }}
+            timeoutSeconds: {{ .Values.api.probes.readiness.timeoutSeconds }}
+          lifecycle:
+            preStop:
+              # Give Traefik/EndpointSlices a moment to drop this pod before
+              # Uvicorn stops accepting connections, so a rollout or pod
+              # delete causes no failed requests. Built-in kubelet sleep
+              # (K8s >= 1.30), so no shell is needed in the image.
+              sleep:
+                seconds: 5
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 12 }}
+          volumeMounts:
+            {{- include "docify.tmpVolumeMount" . | nindent 12 }}
+      volumes:
+        {{- include "docify.tmpVolume" . | nindent 8 }}
+      {{- with .Values.api.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.api.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

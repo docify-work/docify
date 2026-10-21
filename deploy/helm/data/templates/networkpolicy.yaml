@@ -1,0 +1,125 @@
+{{- if .Values.networkPolicies.enabled }}
+{{- $np := .Values.networkPolicies }}
+{{- /*
+Data namespace network model:
+  - default deny in + out for every pod (this also denies IMDS for Postgres
+    and db-bootstrap - the namespace's "deny-imds", D16);
+  - Postgres :5432 accepts only: app pods (net-app=true) in docify-<env>
+    namespaces + pods in this namespace labelled postgres-client=true
+    (db-bootstrap, pg-backup);
+  - postgres-client pods may reach Postgres + DNS;
+  - pg-backup pods additionally reach IMDS (S3 credentials) + HTTPS.
+*/}}
+{{- $clientNs := list }}
+{{- range .Values.envs }}{{ $clientNs = append $clientNs (printf "docify-%s" .) }}{{ end }}
+{{- $clientNs = concat $clientNs $np.extraClientNamespaces | uniq }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-ingress
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "data.postgresSelector" . | nindent 6 }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        # App pods of each environment namespace.
+        - namespaceSelector:
+            matchExpressions:
+              - key: kubernetes.io/metadata.name
+                operator: In
+                values: {{ toJson $clientNs }}
+          podSelector:
+            matchLabels:
+              docify.work/net-app: "true"
+        # db-bootstrap + pg-backup in this namespace.
+        - podSelector:
+            matchLabels:
+              docify.work/postgres-client: "true"
+      ports:
+        - { protocol: TCP, port: 5432 }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: postgres-client-egress
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      docify.work/postgres-client: "true"
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "data.postgresSelector" . | nindent 14 }}
+      ports:
+        - { protocol: TCP, port: 5432 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $np.dns.namespace }}
+          podSelector:
+            matchLabels:
+              {{- toYaml $np.dns.podLabels | nindent 14 }}
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+{{- if .Values.backup.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pg-backup-egress
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector:
+    matchLabels:
+      docify.work/net-backup: "true"
+  policyTypes: ["Egress"]
+  {{- if not (and $np.awsCredentialCIDRs $np.httpsEgressCIDRs) }}
+  {{- fail "networkPolicies.awsCredentialCIDRs/httpsEgressCIDRs must not be empty when backup is enabled (an empty 'to' would allow everything)" }}
+  {{- end }}
+  egress:
+    # Instance-role credentials via IMDS (D16) ...
+    - to:
+        {{- range $np.awsCredentialCIDRs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - { protocol: TCP, port: 80 }
+    # ... and HTTPS to S3.
+    - to:
+        {{- range $np.httpsEgressCIDRs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      ports:
+        - { protocol: TCP, port: 443 }
+{{- end }}
+{{- end }}

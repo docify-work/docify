@@ -1,0 +1,38 @@
+{{- if .Values.keda.enabled }}
+# KEDA scales the worker Deployment on SQS queue depth (§5.3, §13.3).
+# desired replicas = ceil((visible + in-flight) / queueLength), clamped to
+# [minReplicas, maxReplicas]; 0 replicas when the queue is empty.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "worker") | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  scaleTargetRef:
+    name: worker
+  minReplicaCount: {{ .Values.keda.minReplicas }}
+  maxReplicaCount: {{ .Values.keda.maxReplicas }}
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  # Wait 5 min after the last activity before scaling to zero.
+  cooldownPeriod: {{ .Values.keda.cooldownPeriod }}
+  triggers:
+    - type: aws-sqs-queue
+      authenticationRef:
+        name: keda-aws
+      metadata:
+        queueURL: {{ include "docify.queueURL" . | quote }}
+        awsRegion: {{ .Values.aws.region | quote }}
+        # Messages per replica = WORKER_CONCURRENCY.
+        queueLength: {{ .Values.keda.queueLength | quote }}
+        # Wake from 0 as soon as one message is waiting.
+        activationQueueLength: {{ .Values.keda.activationQueueLength | quote }}
+        # Count in-flight messages too, so KEDA doesn't scale in a worker
+        # that is still processing (F51).
+        scaleOnInFlight: {{ .Values.keda.scaleOnInFlight | quote }}
+        {{- with .Values.keda.awsEndpoint }}
+        awsEndpoint: {{ . | quote }}
+        {{- end }}
+{{- end }}

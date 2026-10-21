@@ -1,0 +1,65 @@
+{{- /*
+Postgres storage.
+
+CLOUD (persistence.hostPath.enabled=true): a static PersistentVolume pointing
+at /data/postgres on the EBS data volume, pre-bound to exactly one PVC via
+claimRef (no other claim can grab it) and the PVC pins it via volumeName.
+Retain = deleting the PVC never deletes the data.
+
+LOCAL (kind): just a PVC from the default StorageClass.
+
+Both objects are protected from accidental deletion:
+  helm.sh/resource-policy: keep        -> `helm uninstall` leaves them
+  argocd ... Prune=false,Delete=false  -> Argo never prunes/deletes them
+*/}}
+{{- if .Values.persistence.hostPath.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.persistence.hostPath.pvName }}
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  capacity:
+    storage: {{ .Values.persistence.size }}
+  accessModes: ["ReadWriteOnce"]
+  persistentVolumeReclaimPolicy: Retain
+  # "" = no StorageClass: this PV is only for static binding.
+  storageClassName: ""
+  volumeMode: Filesystem
+  hostPath:
+    path: {{ .Values.persistence.hostPath.path }}
+    # Must already exist (never DirectoryOrCreate) - see header.
+    type: Directory
+  claimRef:
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    namespace: {{ .Release.Namespace }}
+    name: {{ .Values.persistence.claimName }}
+---
+{{- end }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.claimName }}
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/resource-policy: keep
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.persistence.hostPath.enabled }}
+  storageClassName: ""
+  volumeName: {{ .Values.persistence.hostPath.pvName }}
+  {{- else if .Values.persistence.storageClass }}
+  storageClassName: {{ .Values.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}

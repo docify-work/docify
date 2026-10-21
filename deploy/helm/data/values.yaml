@@ -1,0 +1,113 @@
+# =============================================================================
+# Data chart - defaults are the CLOUD (k3s on EC2) setup. kind overrides them
+# via deploy/argocd/local (persistence.hostPath.enabled=false, localSecrets).
+# Spec: docs/Docify_Master_Doc.md §5.5 (Postgres), §18.1 (backups), D02/D03.
+# =============================================================================
+
+# -- Application environments that get a database + role in this Postgres
+#    (D03: one instance, one DB per env). Names must match [a-z0-9_]+.
+#    For each env: role docify_<env>, database docify_<env>, password from
+#    SSM /docify/<env>/db/password.
+envs:
+  - staging
+  - prod
+
+aws:
+  region: ap-south-1
+  # Placeholder - the real id is injected by the root Argo CD Application
+  # (Helm parameter aws.accountId). Never commit the real value.
+  accountId: "000000000000"
+
+postgres:
+  image:
+    # Official pgvector image (Postgres 17.x + pgvector). Pinned. ⚠ V23
+    repository: pgvector/pgvector
+    tag: 0.8.7-pg17
+    pullPolicy: IfNotPresent
+  # Tuning for an 8 GiB node (m7i-flex.large, D30) - §5.5.
+  # For a 4 GiB node halve shared_buffers and effective_cache_size.
+  settings:
+    shared_buffers: 256MB
+    work_mem: 8MB
+    maintenance_work_mem: 128MB
+    max_connections: "80"
+    effective_cache_size: 1GB
+    # Log slow statements (> 1 s) - cheap and useful when debugging.
+    log_min_duration_statement: "1000"
+  resources:
+    requests: { cpu: 100m, memory: 384Mi }
+    limits: { memory: 1Gi }
+  # /dev/shm for parallel query workers (counts against the memory limit).
+  shmSize: 128Mi
+  terminationGracePeriodSeconds: 60
+
+persistence:
+  # CLOUD: static PV on the dedicated EBS data volume mounted at /data
+  # (bootstrap.sh creates /data/postgres owned by 999:999). type: Directory
+  # means "must already exist" - if /data isn't mounted the pod fails instead
+  # of silently creating an empty DB on the root disk (F25).
+  hostPath:
+    enabled: true
+    path: /data/postgres
+    pvName: docify-postgres-data
+  # LOCAL (hostPath.enabled=false): normal PVC from the default StorageClass.
+  storageClass: ""
+  size: 8Gi
+  claimName: postgres-data
+
+# -- Passwords: ExternalSecret "postgres-passwords" from SSM (cloud).
+externalSecrets:
+  enabled: true
+  storeName: aws-parameter-store
+  refreshInterval: 1h
+  superuserPasswordKey: /docify/shared/postgres/superuser_password
+  # Per env: /docify/<env>/db/password (computed).
+
+# -- DEV ONLY (kind): plain Secret from values. Never in the cloud.
+localSecrets:
+  enabled: false
+  superuserPassword: ""
+  # env -> password, e.g. { local: "docify-local-dev" }
+  envPasswords: {}
+
+# -- Idempotent DB bootstrap (Argo Sync hook, wave 1 = after the StatefulSet
+#    is healthy). Re-runs on every sync; safe to repeat. See job-db-bootstrap.yaml.
+bootstrap:
+  enabled: true
+  extensions: ["vector", "pg_trgm", "citext"]
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+    limits: { memory: 128Mi }
+
+# -- Nightly logical backup to S3 (§18.1). Also triggered by stop.yml
+#    (`kubectl -n data create job --from=cronjob/pg-backup pre-stop-<ts>`).
+backup:
+  enabled: true
+  schedule: "30 22 * * *"
+  timeZone: Asia/Kolkata
+  # Default docify-backups-<aws.accountId> (computed when empty).
+  bucket: ""
+  prefix: postgres
+  dumpImage: postgres:17.11-bookworm
+  uploadImage: amazon/aws-cli:2.38.3
+  activeDeadlineSeconds: 900
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { memory: 256Mi }
+  # emptyDir size for the compressed dump.
+  scratchSize: 2Gi
+
+networkPolicies:
+  enabled: true
+  # Extra namespaces allowed to reach Postgres :5432 (besides docify-<env>
+  # for every env above).
+  extraClientNamespaces: []
+  dns:
+    namespace: kube-system
+    podLabels:
+      k8s-app: kube-dns
+  # Backup pods need AWS credentials (IMDS) + HTTPS to S3.
+  awsCredentialCIDRs:
+    - 169.254.169.254/32
+  httpsEgressCIDRs:
+    - 0.0.0.0/0

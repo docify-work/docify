@@ -1,0 +1,321 @@
+# =============================================================================
+# Grafana alerting as code (§16.4, D35) - provisioned by the Grafana
+# "alerts" sidecar (ConfigMap label grafana_alert=1, see kustomization.yaml).
+#
+# Contact point: Amazon SNS topic docify-alerts -> email subscription (Q8).
+# Grafana signs SNS calls with the AWS SDK default chain = EC2 instance role
+# via IMDS (Grafana is the only monitoring pod allowed to reach IMDS,
+# networkpolicy.yaml). ${AWS_ACCOUNT_ID} is expanded by Grafana from its
+# environment (set by the root app as a Helm parameter) - the account id is
+# never stored in Git. ⚠ verify the SNS settings keys + env expansion in P10.
+#
+# Annotation templates use `index .Labels "x"` instead of `$labels.x`:
+# Grafana expands $VARS in provisioning files, which would eat `$labels`.
+#
+# Alerts only evaluate while the server is awake; AWS Budgets cover cost
+# while it sleeps. "Backup missing" is checked by start.yml, not here.
+# =============================================================================
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: sns-email
+    receivers:
+      - uid: docify-sns-email
+        type: sns
+        disableResolveMessage: false
+        settings:
+          topic_arn: arn:aws:sns:ap-south-1:${AWS_ACCOUNT_ID}:docify-alerts
+          sigv4:
+            region: ap-south-1
+          subject: '[Docify] {{ .CommonLabels.alertname }} ({{ .Status }})'
+
+policies:
+  - orgId: 1
+    receiver: sns-email
+    group_by: ["alertname", "namespace"]
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+
+groups:
+  # ---------------------------------------------------------------- app
+  - orgId: 1
+    name: docify-app
+    folder: Docify
+    interval: 1m
+    rules:
+      - uid: docify-api-5xx
+        title: API 5xx above 5%
+        condition: B
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: 'More than 5% of API requests fail with 5xx in {{ index .Labels "namespace" }}.'
+          runbook: 'Grafana > Docify Overview; kubectl -n <ns> logs deploy/api'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                sum by (namespace) (rate(docify_http_requests_total{status=~"5.."}[5m]))
+                / clamp_min(sum by (namespace) (rate(docify_http_requests_total[5m])), 1e-9)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+
+      - uid: docify-api-latency
+        title: API p95 latency above 1 s
+        condition: B
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'API p95 latency > 1 s for 15 min in {{ index .Labels "namespace" }}.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                histogram_quantile(0.95,
+                sum by (namespace, le) (rate(docify_http_request_duration_seconds_bucket{route!~".*/chat.*"}[5m])))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [1] }
+
+      - uid: docify-dlq
+        title: Messages in the dead-letter queue
+        condition: B
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: 'DLQ is not empty in {{ index .Labels "namespace" }} - a message crashed a worker 5 times (runbook R8).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: max by (namespace) (docify_queue_messages{kind="dlq"})
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+
+      - uid: docify-queue-stuck
+        title: Queue stuck (oldest message > 15 min)
+        condition: B
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'Oldest SQS message is older than 15 min in {{ index .Labels "namespace" }} - workers not consuming? Check KEDA + worker pods.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: max by (namespace) (docify_queue_oldest_age_seconds)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [900] }
+
+      - uid: docify-job-failures
+        title: Many failed jobs
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'More than 5 jobs failed/dead in 30 min in {{ index .Labels "namespace" }} (Jobs page).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 1800, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: sum by (namespace) (increase(docify_jobs_total{status=~"failed|dead"}[30m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [5] }
+
+      - uid: docify-ai-spend
+        title: AI spend above 80% of the daily budget
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          # AI_DAILY_BUDGET_USD = 2.00 -> 80% spent = 0.40 left. Update if
+          # the budget changes.
+          summary: 'Less than $0.40 of the $2.00 daily AI budget left.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: min(docify_ai_budget_remaining_usd{scope="daily"})
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0.4] }
+
+  # ---------------------------------------------------------------- platform
+  - orgId: 1
+    name: docify-platform
+    folder: Docify
+    interval: 1m
+    rules:
+      - uid: docify-crashloop
+        title: Container restarting
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'Pod {{ index .Labels "namespace" }}/{{ index .Labels "pod" }} restarted more than 3 times in 15 min.'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[15m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [3] }
+
+      - uid: docify-node-memory
+        title: Node memory low (< 10% available)
+        condition: B
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: 'Node has < 10% memory available - evictions/OOM likely (F26, §13.4).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: min(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [0.1] }
+
+      - uid: docify-disk
+        title: Disk above 80% (/ or /data)
+        condition: B
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: critical }
+        annotations:
+          summary: 'Filesystem {{ index .Labels "mountpoint" }} is above 80% (runbook R9).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: >-
+                max by (mountpoint) (1 - node_filesystem_avail_bytes{mountpoint=~"/|/data",fstype!~"tmpfs|overlay"}
+                / node_filesystem_size_bytes{mountpoint=~"/|/data",fstype!~"tmpfs|overlay"})
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: gt, params: [0.8] }
+
+      - uid: docify-cert-expiry
+        title: TLS certificate expires in < 14 days
+        condition: B
+        for: 1h
+        noDataState: OK
+        execErrState: Error
+        labels: { severity: warning }
+        annotations:
+          summary: 'Certificate {{ index .Labels "namespace" }}/{{ index .Labels "name" }} expires in < 14 days - check cert-manager (§13.5).'
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: prometheus
+            model:
+              refId: A
+              instant: true
+              expr: min by (namespace, name) (certmanager_certificate_expiration_timestamp_seconds - time())
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator: { type: lt, params: [1209600] }

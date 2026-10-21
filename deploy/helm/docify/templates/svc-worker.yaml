@@ -1,0 +1,17 @@
+# Headless Service only so Prometheus (ServiceMonitor) can discover worker
+# pods' :9000 metrics endpoint. Nothing else talks to the worker.
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-metrics
+  labels:
+    {{- include "docify.componentLabels" (dict "ctx" . "component" "worker") | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "docify.selectorLabels" (dict "ctx" . "component" "worker") | nindent 4 }}
+  ports:
+    - name: metrics
+      port: 9000
+      targetPort: metrics
+      protocol: TCP

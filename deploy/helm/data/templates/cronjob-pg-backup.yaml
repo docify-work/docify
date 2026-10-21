@@ -1,0 +1,112 @@
+{{- if .Values.backup.enabled }}
+# Nightly logical backup of the whole Postgres instance (all DBs + roles)
+# to S3 (§18.1). 22:30 IST = before the 23:00 auto-stop (D25).
+# stop.yml also runs it on demand:
+#   kubectl -n data create job --from=cronjob/pg-backup pre-stop-<ts>
+#
+# Two containers, each with the smallest possible job:
+#   init "dump"   (postgres image)  pg_dumpall | gzip -> /backup (emptyDir)
+#   main "upload" (aws-cli image)   aws s3 cp -> s3://<bucket>/postgres/<date>/<ts>.sql.gz
+# Only these pods may reach IMDS in the data namespace (networkpolicy.yaml).
+# Bucket lifecycle (14 d expiry) is set by Terraform.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-backup
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+    app.kubernetes.io/name: pg-backup
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  timeZone: {{ .Values.backup.timeZone }}
+  concurrencyPolicy: Forbid
+  # If the node was asleep at 22:30, don't run a stale backup on wake.
+  startingDeadlineSeconds: 1800
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
+      ttlSecondsAfterFinished: 172800
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: pg-backup
+            docify.work/postgres-client: "true"
+            docify.work/net-backup: "true"
+        spec:
+          automountServiceAccountToken: false
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+            seccompProfile:
+              type: RuntimeDefault
+          initContainers:
+            - name: dump
+              image: {{ .Values.backup.dumpImage }}
+              env:
+                - name: PGHOST
+                  value: postgres
+                - name: PGUSER
+                  value: postgres
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: postgres-passwords, key: POSTGRES_PASSWORD }
+                - name: TZ
+                  value: {{ .Values.backup.timeZone }}
+                - name: PREFIX
+                  value: {{ .Values.backup.prefix | quote }}
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  set -euo pipefail
+                  ts="$(date +%Y%m%dT%H%M%S)"
+                  day="$(date +%F)"
+                  pg_dumpall --no-password | gzip -6 > /backup/dump.sql.gz
+                  # Fail loudly on a truncated/corrupt archive.
+                  gzip -t /backup/dump.sql.gz
+                  echo "${PREFIX}/${day}/${ts}.sql.gz" > /backup/key
+                  ls -l /backup
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+              securityContext:
+                {{- include "data.containerSecurityContext" . | nindent 16 }}
+              volumeMounts:
+                - { name: backup, mountPath: /backup }
+                - { name: tmp, mountPath: /tmp }
+          containers:
+            - name: upload
+              image: {{ .Values.backup.uploadImage }}
+              env:
+                - name: AWS_REGION
+                  value: {{ .Values.aws.region }}
+                - name: BUCKET
+                  value: {{ include "data.backupBucket" . | quote }}
+                # aws-cli writes its cache under $HOME; root FS is read-only.
+                - name: HOME
+                  value: /tmp
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  set -eu
+                  key="$(cat /backup/key)"
+                  aws s3 cp /backup/dump.sql.gz "s3://${BUCKET}/${key}" --only-show-errors
+                  echo "uploaded s3://${BUCKET}/${key}"
+              resources:
+                {{- toYaml .Values.backup.resources | nindent 16 }}
+              securityContext:
+                {{- include "data.containerSecurityContext" . | nindent 16 }}
+              volumeMounts:
+                - { name: backup, mountPath: /backup, readOnly: true }
+                - { name: tmp, mountPath: /tmp }
+          volumes:
+            - name: backup
+              emptyDir:
+                sizeLimit: {{ .Values.backup.scratchSize }}
+            - name: tmp
+              emptyDir: {}
+{{- end }}

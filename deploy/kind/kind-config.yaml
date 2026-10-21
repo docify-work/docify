@@ -1,0 +1,16 @@
+# kind cluster for P6/P7 (§20.2): one node, Traefik reachable on
+# http://localhost:8080 (host) -> node port 30080 (Traefik "web" NodePort,
+# deploy/values/platform/traefik-kind.yaml).
+#
+#   kind create cluster --name docify --config deploy/kind/kind-config.yaml
+#   kind delete cluster --name docify
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: docify
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8080
+        listenAddress: "127.0.0.1"   # only this laptop, not the LAN
+        protocol: TCP

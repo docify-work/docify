@@ -1,0 +1,41 @@
+# =============================================================================
+# Data chart (deploy/helm/data) on kind - P6/P7 (§20.2).
+# The chart defaults are the cloud setup; this file switches to local mode:
+#   - normal PVC from kind's default StorageClass instead of the static
+#     hostPath PV on /data/postgres
+#   - plain Secret with throwaway dev passwords instead of External Secrets
+#   - one env "local" (database docify_local, role docify_local)
+#   - no S3 backups
+# =============================================================================
+envs:
+  - local
+
+persistence:
+  hostPath:
+    enabled: false
+  size: 2Gi
+
+postgres:
+  # Smaller laptop footprint.
+  settings:
+    shared_buffers: 128MB
+    work_mem: 4MB
+    maintenance_work_mem: 64MB
+    max_connections: "50"
+    effective_cache_size: 512MB
+    log_min_duration_statement: "1000"
+  resources:
+    requests: { cpu: 50m, memory: 256Mi }
+    limits: { memory: 512Mi }
+
+externalSecrets:
+  enabled: false
+
+localSecrets:
+  enabled: true
+  superuserPassword: postgres-local-dev
+  envPasswords:
+    local: docify-local-dev     # must match localSecrets.dbPassword in values/local.yaml
+
+backup:
+  enabled: false

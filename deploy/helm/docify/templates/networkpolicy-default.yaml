@@ -1,0 +1,46 @@
+{{- if .Values.networkPolicies.enabled }}
+{{- /*
+NetworkPolicies (§13.3). Model: deny everything, then allow exactly what
+each role needs. Policies are additive (a pod gets the union of every
+policy that selects it). Pods opt into extra egress with labels:
+  docify.work/net-app=true  -> Valkey + Postgres     (api, worker, jobs)
+  docify.work/net-aws=true  -> AWS creds + HTTPS out (api, worker, reconcile)
+All policies use wave -2 so they exist before the migrate hook runs.
+*/}}
+# 1) Default deny: no ingress and no egress for any pod in the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector: {}
+  policyTypes: ["Ingress", "Egress"]
+---
+# 2) Every pod may resolve DNS via CoreDNS.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .Values.networkPolicies.dns.namespace }}
+          podSelector:
+            matchLabels:
+              {{- toYaml .Values.networkPolicies.dns.podLabels | nindent 14 }}
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+{{- end }}

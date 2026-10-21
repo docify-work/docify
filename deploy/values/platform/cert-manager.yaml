@@ -1,0 +1,48 @@
+# =============================================================================
+# cert-manager (chart jetstack/cert-manager v1.21.2) - §13.5.
+# Issues the origin certificates via Let's Encrypt DNS-01 on Route 53 using
+# the EC2 instance role (ambient credentials). ClusterIssuers live in the
+# platform-config app (deploy/helm/platform-config).
+# Budget (§13.4): 3 pods ~100 Mi requests / 200 Mi limits.
+# =============================================================================
+
+crds:
+  # CRDs are part of this Argo CD app (so they're upgraded with the chart).
+  enabled: true
+  keep: true
+
+replicaCount: 1
+
+# ClusterIssuers may use the pod's ambient AWS credentials (default true;
+# set explicitly because our whole DNS-01 setup depends on it).
+extraArgs:
+  - --cluster-issuer-ambient-credentials=true
+  - --issuer-ambient-credentials=false
+
+resources:
+  requests: { cpu: 10m, memory: 48Mi }
+  limits: { memory: 96Mi }
+
+webhook:
+  replicaCount: 1
+  resources:
+    requests: { cpu: 10m, memory: 24Mi }
+    limits: { memory: 48Mi }
+
+cainjector:
+  replicaCount: 1
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 64Mi }
+
+startupapicheck:
+  resources:
+    requests: { cpu: 10m, memory: 16Mi }
+    limits: { memory: 32Mi }
+
+# Metrics are scraped via kube-prometheus-stack's additionalServiceMonitors
+# (no ServiceMonitor here: its CRD doesn't exist when this app syncs at -5).
+prometheus:
+  enabled: true
+  servicemonitor:
+    enabled: false

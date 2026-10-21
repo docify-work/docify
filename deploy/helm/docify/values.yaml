@@ -1,0 +1,360 @@
+# =============================================================================
+# Docify app chart - default values.
+#
+# These defaults describe a "cloud-like" environment (k3s on EC2). Every
+# environment overrides them in deploy/values/<env>.yaml:
+#   local.yaml    kind cluster on a laptop (P6/P7)
+#   staging.yaml  k3s namespace docify-staging (P9+)
+#   prod.yaml     k3s namespace docify-prod (P9+)
+#   eks-lab.yaml  one-day EKS lab (P12)
+#
+# Spec: docs/Docify_Master_Doc.md §13.3 (templates), §13.4 (resources),
+# §15 (env vars + SSM paths), §5.5 (Valkey).
+# =============================================================================
+
+# -- Environment name. Drives resource names (queues, SSM paths, DB role,
+#    DB name) and the backend's ENV variable. One of: local | staging | prod.
+env: staging
+
+# -- AWS settings shared by several templates.
+aws:
+  region: ap-south-1
+  # The real account id is NEVER committed (public repo, see CLAUDE.md).
+  # It is injected at deploy time by the root Argo CD Application as a Helm
+  # parameter (aws.accountId), which itself is created by the server
+  # bootstrap script from Terraform outputs. "000000000000" is a placeholder
+  # that renders syntactically valid URLs for linting/CI.
+  accountId: "000000000000"
+
+# -- Container image (single backend image, §5.2).
+image:
+  repository: "000000000000.dkr.ecr.ap-south-1.amazonaws.com/docify/backend"
+  # The release workflow (release.yml / promote.yml) rewrites this line in
+  # deploy/values/<env>.yaml with the full git sha. Never "latest".
+  tag: "0000000000000000000000000000000000000000"
+  pullPolicy: IfNotPresent
+  # If set, image.repository is ignored and the repository is built from
+  # aws.accountId: <acct>.dkr.ecr.<region>.amazonaws.com/<ecrRepository>.
+  # This keeps the account id out of Git (cloud envs use this).
+  ecrRepository: ""
+
+imagePullSecrets: []
+
+# -- Service account. k3s pods use the EC2 instance role through IMDS (D16),
+#    so no annotations are needed there. EKS lab uses EKS Pod Identity,
+#    which binds an IAM role to this SA name.
+serviceAccount:
+  create: true
+  name: docify
+  annotations: {}
+
+# =============================================================================
+# Non-secret configuration -> ConfigMap "docify-config" (§15.1).
+# Keys whose value is "" are NOT rendered (the backend default applies).
+# A few keys are computed by the chart when left empty:
+#   ENV, AWS_REGION, SQS_QUEUE_URL, SQS_DLQ_URL, S3_REPO_CACHE_BUCKET,
+#   VALKEY_URL (see templates/configmap.yaml).
+# =============================================================================
+config:
+  PUBLIC_BASE_URL: "https://docify.work"
+  STORAGE_BACKEND: s3
+  LOCAL_STORAGE_DIR: ""
+  EMAIL_BACKEND: ses
+  EMAIL_FROM: "Docify <no-reply@docify.work>"
+  SMTP_HOST: ""
+  SMTP_PORT: ""
+  GITHUB_APP_ID: ""
+  GITHUB_APP_SLUG: ""
+  GITHUB_CLIENT_ID: ""
+  GOOGLE_CLIENT_ID: ""
+  AI_MODE: real
+  LLM_MODEL_SUMMARY: claude-haiku-5-5
+  LLM_MODEL_DOC: claude-sonnet-5-5
+  LLM_MODEL_CHAT: claude-haiku-5-5
+  EMBED_MODEL: voyage-code-3
+  EMBED_DIM: "1024"
+  AI_DAILY_BUDGET_USD: "2.00"
+  AI_WS_MONTHLY_BUDGET_USD: "3.00"
+  CHAT_USER_DAILY_LIMIT: "30"
+  CHAT_ANON_IP_DAILY_LIMIT: "5"
+  CHAT_ANON_GLOBAL_DAILY_LIMIT: "100"
+  SEARCH_ANON_IP_DAILY_LIMIT: "30"
+  RAG_MIN_SIM: "0.45"
+  REPO_MAX_FILES: "3000"
+  REPO_MAX_MB: "100"
+  WS_MAX_REPOS: "5"
+  FILE_MAX_KB: "200"
+  DEMO_WORKSPACE_SLUG: demo
+  WORKER_CONCURRENCY: "2"
+  LOG_LEVEL: INFO
+  # Computed when empty (see header comment):
+  SQS_QUEUE_URL: ""
+  SQS_DLQ_URL: ""
+  S3_REPO_CACHE_BUCKET: ""
+  VALKEY_URL: ""
+  # Local only (ElasticMQ endpoint). Leave empty in the cloud.
+  AWS_ENDPOINT_URL_SQS: ""
+
+# -- Extra env vars added verbatim to every backend container (rarely needed).
+extraEnv: []
+
+# =============================================================================
+# Secrets
+# =============================================================================
+
+# -- External Secrets Operator (cloud). Creates two Secrets from SSM:
+#    docify-app (app secrets) and docify-db (DATABASE_URL).
+externalSecrets:
+  enabled: true
+  # ClusterSecretStore created by the platform-config app.
+  storeName: aws-parameter-store
+  refreshInterval: 1h
+  # SSM prefix. Default /docify/<env> (computed when empty).
+  ssmPrefix: ""
+  # Secret env var -> SSM path relative to ssmPrefix (§15.2).
+  appKeys:
+    SESSION_PEPPER: app/session_pepper
+    ORIGIN_VERIFY_HEADER: app/origin_verify_header
+    GITHUB_APP_PRIVATE_KEY: github/app_private_key
+    GITHUB_CLIENT_SECRET: github/client_secret
+    GOOGLE_CLIENT_SECRET: google/client_secret
+    ANTHROPIC_API_KEY: ai/anthropic_api_key
+    VOYAGE_API_KEY: ai/voyage_api_key
+  dbPasswordKey: db/password
+
+# -- Database location used to build DATABASE_URL (ESO template or local Secret).
+database:
+  host: postgres.data.svc.cluster.local
+  port: 5432
+  # Default: docify_<env> for both (computed when empty).
+  name: ""
+  user: ""
+
+# -- DEV ONLY: plain Kubernetes Secrets rendered from values (kind, P6/P7).
+#    Never enable in a cloud env - values files are public. Put real local
+#    values in deploy/values/local.secrets.yaml (git-ignored) if you need them.
+localSecrets:
+  enabled: false
+  # Full DATABASE_URL; if empty it's built from database.* + dbPassword.
+  databaseUrl: ""
+  dbPassword: ""
+  app: {}
+
+# =============================================================================
+# api - FastAPI/Uvicorn (`docify api`): HTTP :8000, metrics :9000
+# =============================================================================
+api:
+  # Used only when autoscaling is disabled (otherwise spec.replicas is omitted
+  # so Argo CD selfHeal doesn't fight the HPA, §13.2).
+  replicas: 1
+  command: ["docify", "api"]
+  resources:
+    requests: { cpu: 100m, memory: 150Mi }
+    limits: { memory: 300Mi }
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
+  pdb:
+    # prod only (§13.3): keep one api pod during voluntary disruptions.
+    enabled: false
+    minAvailable: 1
+  # Probe timings from §13.3.
+  probes:
+    startup: { periodSeconds: 2, failureThreshold: 30, timeoutSeconds: 2 }
+    liveness: { periodSeconds: 10, failureThreshold: 3, timeoutSeconds: 2 }
+    readiness: { periodSeconds: 5, failureThreshold: 2, timeoutSeconds: 2 }
+  terminationGracePeriodSeconds: 30
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# =============================================================================
+# worker - SQS consumer (`docify worker`): metrics :9000
+# =============================================================================
+worker:
+  # Used only when keda.enabled=false.
+  replicas: 1
+  command: ["docify", "worker"]
+  resources:
+    requests: { cpu: 100m, memory: 200Mi }
+    limits: { memory: 400Mi }
+  # Worker finishes in-flight jobs for <=120 s after SIGTERM (§5.3).
+  terminationGracePeriodSeconds: 150
+  # The worker touches this file at least every 30 s; liveness fails when
+  # it is older than heartbeatMaxAgeMinutes (2 min = 120 s).
+  heartbeatFile: /tmp/worker-heartbeat
+  heartbeatMaxAgeMinutes: 2
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+# -- KEDA ScaledObject for the worker (aws-sqs-queue scaler, §13.3).
+keda:
+  enabled: true
+  minReplicas: 0
+  maxReplicas: 1
+  # queueLength = messages per replica = WORKER_CONCURRENCY.
+  queueLength: 2
+  activationQueueLength: 1
+  scaleOnInFlight: true
+  pollingInterval: 30
+  cooldownPeriod: 300
+  # KEDA operator authenticates with its own credentials (instance role on
+  # k3s, Pod Identity on EKS). ⚠ V20
+  podIdentity:
+    provider: aws
+    identityOwner: keda
+  # Optional custom SQS endpoint (e.g. ElasticMQ). ⚠ V20 - untested.
+  awsEndpoint: ""
+
+# =============================================================================
+# Valkey (one small instance per env, §5.5 / D04) - cache + rate limits only.
+# =============================================================================
+valkey:
+  enabled: true
+  image:
+    repository: valkey/valkey
+    tag: 8.1.10-alpine
+    pullPolicy: IfNotPresent
+  maxmemory: 48mb
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 64Mi }
+
+# =============================================================================
+# Jobs
+# =============================================================================
+migrate:
+  # Argo CD Sync hook at wave -1 (after ExternalSecrets at -2, D28).
+  command: ["docify", "migrate"]
+  backoffLimit: 2
+  # Migrate itself retries the DB connection for 5 min; give it a bit more.
+  activeDeadlineSeconds: 600
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+cronjobs:
+  timeZone: Asia/Kolkata
+  reconcile:
+    enabled: true
+    schedule: "*/15 * * * *"
+    command: ["docify", "reconcile"]
+    startingDeadlineSeconds: 300
+    activeDeadlineSeconds: 600
+  housekeeping:
+    enabled: true
+    schedule: "0 3 * * *"
+    command: ["docify", "housekeeping"]
+    startingDeadlineSeconds: 3600
+    activeDeadlineSeconds: 1800
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+# =============================================================================
+# Networking
+# =============================================================================
+service:
+  type: ClusterIP
+  port: 80        # Service port -> container 8000
+
+ingress:
+  enabled: true
+  # k3s bundles Traefik (D09). EKS lab uses "alb".
+  className: traefik
+  # origin.<domain> (prod) / origin-staging.<domain> (staging). "" = any host.
+  host: origin-staging.docify.work
+  annotations: {}
+  # Only /api is served by the cluster; "/" is the SPA on S3/CloudFront (D07).
+  path: /api
+  pathType: Prefix
+  tls:
+    enabled: true
+    # Secret written by cert-manager (certificate.yaml).
+    secretName: docify-origin-tls
+
+certificate:
+  enabled: true
+  # Start with letsencrypt-staging until issuance works, then switch to
+  # letsencrypt-prod (LE prod rate limits, §13.5).
+  issuerName: letsencrypt-staging
+  issuerKind: ClusterIssuer
+
+networkPolicies:
+  enabled: true
+  # Who may call the api on :8000. Default: Traefik in kube-system (k3s).
+  ingressSources:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+  # Namespace of the Prometheus that scrapes :9000.
+  monitoringNamespace: monitoring
+  # Where Postgres lives. Set external.enabled for RDS (EKS lab).
+  postgres:
+    namespace: data
+    podLabels:
+      app.kubernetes.io/name: postgres
+    external:
+      enabled: false
+      cidrs: []
+  dns:
+    namespace: kube-system
+    podLabels:
+      k8s-app: kube-dns
+  # AWS credential endpoints reachable by api/worker/reconcile:
+  # IMDS on EC2 (D16); EKS Pod Identity agent uses 169.254.170.23.
+  awsCredentialCIDRs:
+    - 169.254.169.254/32
+  # Outbound HTTPS (AWS APIs, GitHub, Anthropic, Voyage).
+  httpsEgressCIDRs:
+    - 0.0.0.0/0
+
+# -- Prometheus Operator ServiceMonitor (enable in P10 once the CRD exists).
+serviceMonitor:
+  enabled: false
+  interval: 60s
+  labels: {}
+
+# =============================================================================
+# DEV ONLY in-namespace services for kind (D24): ElasticMQ (SQS) + Mailpit.
+# =============================================================================
+devServices:
+  elasticmq:
+    enabled: false
+    image: softwaremill/elasticmq-native:1.7.1
+    resources:
+      requests: { cpu: 20m, memory: 64Mi }
+      limits: { memory: 192Mi }
+  mailpit:
+    enabled: false
+    image: axllent/mailpit:v1.31.6
+    resources:
+      requests: { cpu: 10m, memory: 32Mi }
+      limits: { memory: 128Mi }
+
+# -- Frontend runtime config. NOT used by this chart: release.yml/promote.yml
+#    read it to generate config.json for the SPA (§15.1).
+frontend: {}
+
+# -- Pod-level security defaults (§13.3). Compatible with PSA "restricted".
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]

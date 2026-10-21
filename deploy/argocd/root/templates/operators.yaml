@@ -1,0 +1,41 @@
+{{- /*
+Upstream (third-party) Helm charts whose values live in THIS repo:
+argocd, cert-manager, external-secrets, keda.
+
+Pattern = Argo CD multi-source Application:
+  source 1: the upstream chart, pinned to an exact version
+  source 2: this Git repo, only as a "ref: values" so source 1 can read
+            $values/deploy/values/platform/<chart>.yaml
+*/ -}}
+{{- $ctx := . }}
+{{- range $key := list "argocd" "certManager" "externalSecrets" "keda" }}
+{{- $app := get $ctx.Values.apps $key }}
+{{- if $app.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  {{- /* Argo CD must never cascade-delete itself. */}}
+  {{- include "root.appMetadata" (dict "ctx" $ctx "name" $app.releaseName "wave" $app.wave "finalizer" (ne $key "argocd")) | nindent 2 }}
+spec:
+  project: {{ $ctx.Values.global.project }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $app.namespace }}
+  sources:
+    - repoURL: {{ $app.repoURL }}
+      chart: {{ $app.chart }}
+      targetRevision: {{ $app.version | quote }}
+      helm:
+        releaseName: {{ $app.releaseName }}
+        valueFiles:
+          {{- range $app.valueFiles }}
+          - $values/{{ . }}
+          {{- end }}
+    - repoURL: {{ $ctx.Values.global.repoURL }}
+      targetRevision: {{ $ctx.Values.global.targetRevision }}
+      ref: values
+  {{- $psa := include "root.psa.baseline" $ctx | fromYaml }}
+  {{- include "root.syncPolicy" (dict "ctx" $ctx "ssa" true "nsLabels" $psa) | nindent 2 }}
+{{- end }}
+{{- end }}

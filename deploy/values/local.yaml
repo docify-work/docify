@@ -1,0 +1,103 @@
+# =============================================================================
+# Docify LOCAL (kind, namespace docify-local) - P6/P7 (§20.2).
+#
+#   - image built locally and loaded into kind: `kind load docker-image docify-backend:dev`
+#   - no AWS at all: ElasticMQ (SQS) + Mailpit (SMTP) run in the namespace,
+#     storage on local disk, fake AI
+#   - plain Secrets from values (localSecrets) instead of External Secrets;
+#     the values below are throwaway dev values, NOT real secrets. For real
+#     local keys create deploy/values/local.secrets.yaml (git-ignored) and
+#     pass it as an extra -f / valueFile.
+#   - no TLS / cert-manager / KEDA / ServiceMonitor
+# =============================================================================
+env: local
+
+image:
+  repository: docify-backend
+  tag: dev
+  pullPolicy: IfNotPresent
+
+config:
+  PUBLIC_BASE_URL: "http://localhost:8080"
+  STORAGE_BACKEND: local
+  # /tmp is the only writable path (read-only root FS). Pod-local and
+  # ephemeral - fine for the repo-cache on kind.
+  LOCAL_STORAGE_DIR: /tmp/docify-storage
+  EMAIL_BACKEND: smtp
+  EMAIL_FROM: "Docify Local <no-reply@localhost>"
+  SMTP_HOST: mailpit
+  SMTP_PORT: "1025"
+  AI_MODE: fake
+  AWS_ENDPOINT_URL_SQS: "http://elasticmq:9324"
+  # ElasticMQ's fixed fake account id is 000000000000.
+  SQS_QUEUE_URL: "http://elasticmq:9324/000000000000/docify-local-events"
+  SQS_DLQ_URL: "http://elasticmq:9324/000000000000/docify-local-events-dlq"
+  # Dev GitHub App ids (not secret) - fill in when using the Dev App + smee.
+  GITHUB_APP_ID: ""
+  GITHUB_APP_SLUG: ""
+  GITHUB_CLIENT_ID: ""
+  GOOGLE_CLIENT_ID: ""
+  LOG_LEVEL: DEBUG
+
+externalSecrets:
+  enabled: false
+
+localSecrets:
+  enabled: true
+  dbPassword: docify-local-dev          # must match deploy/argocd/local data values
+  app:
+    SESSION_PEPPER: local-dev-pepper-not-a-secret-0000000000
+    ORIGIN_VERIFY_HEADER: local-dev-origin-header
+    GITHUB_APP_PRIVATE_KEY: ""
+    GITHUB_CLIENT_SECRET: ""
+    GOOGLE_CLIENT_SECRET: ""
+    ANTHROPIC_API_KEY: ""
+    VOYAGE_API_KEY: ""
+    # boto3 needs *some* credentials even for ElasticMQ.
+    AWS_ACCESS_KEY_ID: local
+    AWS_SECRET_ACCESS_KEY: local
+
+api:
+  replicas: 1
+  autoscaling:
+    enabled: false
+  pdb:
+    enabled: false
+
+worker:
+  replicas: 1
+
+# KEDA against ElasticMQ is unverified (V20) -> fixed single worker locally.
+keda:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: traefik
+  host: ""                # any host -> http://localhost:8080/api/...
+  tls:
+    enabled: false
+
+certificate:
+  enabled: false
+
+networkPolicies:
+  enabled: true
+  # Traefik is installed by Helm into its own namespace on kind.
+  ingressSources:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: traefik
+  # No AWS locally: nothing outside the cluster except HTTPS (GitHub dev app).
+  awsCredentialCIDRs: []
+  httpsEgressCIDRs:
+    - 0.0.0.0/0
+
+serviceMonitor:
+  enabled: false
+
+devServices:
+  elasticmq:
+    enabled: true
+  mailpit:
+    enabled: true

@@ -1,0 +1,2 @@
+# Daily purge of old rows at 03:00 IST (§6). Template: _cronjob.tpl
+{{ include "docify.cronjob" (dict "root" . "name" "housekeeping" "cj" .Values.cronjobs.housekeeping) }}

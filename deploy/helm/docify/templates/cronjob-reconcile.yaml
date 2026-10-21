@@ -1,0 +1,3 @@
+# Reconciler every 15 min (§8.4) - the source of truth when webhooks are
+# missed (D06). Template: _cronjob.tpl
+{{ include "docify.cronjob" (dict "root" . "name" "reconcile" "cj" .Values.cronjobs.reconcile) }}

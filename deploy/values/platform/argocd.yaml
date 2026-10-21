@@ -1,0 +1,97 @@
+# =============================================================================
+# Argo CD (chart argo/argo-cd 10.10.5 = Argo CD v3.5.5) - trimmed for one
+# small node (§13.2, §13.4: ~400 Mi requests / ~800 Mi limits in total).
+#
+# Used twice with IDENTICAL values:
+#   1. infra/server/bootstrap.sh: helm install argocd argo/argo-cd -n argocd \
+#        --version 10.10.5 -f deploy/values/platform/argocd.yaml
+#   2. the "argocd" Application (wave -10) - Argo CD then manages itself and
+#      adopts the release from step 1.
+# Public repo -> no repository credentials needed.
+# =============================================================================
+
+global:
+  # Single node: no anti-affinity games.
+  affinity:
+    podAntiAffinity: none
+
+# Unused components switched off (saves ~300 Mi).
+dex:
+  enabled: false            # no SSO; admin login via port-forward (R3)
+notifications:
+  enabled: false
+# The chart always templates the ApplicationSet controller; 0 replicas
+# effectively disables it (we use a Helm-chart app-of-apps instead, D12).
+applicationSet:
+  replicas: 0
+
+configs:
+  cm:
+    # Application health check (V19). Since Argo CD 1.8 a child Application
+    # no longer reports health to its parent, so sync waves in the root
+    # app-of-apps would NOT wait for e.g. cert-manager to be Healthy before
+    # creating platform-config. This Lua restores that behaviour.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil then
+        if obj.status.health ~= nil then
+          hs.status = obj.status.health.status
+          if obj.status.health.message ~= nil then
+            hs.message = obj.status.health.message
+          end
+        end
+      end
+      return hs
+    # Poll Git every 3 min (default). The node sleeps a lot; on wake Argo
+    # catches up within one interval.
+    timeout.reconciliation: 180s
+    # No `argocd admin`/UI exec into pods.
+    exec.enabled: false
+    statusbadge.enabled: false
+
+  params:
+    # Fewer parallel workers: tiny cluster, saves CPU/memory.
+    controller.status.processors: "10"
+    controller.operation.processors: "5"
+    reposerver.parallelism.limit: "2"
+
+  # Helm repos that need an explicit entry. Loki's chart is published only
+  # as OCI on ghcr.io (V21), which Argo CD must be told about (enableOCI).
+  repositories:
+    grafana-community-oci:
+      url: ghcr.io/grafana-community/helm-charts
+      name: grafana-community
+      type: helm
+      enableOCI: "true"
+
+controller:
+  replicas: 1
+  resources:
+    requests: { cpu: 100m, memory: 200Mi }
+    limits: { memory: 400Mi }
+
+repoServer:
+  replicas: 1
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 256Mi }
+
+server:
+  replicas: 1
+  resources:
+    requests: { cpu: 20m, memory: 64Mi }
+    limits: { memory: 128Mi }
+
+redis:
+  enabled: true
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 64Mi }
+
+redis-ha:
+  enabled: false
+
+commitServer:
+  enabled: false

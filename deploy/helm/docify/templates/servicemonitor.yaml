@@ -1,0 +1,33 @@
+{{- if .Values.serviceMonitor.enabled }}
+# Prometheus Operator scrape config for api + worker :9000 (P10).
+# kube-prometheus-stack is configured to pick up ServiceMonitors from all
+# namespaces without a release label (deploy/values/platform/kube-prometheus-stack.yaml).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: docify
+  labels:
+    {{- include "docify.labels" . | nindent 4 }}
+    {{- with .Values.serviceMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values: ["docify"]
+      - key: app.kubernetes.io/component
+        operator: In
+        values: ["api", "worker"]
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: {{ .Values.serviceMonitor.interval }}
+      # Adds namespace/pod labels; dashboards filter by namespace (= env).
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+          targetLabel: component
+{{- end }}

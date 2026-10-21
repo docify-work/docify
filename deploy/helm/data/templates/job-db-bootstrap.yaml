@@ -1,0 +1,112 @@
+{{- if .Values.bootstrap.enabled }}
+# db-bootstrap: makes sure every env has its role, database and extensions
+# (§5.5). Idempotent - it runs on every Argo CD sync of the data app:
+#   1. CREATE ROLE docify_<env> LOGIN            (only if missing)
+#   2. ALTER ROLE ... PASSWORD                   (ALWAYS -> rotation works, R6)
+#   3. CREATE DATABASE docify_<env> OWNER role   (only if missing)
+#   4. REVOKE CONNECT ... FROM PUBLIC; GRANT CONNECT to the env's role only
+#      (staging's role can't open prod's DB, D03)
+#   5. CREATE EXTENSION IF NOT EXISTS vector, pg_trgm, citext (as superuser)
+#
+# Argo CD: Sync hook at wave 1 -> runs after the StatefulSet (wave 0) is
+# healthy. Plain Helm (kind without Argo): post-install/post-upgrade hook.
+# psql variables (:'pw', :"role") are quoted by psql itself, so passwords and
+# names are never spliced into SQL by the shell (no SQL injection).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-bootstrap
+  labels:
+    {{- include "data.labels" . | nindent 4 }}
+    app.kubernetes.io/name: db-bootstrap
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "1"
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db-bootstrap
+        docify.work/postgres-client: "true"
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: bootstrap
+          # Same image as the server -> psql version always matches.
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              value: postgres
+            - name: PGDATABASE
+              value: postgres
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef: { name: postgres-passwords, key: POSTGRES_PASSWORD }
+            - name: ENVS
+              value: {{ join " " .Values.envs | quote }}
+            - name: EXTENSIONS
+              value: {{ join " " .Values.bootstrap.extensions | quote }}
+            {{- range .Values.envs }}
+            - name: {{ include "data.envPasswordVar" . }}
+              valueFrom:
+                secretKeyRef: { name: postgres-passwords, key: {{ include "data.envPasswordVar" . }} }
+            {{- end }}
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              echo "waiting for postgres..."
+              for i in $(seq 1 60); do pg_isready -q && break; sleep 5; done
+              pg_isready
+
+              # Nobody but the owner roles should connect to the maintenance DB.
+              psql -v ON_ERROR_STOP=1 -qc 'REVOKE CONNECT ON DATABASE postgres FROM PUBLIC;'
+
+              for env in $ENVS; do
+                role="docify_${env}"
+                db="docify_${env}"
+                pwvar="DB_PASSWORD_${env^^}"
+                pw="${!pwvar}"
+                echo "== ${db}"
+                psql -v ON_ERROR_STOP=1 -q -v role="$role" -v db="$db" -v pw="$pw" <<'SQL'
+              SELECT format('CREATE ROLE %I LOGIN', :'role')
+                WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'role') \gexec
+              ALTER ROLE :"role" WITH LOGIN PASSWORD :'pw';
+              SELECT format('CREATE DATABASE %I OWNER %I', :'db', :'role')
+                WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db') \gexec
+              REVOKE CONNECT ON DATABASE :"db" FROM PUBLIC;
+              GRANT CONNECT ON DATABASE :"db" TO :"role";
+              SQL
+                for ext in $EXTENSIONS; do
+                  psql -v ON_ERROR_STOP=1 -q -d "$db" -v ext="$ext" <<'SQL'
+              CREATE EXTENSION IF NOT EXISTS :"ext";
+              SQL
+                done
+              done
+              echo "db-bootstrap done"
+          resources:
+            {{- toYaml .Values.bootstrap.resources | nindent 12 }}
+          securityContext:
+            {{- include "data.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+{{- end }}

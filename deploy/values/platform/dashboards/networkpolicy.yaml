@@ -1,0 +1,40 @@
+# monitoring namespace IMDS rules (D16). Lives with the monitoring app (not
+# platform-config) because this namespace is created by the monitoring app
+# itself at wave 0, after platform-config (-4) has synced.
+#
+# 1) deny-imds: every pod may talk to anything except the EC2 metadata
+#    endpoint (so Prometheus/Loki/Alloy can't use the instance role).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-imds
+spec:
+  podSelector: {}
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32
+    # In-cluster traffic, regardless of how the CNI treats ipBlock for pod IPs.
+    - to:
+        - namespaceSelector: {}
+---
+# 2) Grafana is the exception: it publishes alerts to SNS with the instance
+#    role (D35). Policies are additive, so this re-opens IMDS for Grafana only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: grafana-allow-imds
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: grafana
+  policyTypes: ["Egress"]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 169.254.169.254/32
+      ports:
+        - { protocol: TCP, port: 80 }

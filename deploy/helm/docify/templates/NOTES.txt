@@ -1,0 +1,16 @@
+Docify ({{ .Values.env }}) deployed to namespace {{ .Release.Namespace }}.
+Image: {{ include "docify.image" . }}
+
+{{- if and (ne .Values.env "local") (eq (toString .Values.aws.accountId) "000000000000") }}
+
+WARNING: aws.accountId is still the placeholder "000000000000".
+Queue URLs, bucket names and the ECR image will be wrong. In the cloud the
+root Argo CD Application injects the real value as a Helm parameter.
+{{- end }}
+
+Check:
+  kubectl -n {{ .Release.Namespace }} get pods
+  kubectl -n {{ .Release.Namespace }} logs job/migrate
+{{- if .Values.ingress.enabled }}
+  curl {{ if .Values.ingress.tls.enabled }}https{{ else }}http{{ end }}://{{ default "localhost:8080" .Values.ingress.host }}{{ .Values.ingress.path }}/health
+{{- end }}

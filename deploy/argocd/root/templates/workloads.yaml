@@ -1,0 +1,52 @@
+{{- /*
+In-repo charts: data (wave 5), docify-staging + docify-prod (wave 10).
+
+Pattern = single-source, path-based Application. Argo CD renders the chart
+at `path` and reads value files RELATIVE TO THE CHART DIRECTORY; files
+outside the chart are allowed as long as they stay inside the repo, so
+deploy/values/staging.yaml is referenced as ../../../deploy/values/staging.yaml.
+(Simpler than multi-source for our own charts: one source, normal
+history/rollback in the UI.)
+
+Account-specific values (aws.accountId) are passed as Helm parameters,
+which override the value files.
+*/ -}}
+{{- $ctx := . }}
+{{- range $key := list "data" "docifyStaging" "docifyProd" }}
+{{- $app := get $ctx.Values.apps $key }}
+{{- if $app.enabled }}
+{{- $name := ternary "data" $app.namespace (eq $key "data") }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  {{- /* No cascade delete for data: disabling the app must never delete Postgres. */}}
+  {{- include "root.appMetadata" (dict "ctx" $ctx "name" $name "wave" $app.wave "finalizer" (ne $key "data")) | nindent 2 }}
+spec:
+  project: {{ $ctx.Values.global.project }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $app.namespace }}
+  source:
+    repoURL: {{ $ctx.Values.global.repoURL }}
+    targetRevision: {{ $ctx.Values.global.targetRevision }}
+    path: {{ $app.path }}
+    helm:
+      # Fixed release name -> stable label selectors across envs.
+      releaseName: {{ ternary "data" "docify" (eq $key "data") }}
+      {{- with $app.valueFiles }}
+      valueFiles:
+        {{- range . }}
+        - {{ include "root.toRepoRoot" $app.path }}{{ . }}
+        {{- end }}
+      {{- end }}
+      parameters:
+        - name: aws.accountId
+          value: {{ $ctx.Values.global.aws.accountId | quote }}
+          forceString: true
+        - name: aws.region
+          value: {{ $ctx.Values.global.aws.region | quote }}
+  {{- $psa := include (ternary "root.psa.baseline" "root.psa.restricted" (eq $key "data")) $ctx | fromYaml }}
+  {{- include "root.syncPolicy" (dict "ctx" $ctx "ssa" false "nsLabels" $psa) | nindent 2 }}
+{{- end }}
+{{- end }}

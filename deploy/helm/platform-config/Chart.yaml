@@ -1,0 +1,12 @@
+apiVersion: v2
+name: platform-config
+description: >-
+  Cluster-scoped platform objects that depend on operator CRDs (§13.2):
+  cert-manager ClusterIssuers (Let's Encrypt staging/prod, DNS-01 Route 53),
+  the External Secrets ClusterSecretStore for SSM Parameter Store, and
+  deny-imds NetworkPolicies for platform namespaces that must not use the
+  EC2 instance role (D16). Synced at wave -4, after the operators (-5).
+type: application
+version: 0.1.0
+appVersion: "1.0"
+kubeVersion: ">=1.29.0-0"
