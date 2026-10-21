@@ -44,15 +44,16 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
       <div className="l-mesh absolute inset-0 -z-20" aria-hidden="true" />
       <div className="l-grid absolute inset-0 -z-10" aria-hidden="true" />
 
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-32 sm:pt-36 lg:min-h-[min(100svh,900px)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-10 lg:pb-16 lg:pt-28">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-5 pb-20 pt-32 sm:pt-36 lg:min-h-[min(100svh,900px)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:gap-10 lg:pb-16 lg:pt-28">
         {/* left: copy */}
-        <div className="text-center lg:text-left">
+        <div className="min-w-0 text-center lg:text-left">
           <motion.span
             {...fadeUp(0.05)}
             className="inline-flex items-center gap-2 rounded-full border border-black/[0.08] bg-white py-1 pl-1 pr-3 text-xs text-fg-muted shadow-sm"
           >
             <span className="rounded-full bg-[var(--l-indigo)] px-2 py-0.5 text-[11px] font-semibold text-white">New</span>
-            Docs that update themselves on every push
+            <span className="sm:hidden">Docs that update on every push</span>
+            <span className="hidden sm:inline">Docs that update themselves on every push</span>
           </motion.span>
 
           <h1 className="mt-6 text-[clamp(2.2rem,3.6vw,3.25rem)] font-semibold leading-[1.04] tracking-[-0.045em]">
@@ -108,9 +109,9 @@ export function Hero({ primaryHref, primaryLabel, demoHref }: {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.9, ease: EASE, delay: 0.35 }}
-          className="relative"
+          className="relative min-w-0"
         >
-          <div className="aspect-[84/68] w-full">
+          <div className="mx-auto aspect-[84/68] w-full max-w-xl lg:max-w-none">
             <Suspense fallback={<div className="size-full" />}>
               <DemoVideo active={active} jump={jump} onScene={onScene} />
             </Suspense>
@@ -138,7 +139,7 @@ function Chapters({ scene, runKey, active, onPick }: {
   onPick: (i: number) => void;
 }) {
   return (
-    <div role="tablist" aria-label="Product tour chapters" className="mx-auto mt-2 grid max-w-xl grid-cols-4 gap-3 px-3">
+    <div role="tablist" aria-label="Product tour chapters" className="mx-auto mt-2 grid max-w-xl grid-cols-4 gap-2 px-1 sm:gap-3 sm:px-3">
       {CHAPTERS.map((label, i) => {
         const on = scene === i;
         return (
@@ -182,13 +183,13 @@ function ActivityTicker({ active }: { active: boolean }) {
   }, [active]);
   const a = ACTIVITY[i]!;
   return (
-    <div className="inline-flex items-center gap-3 rounded-xl border border-black/[0.07] bg-white/80 py-2 pl-3 pr-4 text-xs shadow-sm">
+    <div className="inline-flex max-w-full items-center gap-3 rounded-xl border border-black/[0.07] bg-white/80 py-2 pl-3 pr-4 text-xs shadow-sm">
       <span className="relative grid size-2 place-items-center">
         <span className="l-pulse-dot absolute size-2 rounded-full bg-[var(--l-emerald)]" />
       </span>
       <span className="text-fg-subtle">Live</span>
       <span className="h-3 w-px bg-black/10" />
-      <span className="relative h-4 w-[17rem] overflow-hidden text-left">
+      <span className="relative h-4 w-[17rem] min-w-0 max-w-[calc(100vw-9rem)] overflow-hidden text-left">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={i}
