@@ -18,12 +18,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from docify.api.errors import Problem, bad_request, conflict
 from docify.audit import audit
 from docify.auth.oauth import ProviderProfile
-from docify.auth.passwords import PasswordRuleError, check_password_rules, hash_password, verify_password
+from docify.auth.passwords import PasswordRuleError, ahash_password, averify_password, check_password_rules
 from docify.auth.sessions import delete_user_sessions
 from docify.auth.tokens import new_token, token_hmac
 from docify.db.models import AuthIdentity, EmailToken, Membership, User, Workspace
 from docify.email import templates
-from docify.email.sender import send_safely
+from docify.email.sender import send_in_background
 from docify.observability.metrics import AUTH_EVENTS
 
 VERIFY_TTL = timedelta(hours=24)
@@ -38,17 +38,19 @@ def normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-async def _issue_email_token(db: AsyncSession, user: User, purpose: str, ttl: timedelta) -> str:
+async def _issue_email_token(db: AsyncSession, user: User, purpose: str, ttl: timedelta,
+                             password_hash: str | None = None) -> str:
     # Only one live token per purpose: older ones stop working.
     await db.execute(delete(EmailToken).where(EmailToken.user_id == user.id, EmailToken.purpose == purpose,
                                               EmailToken.used_at.is_(None)))
     token = new_token()
-    db.add(EmailToken(user_id=user.id, purpose=purpose, token_hmac=token_hmac(token), expires_at=_now() + ttl))
+    db.add(EmailToken(user_id=user.id, purpose=purpose, token_hmac=token_hmac(token), expires_at=_now() + ttl,
+                      password_hash=password_hash))
     await db.flush()
     return token
 
 
-async def _consume_email_token(db: AsyncSession, token: str, purpose: str) -> User:
+async def _consume_email_token(db: AsyncSession, token: str, purpose: str) -> tuple[User, EmailToken]:
     row = (await db.execute(
         select(EmailToken, User).join(User, User.id == EmailToken.user_id)
         .where(EmailToken.token_hmac == token_hmac(token), EmailToken.purpose == purpose)
@@ -57,7 +59,7 @@ async def _consume_email_token(db: AsyncSession, token: str, purpose: str) -> Us
     if row is None or row[0].used_at is not None or row[0].expires_at <= _now():
         raise bad_request("This link is invalid or has expired.", code="invalid_token")
     row[0].used_at = _now()
-    return row[1]
+    return row[1], row[0]
 
 
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
@@ -73,29 +75,37 @@ async def signup(db: AsyncSession, email: str, password: str, name: str | None) 
         check_password_rules(password, email=email)
     except PasswordRuleError as exc:
         raise bad_request(str(exc), code="weak_password") from exc
+    # Always hash: same cost on every path, so response time doesn't reveal whether the email exists.
+    pw_hash = await ahash_password(password)
     existing = await get_user_by_email(db, email)
     if existing is not None:
         # Same response as a new signup; tell the real owner instead (no enumeration).
         if existing.email_verified:
-            await send_safely(templates.signup_notice(email))
+            send_in_background(templates.signup_notice(email))
         else:
-            # Unverified account: refresh password? No — that would let anyone change it.
-            # Just re-send the verification link to the mailbox owner.
-            token = await _issue_email_token(db, existing, "verify", VERIFY_TTL)
-            await send_safely(templates.verify_email(email, token))
+            # Unverified: the new link carries THIS signup's password. Whoever opens it (the mailbox
+            # owner) gets their own password; a stranger's earlier password is discarded (F53).
+            token = await _issue_email_token(db, existing, "verify", VERIFY_TTL, password_hash=pw_hash)
+            send_in_background(templates.verify_email(email, token))
         AUTH_EVENTS.labels("signup", "existing").inc()
         return
-    user = User(email=email, name=(name or "").strip()[:200] or None, password_hash=hash_password(password))
+    user = User(email=email, name=(name or "").strip()[:200] or None)
     db.add(user)
     await db.flush()
-    token = await _issue_email_token(db, user, "verify", VERIFY_TTL)
+    token = await _issue_email_token(db, user, "verify", VERIFY_TTL, password_hash=pw_hash)
     audit(db, "user.signup", actor=user.id)
-    await send_safely(templates.verify_email(email, token))
+    send_in_background(templates.verify_email(email, token))
     AUTH_EVENTS.labels("signup", "created").inc()
 
 
 async def verify_email(db: AsyncSession, token: str) -> User:
-    user = await _consume_email_token(db, token, "verify")
+    user, tok = await _consume_email_token(db, token, "verify")
+    if not user.email_verified:
+        # The password comes only from the link that was opened. A link without one (resend) leaves the
+        # account password-less: the user is signed in by this request and can set one in Account.
+        user.password_hash = tok.password_hash
+        user.session_gen += 1
+        await delete_user_sessions(db, user.id)
     user.email_verified = True
     audit(db, "user.email_verified", actor=user.id)
     return user
@@ -103,14 +113,20 @@ async def verify_email(db: AsyncSession, token: str) -> User:
 
 async def resend_verification(db: AsyncSession, email: str) -> None:
     user = await get_user_by_email(db, email)
-    if user is not None and not user.email_verified and user.password_hash:
+    if user is not None and not user.email_verified:
         token = await _issue_email_token(db, user, "verify", VERIFY_TTL)
-        await send_safely(templates.verify_email(user.email, token))
+        send_in_background(templates.verify_email(user.email, token))
 
 
 async def login_password(db: AsyncSession, email: str, password: str) -> User:
     user = await get_user_by_email(db, email)
-    ok = verify_password(password, user.password_hash if user else None)
+    candidate = user.password_hash if user else None
+    if user is not None and not user.email_verified:
+        # Unverified accounts keep the chosen password on the pending verify link (see signup).
+        candidate = (await db.execute(select(EmailToken.password_hash).where(
+            EmailToken.user_id == user.id, EmailToken.purpose == "verify", EmailToken.used_at.is_(None))
+            .order_by(EmailToken.created_at.desc()).limit(1))).scalar_one_or_none()
+    ok = await averify_password(password, candidate)
     if user is None or not ok or user.disabled:
         AUTH_EVENTS.labels("login", "failed").inc()
         raise Problem(401, "Unauthorized", "Wrong email or password.", code="invalid_credentials")
@@ -127,16 +143,16 @@ async def forgot_password(db: AsyncSession, email: str) -> None:
     if user is None or user.disabled:
         return
     token = await _issue_email_token(db, user, "reset", RESET_TTL)
-    await send_safely(templates.reset_password(user.email, token))
+    send_in_background(templates.reset_password(user.email, token))
 
 
 async def reset_password(db: AsyncSession, token: str, password: str) -> User:
-    user = await _consume_email_token(db, token, "reset")
+    user, _ = await _consume_email_token(db, token, "reset")
     try:
         check_password_rules(password, email=user.email)
     except PasswordRuleError as exc:
         raise bad_request(str(exc), code="weak_password") from exc
-    user.password_hash = hash_password(password)
+    user.password_hash = await ahash_password(password)
     # The reset link proves mailbox ownership, so the email is now verified too.
     user.email_verified = True
     user.session_gen += 1
@@ -147,13 +163,13 @@ async def reset_password(db: AsyncSession, token: str, password: str) -> User:
 
 async def change_password(db: AsyncSession, user: User, current: str | None, new: str,
                           keep_session_id: uuid.UUID | None) -> None:
-    if user.password_hash and not verify_password(current or "", user.password_hash):
+    if user.password_hash and not await averify_password(current or "", user.password_hash):
         raise Problem(400, "Bad request", "Current password is wrong.", code="invalid_credentials")
     try:
         check_password_rules(new, email=user.email)
     except PasswordRuleError as exc:
         raise bad_request(str(exc), code="weak_password") from exc
-    user.password_hash = hash_password(new)
+    user.password_hash = await ahash_password(new)
     await delete_user_sessions(db, user.id, except_id=keep_session_id)
     audit(db, "user.password_changed", actor=user.id)
 

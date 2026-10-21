@@ -27,7 +27,7 @@ from docify.auth.tokens import new_token, token_hmac
 from docify.cache import hit
 from docify.db.models import Invite, Membership, Repository, User, Workspace
 from docify.email import templates
-from docify.email.sender import send_safely
+from docify.email.sender import send_in_background
 from docify.jobs import service as jobs
 from docify.workspaces import purge_workspace, slugify, unique_slug
 
@@ -127,8 +127,10 @@ async def members(ws: str, db: DB, principal: UserPrincipal) -> list[MemberOut]:
 
 
 async def _admin_count(db: DB, ws_id: uuid.UUID) -> int:
-    return int((await db.execute(select(func.count()).select_from(Membership).where(
-        Membership.workspace_id == ws_id, Membership.role == "admin"))).scalar_one())
+    # Lock the admin rows so concurrent demote/leave requests are serialised (no zero-admin workspace).
+    rows = (await db.execute(select(Membership.id).where(
+        Membership.workspace_id == ws_id, Membership.role == "admin").with_for_update())).all()
+    return len(rows)
 
 
 async def _membership(db: DB, ws_id: uuid.UUID, user_id: uuid.UUID) -> Membership:
@@ -206,7 +208,7 @@ async def create_invite(ws: str, body: InviteIn, db: DB, principal: UserPrincipa
     await db.flush()
     await db.refresh(inv)
     audit(db, "invite.created", actor=principal.user.id, workspace_id=w.id, target=email, role=body.role)
-    await send_safely(templates.invite(email, token, w.name, principal.user.name or principal.user.email))
+    send_in_background(templates.invite(email, token, w.name, principal.user.name or principal.user.email))
     return InviteOut.model_validate(inv)
 
 

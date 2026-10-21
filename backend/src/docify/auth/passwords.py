@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from functools import lru_cache
 from importlib import resources
 
@@ -40,6 +41,15 @@ def check_password_rules(password: str, *, email: str | None = None) -> None:
 
 def hash_password(password: str) -> str:
     return _hasher.hash(password)
+
+
+async def ahash_password(password: str) -> str:
+    """Argon2 is CPU-bound (~tens of ms): run it off the event loop so SSE streams don't stall."""
+    return await asyncio.to_thread(_hasher.hash, password)
+
+
+async def averify_password(password: str, password_hash: str | None) -> bool:
+    return await asyncio.to_thread(verify_password, password, password_hash)
 
 
 def verify_password(password: str, password_hash: str | None) -> bool:

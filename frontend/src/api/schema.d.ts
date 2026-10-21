@@ -329,6 +329,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/sessions/revoke-others": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Other Sessions */
+        post: operations["revoke_other_sessions_api_me_sessions_revoke_others_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/sessions/{session_id}": {
         parameters: {
             query?: never;
@@ -972,6 +989,10 @@ export interface components {
             content_md: string | null;
             /** Source Paths */
             source_paths: string[];
+            /** Repo Html Url */
+            repo_html_url: string;
+            /** Commit Url */
+            commit_url: string | null;
         };
         /** DocOut */
         DocOut: {
@@ -1413,6 +1434,8 @@ export interface components {
             end_line?: number | null;
             /** Doc Id */
             doc_id?: string | null;
+            /** Changelog Id */
+            changelog_id?: string | null;
             /** Score */
             score: number;
         };
@@ -2180,6 +2203,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionOut"][];
+                };
+            };
+        };
+    };
+    revoke_other_sessions_api_me_sessions_revoke_others_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Ok"];
                 };
             };
         };

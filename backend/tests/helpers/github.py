@@ -50,6 +50,7 @@ class FakeGitHub:
         self.github_user = {"id": 777, "login": "octo", "name": "Octo Cat", "avatar_url": None}
         self.emails = [{"email": "octo@example.com", "primary": True, "verified": True}]
         self.suspended = False
+        self.user_sees_repo = True  # org member with read access to this repo?
         self.calls: list[str] = []
         self._routes()
 
@@ -82,6 +83,9 @@ class FakeGitHub:
             return_value=httpx.Response(200, json={"access_token": "ghu_user_token", "token_type": "bearer"}))
         m.get(f"{API}/user").mock(side_effect=lambda req: httpx.Response(200, json=self.github_user))
         m.get(f"{API}/user/emails").mock(side_effect=lambda req: httpx.Response(200, json=self.emails))
+        m.get(url__regex=rf"{API}/user/installations/\d+/repositories.*").mock(
+            side_effect=lambda req: httpx.Response(200, json={"repositories": [
+                self.repo_json()] if self.user_sees_repo else []}))
         m.get(url__startswith=f"{API}/user/installations").mock(side_effect=lambda req: httpx.Response(
             200, json={"installations": [{"id": i} for i in self.user_installations]}))
 

@@ -107,3 +107,16 @@ async def send_safely(email: Email) -> None:
         await get_email_sender().send(email)
     except Exception as exc:
         log.warning("email.send_failed", subject=email.subject, error=type(exc).__name__)
+
+
+_background: set[asyncio.Task[None]] = set()
+
+
+def send_in_background(email: Email) -> None:
+    """Fire-and-forget, so response time doesn't reveal whether an email was sent (no enumeration by timing)."""
+    if isinstance(_sender, MemorySender):  # tests: collect immediately
+        _sender.outbox.append(email)
+        return
+    task = asyncio.create_task(send_safely(email))
+    _background.add(task)
+    task.add_done_callback(_background.discard)

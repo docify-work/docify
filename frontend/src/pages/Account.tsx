@@ -31,7 +31,7 @@ import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAppConfig } from "@/lib/config";
 import { describeAgent } from "@/lib/format";
 import { MIN_PASSWORD } from "@/lib/labels";
-import { PROVIDER_LABEL } from "@/lib/messages";
+import { oauthErrorMessage, PROVIDER_LABEL } from "@/lib/messages";
 
 export default function Account() {
   usePageMeta([{ label: "Account" }]);
@@ -95,16 +95,22 @@ function SignInMethods({ me }: { me: Me }) {
   const toast = useToast();
   const [params, setParams] = useSearchParams();
   const linked = params.get("linked");
+  const linkError = params.get("error");
 
   useEffect(() => {
     if (linked) {
       toast.success(`${PROVIDER_LABEL[linked] ?? linked} linked`);
+    } else if (linkError) {
+      toast.error("Couldn't link account", oauthErrorMessage(linkError) ?? undefined);
+    }
+    if (linked || linkError) {
       setParams((p) => {
         p.delete("linked");
+        p.delete("error");
         return p;
       }, { replace: true });
     }
-  }, [linked, setParams, toast]);
+  }, [linked, linkError, setParams, toast]);
 
   const unlink = useMutation({
     mutationFn: (id: string) => meApi.unlink(id),
@@ -259,6 +265,15 @@ function Sessions() {
     },
     onError: (e) => toast.error("Couldn't sign out session", errorMessage(e)),
   });
+  const revokeOthers = useMutation({
+    mutationFn: () => meApi.revokeOtherSessions(),
+    onSuccess: () => {
+      toast.success("Signed out everywhere else");
+      void qc.invalidateQueries({ queryKey: qk.sessions });
+    },
+    onError: (e) => toast.error("Couldn't sign out other sessions", errorMessage(e)),
+  });
+  const others = (q.data ?? []).filter((s) => !s.current).length;
   const columns: Column<Session>[] = [
     {
       key: "device",
@@ -289,7 +304,18 @@ function Sessions() {
   ];
   return (
     <Card>
-      <CardHeader icon={<Monitor />} title="Sessions" meta={q.data?.length} />
+      <CardHeader
+        icon={<Monitor />}
+        title="Sessions"
+        meta={q.data?.length}
+        actions={
+          others > 0 ? (
+            <Button size="sm" variant="ghost" loading={revokeOthers.isPending} onClick={() => revokeOthers.mutate()}>
+              Sign out others
+            </Button>
+          ) : null
+        }
+      />
       {q.isError ? (
         <ErrorState compact error={q.error} onRetry={() => void q.refetch()} />
       ) : (

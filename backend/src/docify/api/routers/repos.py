@@ -128,7 +128,9 @@ async def get_doc(doc_id: uuid.UUID, db: DB, principal: CurrentPrincipal) -> Doc
                         published=_brief(v), has_pending_review=bool(pending),
                         updated_at=v.created_at if v else doc.created_at,
                         content_md=render(v.content_md, repo.full_name, v.commit_sha) if v else None,
-                        source_paths=list(doc.source_paths or []))
+                        source_paths=list(doc.source_paths or []),
+                        repo_html_url=f"https://github.com/{repo.full_name}",
+                        commit_url=f"https://github.com/{repo.full_name}/commit/{v.commit_sha}" if v else None)
 
 
 @router.get("/docs/{doc_id}/versions", response_model=list[DocVersionOut])

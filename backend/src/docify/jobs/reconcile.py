@@ -11,7 +11,7 @@ from datetime import timedelta
 
 from sqlalchemy import select
 
-from docify.ai.budget import spent_today
+from docify.ai.budget import spent_this_month, spent_today
 from docify.config import get_settings
 from docify.db.models import GithubInstallation, Job, Repository
 from docify.db.session import session_scope
@@ -69,7 +69,13 @@ async def _unblock_budget(stats: dict[str, int], out: list[uuid.UUID]) -> None:
             return
         jobs = (await db.execute(select(Job).where(Job.status == "blocked_budget").with_for_update(skip_locked=True)
                                  .limit(50))).scalars().all()
+        over: dict[uuid.UUID, bool] = {}
         for job in jobs:
+            if job.workspace_id is not None:
+                if job.workspace_id not in over:
+                    over[job.workspace_id] = await spent_this_month(db, job.workspace_id) >= s.ai_ws_monthly_budget_usd
+                if over[job.workspace_id]:
+                    continue
             job.status = "queued"
             job.run_after = service.utcnow()
             out.append(job.id)

@@ -39,11 +39,20 @@ class LLMResult:
     usage: Usage = field(default_factory=Usage)
 
 
-class LLMRefusal(Exception):
+class LLMStop(Exception):
+    """Base for "the call happened (and was billed) but gave no usable output"."""
+
+    def __init__(self, model: str, usage: Usage | None = None) -> None:
+        super().__init__(model)
+        self.model = model
+        self.usage = usage or Usage()
+
+
+class LLMRefusal(LLMStop):
     """The model declined (stop_reason=refusal). Handled per F19: section skipped, job continues."""
 
 
-class LLMTruncated(Exception):
+class LLMTruncated(LLMStop):
     """stop_reason=max_tokens. Caller may retry once with fewer inputs (F19)."""
 
 
@@ -127,10 +136,10 @@ class AnthropicLLM:
         usage = Usage(u.input_tokens or 0, u.output_tokens or 0, getattr(u, "cache_read_input_tokens", 0) or 0,
                       getattr(u, "cache_creation_input_tokens", 0) or 0)
         if resp.stop_reason == "refusal":
-            raise LLMRefusal(model)
+            raise LLMRefusal(model, usage)
         text = "".join(b.text for b in resp.content if b.type == "text")
         if resp.stop_reason == "max_tokens":
-            raise LLMTruncated(model)
+            raise LLMTruncated(model, usage)
         data = None
         if output_schema is not None:
             try:
@@ -141,21 +150,27 @@ class AnthropicLLM:
 
     async def stream(self, *, task: Task, model: str, system: str, messages: list[dict[str, Any]],
                      max_tokens: int, usage_out: Usage) -> AsyncIterator[str]:
+        # Usage is captured from the events as they arrive, so a client disconnect or mid-stream error
+        # still records what was billed (message_start → input tokens, message_delta → output tokens).
+        stop_reason = None
         try:
             async with self.client.messages.stream(**self._params(task, model, system, messages, max_tokens,
                                                                   None)) as stream:
-                async for text in stream.text_stream:
-                    yield text
-                final = await stream.get_final_message()
+                async for event in stream:
+                    if event.type == "message_start":
+                        u = event.message.usage
+                        usage_out.input_tokens = u.input_tokens or 0
+                        usage_out.cache_read_tokens = getattr(u, "cache_read_input_tokens", 0) or 0
+                        usage_out.cache_write_tokens = getattr(u, "cache_creation_input_tokens", 0) or 0
+                    elif event.type == "content_block_delta" and event.delta.type == "text_delta":
+                        yield event.delta.text
+                    elif event.type == "message_delta":
+                        usage_out.output_tokens = event.usage.output_tokens or usage_out.output_tokens
+                        stop_reason = event.delta.stop_reason
         except self._anthropic.AnthropicError as exc:
             raise self._map_error(exc) from exc
-        u = final.usage
-        usage_out.input_tokens = u.input_tokens or 0
-        usage_out.output_tokens = u.output_tokens or 0
-        usage_out.cache_read_tokens = getattr(u, "cache_read_input_tokens", 0) or 0
-        usage_out.cache_write_tokens = getattr(u, "cache_creation_input_tokens", 0) or 0
-        if final.stop_reason == "refusal":
-            raise LLMRefusal(model)
+        if stop_reason == "refusal":
+            raise LLMRefusal(model, usage_out)
 
 
 _llm: LLM | None = None

@@ -114,6 +114,25 @@ async def github_user_installation_ids(access_token: str) -> set[int]:
     return ids
 
 
+async def github_user_installation_repo_ids(access_token: str, installation_id: int) -> set[int]:
+    """Repos of an installation that *this user* can access. An org installation's token sees every repo,
+    but a member may only read some of them — attaching is limited to this set (§9.2)."""
+    s = get_settings()
+    ids: set[int] = set()
+    url: str | None = f"{s.github_api_url}/user/installations/{installation_id}/repositories?per_page=100"
+    async with _client() as client:
+        for _ in range(30):
+            if url is None:
+                break
+            r = await client.get(url, headers={"Authorization": f"Bearer {access_token}",
+                                               "Accept": "application/vnd.github+json"})
+            if r.status_code != 200:
+                raise OAuthError("Could not list the repositories you can access.")
+            ids.update(int(repo["id"]) for repo in r.json().get("repositories", []))
+            url = r.links.get("next", {}).get("url")
+    return ids
+
+
 # ----------------------------------------------------------------------------- Google
 
 

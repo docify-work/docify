@@ -79,6 +79,7 @@ export const me = {
   unlink: (id: string) => request<Ok>(`/me/identities/${enc(id)}`, { method: "DELETE" }),
   sessions: () => request<Session[]>("/me/sessions"),
   revokeSession: (id: string) => request<Ok>(`/me/sessions/${enc(id)}`, { method: "DELETE" }),
+  revokeOtherSessions: () => request<Ok>("/me/sessions/revoke-others", { method: "POST" }),
 };
 
 // ------------------------------------------------------------------ workspaces

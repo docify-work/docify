@@ -81,6 +81,12 @@ RETURNING id, (xmax = 0) AS inserted
 """)
 
 
+async def lock_dedupe_key(db: AsyncSession, key: str) -> None:
+    """Serialise enqueue/requeue for one dedupe key until COMMIT, so "look for an open twin, else become
+    the open job" can't race into a unique-index violation (rule 5a)."""
+    await db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": key})
+
+
 @dataclass
 class Enqueued:
     job_id: uuid.UUID
@@ -94,6 +100,8 @@ async def enqueue(db: AsyncSession, job_type: str, *, workspace_id: uuid.UUID | 
     import json
 
     key = dedupe_key_for(job_type, repo_id=repo_id, installation_id=installation_id)
+    if key is not None:
+        await lock_dedupe_key(db, key)
     pl = dict(payload or {})
     if installation_id is not None:
         pl.setdefault("installation_id", installation_id)
@@ -225,6 +233,7 @@ async def requeue(db: AsyncSession, job: Job, *, run_after: datetime, error: dic
     """
     twin: Job | None = None
     if job.dedupe_key:
+        await lock_dedupe_key(db, job.dedupe_key)
         twin = (await db.execute(
             select(Job).where(Job.dedupe_key == job.dedupe_key, Job.status.in_(OPEN_STATUSES), Job.id != job.id)
             .with_for_update()

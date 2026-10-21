@@ -56,7 +56,8 @@ async def setup_repo(outbox: MemorySender, gh: FakeGitHub, *, auto_publish: bool
     async with session_scope() as db:
         db.add(GithubInstallation(installation_id=gh.installation_id, account_login="acme", account_type="User"))
         await db.flush()
-        db.add(WorkspaceInstallation(workspace_id=ws["id"], installation_id=gh.installation_id))
+        db.add(WorkspaceInstallation(workspace_id=ws["id"], installation_id=gh.installation_id,
+                                     allowed_repo_ids=[gh.repo_id]))
     r = await c.post(f"/api/workspaces/{ws['slug']}/github/installations/{gh.installation_id}/repos",
                      json={"github_repo_ids": [gh.repo_id]})
     assert r.status_code == 201, r.text

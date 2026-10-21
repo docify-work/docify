@@ -210,14 +210,19 @@ class Runner:
             async with session_scope() as db:
                 job = await service.load_job_locked(db, c.job_id, c.fence, c.worker)
                 if isinstance(exc, BudgetExceeded):
+                    job.attempts = max(0, job.attempts - 1)  # waiting for budget is not a failed attempt
                     open_id = await service.requeue(db, job, run_after=service.utcnow(),
-                                                    error={"message": str(exc)}, status="blocked_budget")
+                                                    error={"message": str(exc), "code": "budget"},
+                                                    status="blocked_budget")
                     outcome = "blocked_budget"
                     log.info("job.blocked_budget", job_id=str(c.job_id), open_id=str(open_id))
                 elif isinstance(exc, NonRetryableError):
                     await service.finish(db, job, "failed", error={"message": str(exc), "code": exc.code})
-                    await self._repo_error(db, c, exc)
+                    purge_id = await self._repo_error(db, c, exc)
                     outcome = "failed"
+                    if purge_id is not None:
+                        await db.commit()
+                        await service.dispatch([purge_id])
                 else:
                     retryable = isinstance(exc, (RetryableError, TimeoutError, ConnectionError, OSError))
                     if not retryable:
@@ -243,15 +248,20 @@ class Runner:
         log.info("job.done", job_id=str(c.job_id), type=c.job_type, outcome=outcome, error=type(exc).__name__)
         return outcome
 
-    async def _repo_error(self, db: Any, ctx: JobContext, exc: NonRetryableError) -> None:
+    async def _repo_error(self, db: Any, ctx: JobContext, exc: NonRetryableError) -> uuid.UUID | None:
+        """Record a permanent failure on the repo. Lost access → queue a purge (F10); returns its job id."""
         if ctx.repo_id is None or ctx.job_type == "repo_purge":
-            return
+            return None
         repo = (await db.execute(select(Repository).where(Repository.id == ctx.repo_id).with_for_update())) \
             .scalar_one_or_none()
-        if repo is None:
-            return
+        if repo is None or repo.status == "disconnected":
+            return None
         repo.status = exc.repo_status or ("error" if repo.status in ("pending", "indexing") else repo.status)
         repo.error = {"message": str(exc), "code": exc.code}
+        if repo.status == "disconnected":
+            return (await service.enqueue(db, "repo_purge", workspace_id=repo.workspace_id, repo_id=repo.id,
+                                          payload={"reason": exc.code})).job_id
+        return None
 
     async def _shutdown_requeue(self, ctx: JobContext, msg: QueueMessage) -> None:
         try:

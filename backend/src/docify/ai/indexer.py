@@ -197,7 +197,10 @@ async def summarise(ctx: JobContext, repo: Repository, *, only_paths: set[str] |
                     messages=[{"role": "user", "content": f"Path: {path}\n\n<file>\n{content}\n</file>"}],
                     output_schema=prompts.SUMMARY_SCHEMA,
                 )
-            except (LLMRefusal, LLMTruncated):
+            except (LLMRefusal, LLMTruncated) as stop:
+                async with ctx.tx() as db:  # billed even without usable output
+                    record_llm(db, workspace_id=repo.workspace_id, job_id=ctx.job_id, purpose="summary",
+                               model=stop.model, usage=stop.usage)
                 return
             data = res.data or {}
             async with ctx.tx() as db:

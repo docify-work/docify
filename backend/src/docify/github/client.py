@@ -12,6 +12,7 @@ import time
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 import jwt
@@ -95,9 +96,12 @@ class GitHubApp:
                 pass
         r = await self.http.post(f"{self.s.github_api_url}/app/installations/{installation_id}/access_tokens",
                                  headers=_headers(app_jwt()))
-        if r.status_code in (403, 404):
+        if r.status_code == 404:
             raise NonRetryableError("Docify can no longer access this GitHub installation.",
                                     code="installation_gone", repo_status="disconnected")
+        if r.status_code == 403:  # e.g. installation suspended: pause, don't purge (F11)
+            raise NonRetryableError("The GitHub installation is suspended.", code="installation_suspended",
+                                    repo_status="suspended")
         _check(r)
         r.raise_for_status()
         token = str(r.json()["token"])
@@ -163,7 +167,7 @@ class InstallationClient:
 
     async def get_file(self, full_name: str, path: str, ref: str) -> bytes | None:
         r = await self.app.http.get(
-            f"{self.base}/repos/{full_name}/contents/{path}", params={"ref": ref},
+            f"{self.base}/repos/{full_name}/contents/{quote(path)}", params={"ref": ref},
             headers={**_headers(self.token), "Accept": "application/vnd.github.raw+json"},
         )
         _check(r, self.installation_id)

@@ -37,6 +37,7 @@ async def _queue_metrics_loop() -> None:
 def create_app(*, start_background: bool = True) -> FastAPI:
     s = get_settings()
     configure_logging(level=s.log_level, json=s.log_json, service="api", env=s.env, version=s.version)
+    s.check_deployable()
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:

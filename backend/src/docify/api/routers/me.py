@@ -11,7 +11,7 @@ from docify.api.deps import DB, UserPrincipal
 from docify.api.errors import not_found
 from docify.api.schemas import ChangePasswordIn, IdentityOut, MembershipBrief, MeOut, Ok, PatchMeIn, SessionOut
 from docify.auth import service
-from docify.auth.sessions import clear_session_cookie
+from docify.auth.sessions import clear_session_cookie, delete_user_sessions
 from docify.db.models import AuthIdentity, Membership, Session, Workspace
 from docify.jobs import service as jobs
 from docify.workspaces import purge_workspace
@@ -94,6 +94,13 @@ async def sessions(db: DB, principal: UserPrincipal) -> list[SessionOut]:
     current = principal.session.id if principal.session else None
     return [SessionOut(id=s.id, created_at=s.created_at, last_seen_at=s.last_seen_at, ip=s.ip,
                        user_agent=s.user_agent, current=s.id == current) for s in rows]
+
+
+@router.post("/sessions/revoke-others", response_model=Ok)
+async def revoke_other_sessions(db: DB, principal: UserPrincipal) -> Ok:
+    assert principal.session is not None
+    await delete_user_sessions(db, principal.user_id, except_id=principal.session.id)
+    return Ok(message="Signed out of all other sessions.")
 
 
 @router.delete("/sessions/{session_id}", response_model=Ok)

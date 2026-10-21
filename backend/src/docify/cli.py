@@ -39,6 +39,7 @@ def cmd_worker(args: argparse.Namespace) -> None:
 
     _setup("worker")
     s = get_settings()
+    s.check_deployable()
     start_metrics_server(s.metrics_port)
 
     async def main() -> None:

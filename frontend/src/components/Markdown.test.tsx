@@ -83,4 +83,13 @@ describe("markdown helpers", () => {
       { text: " cookie x", hit: false },
     ]);
   });
+
+  it("supports the plain-text «…» markers the API sends", () => {
+    expect(parseHighlights("hash «password» with «bcrypt»")).toEqual([
+      { text: "hash ", hit: false },
+      { text: "password", hit: true },
+      { text: " with ", hit: false },
+      { text: "bcrypt", hit: true },
+    ]);
+  });
 });

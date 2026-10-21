@@ -13,8 +13,10 @@
 #     timeout (a sleeping server fails fast -> the SPA shows "backend
 #     sleeping"), 60 s response timeout (chat streams), secret header
 #     X-Origin-Verify so the app can reject requests that skip CloudFront.
-#   - /api/*: managed CachingDisabled + AllViewerExceptHostHeader (forwarding
-#     the viewer Host header would break origin TLS/Ingress routing).
+#   - /api/*: managed CachingDisabled + our own origin request policy: an explicit
+#     header allow-list (never Host — it would break origin TLS/Ingress routing)
+#     plus CloudFront-Viewer-Address, the only trustworthy client IP for rate
+#     limits (X-Forwarded-For's first entry is client-controlled, V25).
 #   - default: managed CachingOptimized + spa-rewrite function.
 #   - NO custom error responses: they would turn API 404s into index.html.
 #   - Price class 200 (includes India), HTTP/2 + HTTP/3, standard logs off.
@@ -36,8 +38,26 @@ data "aws_cloudfront_cache_policy" "caching_disabled" {
   name = "Managed-CachingDisabled"
 }
 
-data "aws_cloudfront_origin_request_policy" "all_viewer_except_host" {
-  name = "Managed-AllViewerExceptHostHeader"
+resource "aws_cloudfront_origin_request_policy" "api" {
+  name    = "${local.prefix}-api"
+  comment = "Docify API: cookies, query strings, explicit headers + viewer address (no Host)"
+
+  cookies_config {
+    cookie_behavior = "all"
+  }
+  query_strings_config {
+    query_string_behavior = "all"
+  }
+  headers_config {
+    header_behavior = "whitelist"
+    headers {
+      items = [
+        "Accept", "Accept-Language", "Content-Type", "Origin", "Referer", "User-Agent",
+        "X-Docify-CSRF", "X-Request-Id",
+        "CloudFront-Viewer-Address", "CloudFront-Viewer-Country",
+      ]
+    }
+  }
 }
 
 # --- origin access control for the S3 bucket ------------------------------------------
@@ -142,7 +162,7 @@ resource "aws_cloudfront_distribution" "this" {
     allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods             = ["GET", "HEAD"]
     cache_policy_id            = data.aws_cloudfront_cache_policy.caching_disabled.id
-    origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    origin_request_policy_id   = aws_cloudfront_origin_request_policy.api.id
     response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
     compress                   = true
   }

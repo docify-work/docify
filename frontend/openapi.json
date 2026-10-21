@@ -760,6 +760,27 @@
     }
    }
   },
+  "/api/me/sessions/revoke-others": {
+   "post": {
+    "tags": [
+     "account"
+    ],
+    "summary": "Revoke Other Sessions",
+    "operationId": "revoke_other_sessions_api_me_sessions_revoke_others_post",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Ok"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
   "/api/me/sessions/{session_id}": {
    "delete": {
     "tags": [
@@ -2939,6 +2960,21 @@
       },
       "type": "array",
       "title": "Source Paths"
+     },
+     "repo_html_url": {
+      "type": "string",
+      "title": "Repo Html Url"
+     },
+     "commit_url": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Commit Url"
      }
     },
     "type": "object",
@@ -2952,7 +2988,9 @@
      "has_pending_review",
      "updated_at",
      "content_md",
-     "source_paths"
+     "source_paths",
+     "repo_html_url",
+     "commit_url"
     ],
     "title": "DocDetailOut"
    },
@@ -4072,6 +4110,18 @@
        }
       ],
       "title": "Doc Id"
+     },
+     "changelog_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Changelog Id"
      },
      "score": {
       "type": "number",

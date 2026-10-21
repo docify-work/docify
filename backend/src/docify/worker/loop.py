@@ -71,9 +71,13 @@ async def run_worker(*, once: bool = False) -> None:
         await asyncio.wait({receive, stop_wait}, return_when=asyncio.FIRST_COMPLETED)
         stop_wait.cancel()
         if not receive.done():
-            receive.cancel()
-            with contextlib.suppress(BaseException):
-                await receive
+            # Stopping. The boto3 call runs in a thread and can't be cancelled, so wait for it (≤ 20 s)
+            # and hand back anything it received instead of leaving it invisible for 5 minutes.
+            with contextlib.suppress(Exception):
+                leftover = await asyncio.wait_for(receive, timeout=25)
+                for m in leftover:
+                    with contextlib.suppress(Exception):
+                        await queue.change_visibility(m.receipt, 0)
             break
         try:
             messages = receive.result()

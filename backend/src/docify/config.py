@@ -101,6 +101,21 @@ class Settings(BaseSettings):
             v = "postgresql+asyncpg://" + v.removeprefix("postgresql://")
         return v
 
+    def check_deployable(self) -> None:
+        """Fail fast in staging/prod instead of running with dev defaults (published pepper, no origin check)."""
+        if self.is_local:
+            return
+        problems = []
+        pepper = self.session_pepper.get_secret_value()
+        if pepper.startswith("local-dev-pepper") or len(pepper) < 32:
+            problems.append("SESSION_PEPPER must be a real random value (>= 32 chars)")
+        if not self.origin_verify_header or len(self.origin_verify_header.get_secret_value()) < 16:
+            problems.append("ORIGIN_VERIFY_HEADER must be set")
+        if self.ai_mode == "real" and not self.anthropic_api_key.get_secret_value():
+            problems.append("ANTHROPIC_API_KEY is required with AI_MODE=real")
+        if problems:
+            raise RuntimeError("Refusing to start: " + "; ".join(problems))
+
     @property
     def is_local(self) -> bool:
         return self.env in ("local", "test")

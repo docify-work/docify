@@ -33,7 +33,10 @@ async def _load_repo(ctx: JobContext) -> Repository | None:
 
 async def _set_repo(ctx: JobContext, repo: Repository, **values: Any) -> None:
     async with ctx.tx() as db:
-        await db.execute(update(Repository).where(Repository.id == repo.id).values(**values))
+        stmt = update(Repository).where(Repository.id == repo.id)
+        if "status" in values:  # never resurrect a repo removed/suspended while we were working
+            stmt = stmt.where(Repository.status.not_in(INACTIVE))
+        await db.execute(stmt.values(**values))
     for k, v in values.items():
         setattr(repo, k, v)
 
@@ -145,6 +148,11 @@ async def handle_repo_sync(ctx: JobContext) -> None:
 async def incremental(ctx: JobContext, gh: InstallationClient, repo: Repository, head: str, cmp: dict[str, Any],
                       files_changed: list[dict[str, Any]]) -> None:
     s = ctx.settings
+    if any(f.get("filename") == ".docifyignore" or f.get("previous_filename") == ".docifyignore"
+           for f in files_changed):
+        await _set_repo(ctx, repo, status="indexing")
+        await full_index(ctx, gh, repo, head)
+        return
     removed = {f["filename"] for f in files_changed if f.get("status") == "removed"}
     removed |= {f["previous_filename"] for f in files_changed if f.get("status") == "renamed"
                 and f.get("previous_filename")}

@@ -121,6 +121,11 @@ Jira/Slack/Drive · MCP/agents/fine-tuning · rich-text editor · version-diff U
 | D44 | 10-21 | Accepted | **Repo purge deletes the `repositories` row** (children cascade) after marking it `disconnected`; re-attaching later starts fresh | frees the unique `github_repo_id`, simplest correct state | keep disconnected rows |
 | D45 | 10-21 | Accepted | **Account ids never in Git**: Helm values hold `aws.accountId: "000000000000"`; the root Argo `Application` (created by `bootstrap.sh`, not stored in Git) passes real ids as Helm parameters; workflows read `vars.AWS_ACCOUNT_ID` | public repo | ids in values files |
 | D46 | 10-21 | Accepted | **Trivy image gate = vulnerabilities only** (`scanners: vuln`, CRITICAL, fixable) | secret scanner false-positives on SDK docstrings; repo secrets are covered by GitHub push protection | default scanners |
+| D47 | 10-21 | Accepted | **Verify links carry the signup's password** (`email_tokens.password_hash`); verifying an unverified account applies it (or leaves no password for a resend link) and kills sessions | review finding #1: a stranger's password on an unverified account must never survive verification (F53 for email signups) | keep existing hash |
+| D48 | 10-21 | Accepted | **OAuth flows bound to the starting browser**: HttpOnly cookie `docify_oauth` (nonce, 10 min, path /api), HMAC stored in `oauth_states.browser_hmac`, checked at callback and at the Setup URL | review #2: login-CSRF (victim completes attacker's flow) | session binding only |
+| D49 | 10-21 | Accepted | **Attach limited to repos the connecting user can see** (`/user/installations/{id}/repositories` → `workspace_installations.allowed_repo_ids`, refreshed on every Configure) | review #3: an org installation token sees all repos; a member may see only some | trust installation token |
+| D50 | 10-21 | Accepted | **Client IP = `CloudFront-Viewer-Address`** (custom origin request policy with an explicit header allow-list, no Host); X-Forwarded-For only trusted locally | review #4: XFF first entry is client-controlled → rate-limit bypass. Supersedes the §12.5 XFF note (V25) | first XFF entry |
+| D51 | 10-21 | Accepted | **Per-dedupe-key `pg_advisory_xact_lock`** in enqueue/requeue (transaction-scoped, milliseconds) | review #6: twin-lookup + requeue could race into a unique violation. D32's objection was to *session* locks held during long work; this lock is released at commit | catch IntegrityError + retry |
 
 ### 3.2 Differences from `Docify_Project_Plan.md`
 
@@ -1466,7 +1471,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | V21 | Loki chart location/maintainer (2026)                                                                                             | §13.6        | P10.1             | ✅ 2026-10-21 (Loki chart now `oci://ghcr.io/grafana-community/helm-charts`, 19.0.1) |
 | V22 | LE rate limits; k3s cert auto-renew                                                                                               | §13.5, F32   | P9.1              | ⬜                           |
 | V23 | Claude/Voyage pricing & model ids; Voyage free tokens; pgvector version                                                           | D17, D18, §6 | P5.1              | ⬜                           |
-| V25 | CloudFront appends viewer IP to `X-Forwarded-For` with AllViewerExceptHostHeader; whether `CloudFront-Viewer-Address` is included | §12.5        | P9.3              | ⬜                           |
+| V25 | CloudFront appends viewer IP to `X-Forwarded-For` with AllViewerExceptHostHeader; whether `CloudFront-Viewer-Address` is included | §12.5        | P9.3              | ✅ 2026-10-21 by design: use `CloudFront-Viewer-Address` (D50); never the first XFF entry |
 | V26 | Argo CD: hooks not counted in Application health; `syncPolicy.retry` behaviour                                                    | §13.2        | P7.1              | ⬜                           |
 | V24 | ingress-nginx retired, Promtail EOL, Bitnami removal, LocalStack auth, MinIO status                                               | D09–D11, D24 | — (informational) | ✅ 2026-10-20 (web research) |
 

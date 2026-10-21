@@ -13,7 +13,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, text
 
-from docify.ai.budget import check_budget, record_embedding, record_llm
+from docify.ai.budget import check_budget, estimate_tokens, record_embedding, record_llm
 from docify.ai.embeddings import get_embedder
 from docify.ai.llm import LLMRefusal, Usage, get_llm
 from docify.ai.prompts import CHAT_SYSTEM
@@ -96,15 +96,16 @@ async def _search_docs(db: DB, ws: Workspace, repo_ids: list[uuid.UUID], q: str)
     rows = (await db.execute(text("""
         SELECT 'doc' AS kind, d.id AS doc_id, d.repo_id, r.full_name, d.title,
                ts_headline('english', v.content_md, websearch_to_tsquery('english', :q),
-                           'MaxFragments=2, MinWords=8, MaxWords=30') AS snippet,
+                           'StartSel=«, StopSel=», MaxFragments=2, MinWords=8, MaxWords=30') AS snippet,
                ts_rank_cd(v.tsv, websearch_to_tsquery('english', :q)) AS rank
         FROM documents d
         JOIN document_versions v ON v.id = d.published_version_id
         JOIN repositories r ON r.id = d.repo_id
         WHERE d.workspace_id = :ws AND d.repo_id = ANY(:repos) AND v.tsv @@ websearch_to_tsquery('english', :q)
         UNION ALL
-        SELECT 'changelog', NULL, c.repo_id, r.full_name, 'Changelog ' || left(c.to_sha, 7),
-               ts_headline('english', c.content_md, websearch_to_tsquery('english', :q)),
+        SELECT 'changelog', c.id, c.repo_id, r.full_name, 'Changelog ' || left(c.to_sha, 7),
+               ts_headline('english', c.content_md, websearch_to_tsquery('english', :q),
+                           'StartSel=«, StopSel=», MaxFragments=2, MinWords=8, MaxWords=30'),
                ts_rank_cd(c.tsv, websearch_to_tsquery('english', :q))
         FROM changelog_entries c JOIN repositories r ON r.id = c.repo_id
         WHERE c.workspace_id = :ws AND c.repo_id = ANY(:repos) AND c.status = 'published'
@@ -112,7 +113,9 @@ async def _search_docs(db: DB, ws: Workspace, repo_ids: list[uuid.UUID], q: str)
         ORDER BY rank DESC LIMIT 20
     """), {"q": q, "ws": ws.id, "repos": repo_ids})).all()
     return [SearchHitOut(kind=r.kind, repo_id=r.repo_id, repo_full_name=r.full_name, title=r.title,
-                         snippet=r.snippet, url=None, doc_id=r.doc_id, score=round(float(r.rank), 5)) for r in rows]
+                         snippet=r.snippet, url=None, doc_id=r.doc_id if r.kind == "doc" else None,
+                         changelog_id=r.doc_id if r.kind == "changelog" else None,
+                         score=round(float(r.rank), 5)) for r in rows]
 
 
 # ----------------------------------------------------------------------------- chat
@@ -138,9 +141,9 @@ async def chat(ws: str, body: ChatIn, db: DB, principal: CurrentPrincipal) -> St
                       code="ai_budget") from exc
 
     thread: ChatThread
-    if body.thread_id is not None:
+    if body.thread_id is not None and principal.user is not None:
         thread, _ = await load_for_user(db, ChatThread, body.thread_id, principal)
-        if thread.user_id != (principal.user.id if principal.user else None) or thread.workspace_id != w.id:
+        if thread.user_id != principal.user.id or thread.workspace_id != w.id:
             raise not_found("Thread")
     else:
         thread = ChatThread(workspace_id=w.id, user_id=principal.user.id if principal.user else None,
@@ -153,17 +156,26 @@ async def chat(ws: str, body: ChatIn, db: DB, principal: CurrentPrincipal) -> St
     db.add(user_msg)
     repo_ids = await _repo_ids(db, w, body.repo_ids)
     embedder = get_embedder()
+    qvec = None
+    try:
+        vectors, tokens = await embedder.embed([body.message], input_type="query")
+        qvec = vectors[0]
+        record_embedding(db, workspace_id=w.id, job_id=None, model=embedder.model, tokens=tokens,
+                         purpose="chat_embed")
+    except Exception as exc:  # F22: FTS-only
+        log.info("chat.embed_failed", error=type(exc).__name__)
     hits, has_context = await retrieve(db, workspace_id=w.id, repo_ids=repo_ids, query=body.message,
-                                       embedder=embedder)
+                                       embedder=embedder, query_vector=qvec)
     await db.commit()  # thread + user message persist even if streaming fails
 
     history: list[dict[str, Any]] = []
     size = 0
-    for m in reversed(history_rows):
+    for m in history_rows:  # newest first
         size += len(m.content)
         if size > HISTORY_CHARS:
             break
         history.append({"role": m.role, "content": m.content})
+    history.reverse()  # chronological order for the model
     thread_id, ws_id = thread.id, w.id
     sources = [h.as_source(i) for i, h in enumerate(hits, 1)]
 
@@ -219,6 +231,9 @@ async def chat(ws: str, body: ChatIn, db: DB, principal: CurrentPrincipal) -> St
                     await task
             text_ = "".join(answer).strip()
             if text_:
+                if usage.input_tokens == 0:  # interrupted before usage arrived: estimate, never record $0
+                    usage.input_tokens = estimate_tokens(prompt) + 400
+                    usage.output_tokens = max(usage.output_tokens, estimate_tokens(text_))
                 await _save_answer(ws_id, thread_id, text_, sources, s.llm_model_chat, usage)
         yield _sse("done", {"thread_id": str(thread_id)})
 

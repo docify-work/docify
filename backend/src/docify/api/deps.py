@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from docify.api.errors import Problem, not_found, unauthorized
 from docify.auth.sessions import COOKIE, load_session
+from docify.config import get_settings
 from docify.db.models import Membership, Session, User, Workspace
 from docify.db.session import session_factory
 
@@ -40,11 +41,20 @@ DB = Annotated[AsyncSession, Depends(get_db, scope="function")]
 
 
 def client_ip(request: Request) -> str:
-    # Behind CloudFront the viewer IP is the first X-Forwarded-For entry; the origin only
-    # accepts CloudFront traffic, so the header is trusted (§12.5, V25).
-    xff = request.headers.get("x-forwarded-for")
-    if xff:
-        return xff.split(",")[0].strip()[:64]
+    """Viewer IP for rate limits.
+
+    In the cloud we use `CloudFront-Viewer-Address` ("ip:port"), which CloudFront sets itself — the
+    first X-Forwarded-For entry is client-controlled (CloudFront only *appends*), so trusting it would
+    let anyone bypass per-IP limits (V25). The origin only accepts CloudFront traffic (SG + header).
+    Locally (Vite proxy) X-Forwarded-For is fine.
+    """
+    viewer = request.headers.get("cloudfront-viewer-address")
+    if viewer:
+        return viewer.rsplit(":", 1)[0].strip("[]")[:64]
+    if get_settings().is_local:
+        xff = request.headers.get("x-forwarded-for")
+        if xff:
+            return xff.split(",")[0].strip()[:64]
     return request.client.host if request.client else "unknown"
 
 

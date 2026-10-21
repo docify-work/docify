@@ -13,7 +13,7 @@ from sqlalchemy import func, select, text, update
 from docify.ai import citations, prompts
 from docify.ai.budget import check_budget, estimate_tokens, record_llm
 from docify.ai.indexer import file_text
-from docify.ai.llm import LLMRefusal, LLMTruncated
+from docify.ai.llm import LLMRefusal, LLMStop, LLMTruncated
 from docify.db.models import ChangelogEntry, Document, DocumentVersion, File, Repository, Workspace
 from docify.jobs.context import JobContext
 
@@ -137,6 +137,13 @@ def _select(mats: list[Material], budget: int) -> tuple[list[Material], bool]:
     return chosen, partial
 
 
+async def _record_stop(ctx: JobContext, repo: Repository, purpose: str, stop: LLMStop) -> None:
+    """Refused/truncated calls are still billed → count them against the budget."""
+    async with ctx.tx() as db:
+        record_llm(db, workspace_id=repo.workspace_id, job_id=ctx.job_id, purpose=purpose, model=stop.model,
+                   usage=stop.usage)
+
+
 def source_paths(mats: list[Material]) -> list[str]:
     return sorted({m.path for m in mats if not m.path.startswith("(")})
 
@@ -183,7 +190,8 @@ async def generate_doc(ctx: JobContext, repo: Repository, kind: str, sha: str, *
     try:
         res = await ctx.llm.complete(task="doc", model=model, system=prompts.DOC_SYSTEM, max_tokens=8000,
                                      messages=[{"role": "user", "content": user}])
-    except LLMTruncated:
+    except LLMTruncated as trunc:
+        await _record_stop(ctx, repo, f"doc_{kind}", trunc)
         # F19: one retry with half the material.
         chosen, partial = _select(mats, max(budget // 2, 6_000))
         user = f"{header}{update_part}\n<repository_material>\n" + "\n\n".join(m.body for m in chosen) + \
@@ -191,7 +199,8 @@ async def generate_doc(ctx: JobContext, repo: Repository, kind: str, sha: str, *
         res = await ctx.llm.complete(task="doc", model=model, system=prompts.DOC_SYSTEM, max_tokens=8000,
                                      messages=[{"role": "user", "content": user}])
         partial = True
-    except LLMRefusal:
+    except LLMRefusal as refusal:
+        await _record_stop(ctx, repo, f"doc_{kind}", refusal)
         ctx.log.warning("docgen.refusal", kind=kind)
         return False
     content, _removed = citations.validate(res.text.strip(), line_counts)
@@ -270,7 +279,8 @@ async def write_changelog(ctx: JobContext, repo: Repository, *, from_sha: str | 
         res = await ctx.llm.complete(task="changelog", model=ctx.settings.llm_model_summary,
                                      system=prompts.CHANGELOG_SYSTEM, max_tokens=800,
                                      messages=[{"role": "user", "content": body}])
-    except (LLMRefusal, LLMTruncated):
+    except (LLMRefusal, LLMTruncated) as stop:
+        await _record_stop(ctx, repo, "changelog", stop)
         return False
     auto = bool((settings or {}).get("auto_publish", True))
     async with ctx.tx() as db:

@@ -12,13 +12,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from docify.api.deps import DB, CurrentPrincipal, Principal, UserPrincipal, get_workspace
 from docify.api.errors import Problem, conflict
-from docify.api.routers.auth import _front, new_oauth_state
+from docify.api.routers.auth import BROWSER_COOKIE, _front, browser_nonce, new_oauth_state, set_browser_cookie
 from docify.api.schemas import AttachReposIn, GithubRepoOption, InstallationOut, InstallUrlOut, RepoOut
 from docify.audit import audit
 from docify.auth import oauth
@@ -46,11 +47,14 @@ def _require_github() -> None:
 
 
 @router.get("/workspaces/{ws}/github/install-url", response_model=InstallUrlOut)
-async def install_url(ws: str, db: DB, principal: UserPrincipal) -> InstallUrlOut:
+async def install_url(ws: str, request: Request, response: Response, db: DB,
+                      principal: UserPrincipal) -> InstallUrlOut:
     _require_github()
     w = await get_workspace(db, principal, ws, "admin")
+    browser = browser_nonce(request)
     state, _, _ = await new_oauth_state(db, provider="github", purpose="install", session=principal.session,
-                                        workspace_id=w.id, redirect_to=f"/w/{w.slug}/repos")
+                                        browser=browser, workspace_id=w.id, redirect_to=f"/w/{w.slug}/repos")
+    set_browser_cookie(response, browser)
     s = get_settings()
     return InstallUrlOut(url=f"{s.github_web_url}/apps/{s.github_app_slug}/installations/new?"
                              + urlencode({"state": state}))
@@ -70,16 +74,17 @@ async def setup(request: Request, db: DB, principal: CurrentPrincipal, installat
         row = (await db.execute(select(OAuthState).where(
             OAuthState.session_id == principal.session.id, OAuthState.purpose == "install",
             OAuthState.expires_at > now).order_by(OAuthState.created_at.desc()).limit(1))).scalar_one_or_none()
+    back = (row.redirect_to if row is not None and row.redirect_to else "/app")
+    cookie = request.cookies.get(BROWSER_COOKIE)
     if row is None or row.session_id != principal.session.id or row.purpose != "install" or row.expires_at <= now \
-            or installation_id is None:
-        return RedirectResponse(_front("/?error=install_state"), status_code=302)
+            or installation_id is None or not cookie or row.browser_hmac != token_hmac(cookie):
+        return RedirectResponse(_front(f"{back}?error=install_state"), status_code=302)
     await db.delete(row)
-    # Fresh state for the OAuth leg, carrying the installation id to verify.
+    # Fresh state for the OAuth leg, carrying the installation id to verify (same browser binding).
     new_state, challenge, _ = await new_oauth_state(db, provider="github", purpose="install",
-                                                    session=principal.session, workspace_id=row.workspace_id,
-                                                    redirect_to=row.redirect_to)
-    created = (await db.execute(select(OAuthState).where(OAuthState.state_hmac == token_hmac(new_state)))).scalar_one()
-    created.installation_id = installation_id
+                                                    session=principal.session, browser=cookie,
+                                                    workspace_id=row.workspace_id, redirect_to=row.redirect_to,
+                                                    installation_id=installation_id)
     return RedirectResponse(oauth.github_authorize_url(new_state, challenge), status_code=302)
 
 
@@ -89,7 +94,7 @@ async def complete_install(db: DB, principal: Principal, row: OAuthState, profil
         return "/login?error=login_required"
     ws = await db.get(Workspace, row.workspace_id)
     if ws is None or ws.deleted_at is not None or principal.role_in(ws.id) != "admin":
-        return "/?error=install_workspace"
+        return "/app?error=install_workspace"
     assert profile.access_token is not None
     try:
         allowed = await oauth.github_user_installation_ids(profile.access_token)
@@ -99,6 +104,10 @@ async def complete_install(db: DB, principal: Principal, row: OAuthState, profil
         audit(db, "github.install_rejected", actor=principal.user.id, workspace_id=ws.id,
               target=str(row.installation_id))
         return f"/w/{ws.slug}/repos?error=install_not_yours"
+    try:
+        visible_repos = await oauth.github_user_installation_repo_ids(profile.access_token, row.installation_id)
+    except oauth.OAuthError:
+        return f"/w/{ws.slug}/repos?error=install_verify"
     app = GitHubApp()
     try:
         meta = await app.get_installation(row.installation_id)
@@ -125,7 +134,10 @@ async def complete_install(db: DB, principal: Principal, row: OAuthState, profil
         WorkspaceInstallation.installation_id == row.installation_id))).scalar_one_or_none()
     if exists is None:
         db.add(WorkspaceInstallation(workspace_id=ws.id, installation_id=row.installation_id,
-                                     added_by=principal.user.id))
+                                     added_by=principal.user.id, allowed_repo_ids=sorted(visible_repos)))
+    else:
+        # Re-running the flow ("Configure" on GitHub) refreshes what this workspace may attach.
+        exists.allowed_repo_ids = sorted(visible_repos)
     audit(db, "github.installed", actor=principal.user.id, workspace_id=ws.id, target=str(row.installation_id))
     return f"/w/{ws.slug}/repos?connected=1"
 
@@ -134,18 +146,19 @@ async def complete_install(db: DB, principal: Principal, row: OAuthState, profil
 async def installations(ws: str, db: DB, principal: UserPrincipal) -> list[InstallationOut]:
     _require_github()
     w = await get_workspace(db, principal, ws, "admin")
-    insts = (await db.execute(select(GithubInstallation).join(
+    rows = (await db.execute(select(GithubInstallation, WorkspaceInstallation.allowed_repo_ids).join(
         WorkspaceInstallation, WorkspaceInstallation.installation_id == GithubInstallation.installation_id)
-        .where(WorkspaceInstallation.workspace_id == w.id, GithubInstallation.deleted_at.is_(None)))).scalars().all()
+        .where(WorkspaceInstallation.workspace_id == w.id, GithubInstallation.deleted_at.is_(None)))).all()
     out: list[InstallationOut] = []
     app = GitHubApp()
     try:
-        for inst in insts:
+        for inst, allowed_ids in rows:
             options: list[GithubRepoOption] = []
             if inst.suspended_at is None:
                 try:
                     client = await app.for_installation(inst.installation_id)
-                    repos = await client.list_repos()
+                    allowed_set = set(allowed_ids or [])
+                    repos = [r for r in await client.list_repos() if int(r["id"]) in allowed_set]
                 except (GitHubNotFound, JobError):
                     repos = []
                 ids = [int(r["id"]) for r in repos]
@@ -194,7 +207,7 @@ async def attach_repos(ws: str, installation_id: int, body: AttachReposIn, db: D
     created: list[Repository] = []
     for gid in dict.fromkeys(body.github_repo_ids):
         meta = accessible.get(gid)
-        if meta is None:
+        if meta is None or gid not in set(link.allowed_repo_ids or []):
             raise Problem(404, "Not found", f"Repository {gid} is not accessible to this installation.",
                           code="repo_not_accessible")
         other = (await db.execute(select(Repository, Workspace.name).join(Workspace, Workspace.id ==
@@ -209,7 +222,11 @@ async def attach_repos(ws: str, installation_id: int, body: AttachReposIn, db: D
                           default_branch=meta.get("default_branch") or "main", private=bool(meta.get("private")),
                           archived=bool(meta.get("archived")), size_kb=meta.get("size"), status="pending")
         db.add(repo)
-        await db.flush()
+        try:
+            async with db.begin_nested():
+                await db.flush()
+        except IntegrityError as exc:  # concurrent attach of the same repo
+            raise conflict("This repository was just attached elsewhere.", code="repo_in_use") from exc
         await db.refresh(repo)
         created.append(repo)
         audit(db, "repo.attached", actor=principal.user_id, workspace_id=w.id, target=meta["full_name"])

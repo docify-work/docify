@@ -257,6 +257,8 @@ class DocOut(Out):
 class DocDetailOut(DocOut):
     content_md: str | None  # citations rendered as GitHub permalinks
     source_paths: list[str]
+    repo_html_url: str
+    commit_url: str | None
 
 
 class DocVersionOut(VersionBrief):
@@ -299,7 +301,8 @@ class SearchHitOut(Out):
     start_line: int | None = None
     end_line: int | None = None
     doc_id: uuid.UUID | None = None
-    score: float
+    changelog_id: uuid.UUID | None = None
+    score: float  # snippets mark matches with «…» (plain text, never HTML)
 
 
 class SearchOut(Out):

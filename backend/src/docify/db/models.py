@@ -97,6 +97,9 @@ class EmailToken(IdMixin, TimestampMixin, Base):
     token_hmac: Mapped[bytes] = mapped_column(LargeBinary, unique=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Verify tokens carry the password chosen by whoever requested *this* link; verifying applies it
+    # (or wipes the password if none), so a stranger's password on an unverified account never survives.
+    password_hash: Mapped[str | None] = mapped_column(String(255))
 
 
 OAUTH_PURPOSES = ("login", "link", "install")
@@ -114,6 +117,7 @@ class OAuthState(TimestampMixin, Base):
     nonce: Mapped[str | None] = mapped_column(String(128))
     redirect_to: Mapped[str | None] = mapped_column(String(300))
     installation_id: Mapped[int | None] = mapped_column(BigInteger)  # install flow: set by the Setup URL step
+    browser_hmac: Mapped[bytes | None] = mapped_column(LargeBinary)  # binds the flow to the starting browser
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
@@ -183,6 +187,9 @@ class WorkspaceInstallation(IdMixin, TimestampMixin, Base):
         BigInteger, ForeignKey("github_installations.installation_id", ondelete="CASCADE"), index=True
     )
     added_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    # Repos the connecting user can actually see in this installation (from /user/installations/{id}/repositories).
+    # Org installations expose every repo to the installation token, so attach is limited to this list.
+    allowed_repo_ids: Mapped[list[int]] = mapped_column(ARRAY(BigInteger), server_default=text("'{}'"))
 
 
 REPO_STATUSES = (

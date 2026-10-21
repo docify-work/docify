@@ -11,11 +11,11 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 
 from docify.api.deps import DB, CurrentPrincipal, client_ip
-from docify.api.errors import Problem, bad_request
+from docify.api.errors import Problem
 from docify.api.schemas import EmailIn, LoginIn, Ok, ResetPasswordIn, SignupIn, TokenIn
 from docify.auth import oauth, service
 from docify.auth.sessions import clear_session_cookie, create_session, set_session_cookie
-from docify.auth.tokens import new_token, token_hmac
+from docify.auth.tokens import constant_time_equals, new_token, token_hmac
 from docify.cache import hit
 from docify.config import get_settings
 from docify.db.models import OAuthState, Session
@@ -98,8 +98,25 @@ async def reset(body: ResetPasswordIn, request: Request, response: Response, db:
 # ----------------------------------------------------------------------------- OAuth
 
 
-async def new_oauth_state(db: DB, *, provider: str, purpose: str, session: Session | None,
-                          workspace_id: object = None, redirect_to: str | None = None) -> tuple[str, str, str]:
+BROWSER_COOKIE = "docify_oauth"
+
+
+def browser_nonce(request: Request) -> str:
+    """Per-browser random value; its HMAC is stored on every OAuth state so a flow can only be completed
+    in the browser that started it (stops login-CSRF: "victim finishes the attacker's OAuth flow")."""
+    current = request.cookies.get(BROWSER_COOKIE)
+    return current if current and 20 <= len(current) <= 100 else new_token(24)
+
+
+def set_browser_cookie(response: Response, nonce: str) -> None:
+    s = get_settings()
+    response.set_cookie(BROWSER_COOKIE, nonce, max_age=int(STATE_TTL.total_seconds()), httponly=True,
+                        secure=s.cookie_secure, samesite="lax", path="/api")
+
+
+async def new_oauth_state(db: DB, *, provider: str, purpose: str, session: Session | None, browser: str,
+                          workspace_id: object = None, redirect_to: str | None = None,
+                          installation_id: int | None = None) -> tuple[str, str, str]:
     """Returns (state, code_challenge, nonce)."""
     state = new_token(24)
     verifier, challenge = oauth.pkce_pair()
@@ -107,9 +124,14 @@ async def new_oauth_state(db: DB, *, provider: str, purpose: str, session: Sessi
     db.add(OAuthState(state_hmac=token_hmac(state), provider=provider, purpose=purpose,
                       session_id=session.id if session else None, workspace_id=workspace_id,
                       code_verifier=verifier, nonce=nonce, redirect_to=redirect_to,
+                      installation_id=installation_id, browser_hmac=token_hmac(browser),
                       expires_at=datetime.now(UTC) + STATE_TTL))
     await db.flush()
     return state, challenge, nonce
+
+
+def _with_query(path: str, key: str, value: str) -> str:
+    return f"{path}{'&' if '?' in path else '?'}{key}={quote(value)}"
 
 
 @router.get("/{provider}/start", summary="Begin OAuth login or account linking (browser redirect)")
@@ -117,18 +139,22 @@ async def oauth_start(provider: Literal["github", "google"], principal: CurrentP
                       purpose: Literal["login", "link"] = "login",
                       redirect_to: str | None = Query(default=None, max_length=300)) -> RedirectResponse:
     s = get_settings()
+    fail = "/account" if purpose == "link" else "/login"
     if (provider == "github" and not s.github_configured) or (provider == "google" and not s.google_configured):
-        return RedirectResponse(_front("/login?error=provider_disabled"), status_code=302)
+        return RedirectResponse(_front(_with_query(fail, "error", "provider_disabled")), status_code=302)
     await hit(f"oauth:ip:{client_ip(request)}", limit=30, window_s=600)
     if purpose == "link" and principal.is_anonymous:
         return RedirectResponse(_front("/login?error=login_required"), status_code=302)
     default = "/account" if purpose == "link" else "/"
+    browser = browser_nonce(request)
     state, challenge, nonce = await new_oauth_state(
-        db, provider=provider, purpose=purpose, session=principal.session,
+        db, provider=provider, purpose=purpose, session=principal.session, browser=browser,
         redirect_to=_safe_redirect(redirect_to, default))
-    url = oauth.github_authorize_url(state, challenge) if provider == "github" \
-        else oauth.google_authorize_url(state, challenge, nonce)
-    return RedirectResponse(url, status_code=302)
+    url = (oauth.github_authorize_url(state, challenge) if provider == "github"
+           else oauth.google_authorize_url(state, challenge, nonce))
+    resp = RedirectResponse(url, status_code=302)
+    set_browser_cookie(resp, browser)
+    return resp
 
 
 @router.get("/{provider}/callback", summary="OAuth redirect target")
@@ -144,15 +170,22 @@ async def oauth_callback(provider: Literal["github", "google"], principal: Curre
     if row is None or row.provider != provider or row.expires_at <= datetime.now(UTC):
         return RedirectResponse(_front("/login?error=oauth_state"), status_code=302)
     await db.delete(row)  # single use
-    # States created by a signed-in user only complete in that same session (login CSRF defence).
+    # 1) Same browser that started the flow (cookie nonce). 2) Signed-in flows: same session too.
+    cookie = request.cookies.get(BROWSER_COOKIE)
+    if not cookie or row.browser_hmac is None or not constant_time_equals(token_hmac(cookie), row.browser_hmac):
+        await db.commit()
+        return RedirectResponse(_front("/login?error=oauth_state"), status_code=302)
     if row.session_id is not None and (principal.session is None or principal.session.id != row.session_id):
+        await db.commit()
         return RedirectResponse(_front("/login?error=oauth_session"), status_code=302)
+    fail = {"link": "/account", "install": row.redirect_to or "/"}.get(row.purpose, "/login")
     try:
-        profile = await oauth.github_exchange(code, row.code_verifier) if provider == "github" \
-            else await oauth.google_exchange(code, row.code_verifier, row.nonce)
+        profile = (await oauth.github_exchange(code, row.code_verifier) if provider == "github"
+                   else await oauth.google_exchange(code, row.code_verifier, row.nonce))
     except oauth.OAuthError as exc:
         log.info("oauth.exchange_failed", provider=provider, error=str(exc))
-        return RedirectResponse(_front("/login?error=oauth_failed"), status_code=302)
+        await db.commit()
+        return RedirectResponse(_front(_with_query(fail, "error", "oauth_failed")), status_code=302)
 
     try:
         if row.purpose == "install":
@@ -162,12 +195,12 @@ async def oauth_callback(provider: Literal["github", "google"], principal: Curre
             if principal.user is None:
                 return RedirectResponse(_front("/login?error=login_required"), status_code=302)
             await service.link_identity(db, principal.user, profile)
-            return RedirectResponse(_front(_safe_redirect(row.redirect_to, "/account") + "?linked=" + provider),
-                                    status_code=302)
+            return RedirectResponse(_front(_with_query(_safe_redirect(row.redirect_to, "/account"), "linked",
+                                                       provider)), status_code=302)
         user = await service.resolve_oauth_login(db, profile)
     except Problem as exc:
         await db.commit()  # keep the deleted state row / audit
-        return RedirectResponse(_front(f"/login?error={quote(exc.code)}"), status_code=302)
+        return RedirectResponse(_front(_with_query(fail, "error", exc.code)), status_code=302)
 
     if principal.session is not None:
         await db.delete(principal.session)  # rotate session on login
@@ -175,8 +208,3 @@ async def oauth_callback(provider: Literal["github", "google"], principal: Curre
     redirect = RedirectResponse(_front(_safe_redirect(row.redirect_to)), status_code=302)
     set_session_cookie(redirect, token)
     return redirect
-
-
-def require_provider(provider: str) -> None:
-    if provider not in ("github", "google"):
-        raise bad_request("Unknown provider.")
