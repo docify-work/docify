@@ -1,0 +1,154 @@
+# "Start Docify" button (Master Doc §14.2, §19.1, R1).
+#
+# 1. warn if the newest Postgres dump is older than the last stop (§16.4)
+# 2. start the server, wait until EC2 says "running"
+# 3. wait for prod + staging /api/health through CloudFront (<= 10 min)
+#    (DNS is updated by the server itself at boot, D26)
+# 4. smoke-test staging at the sha in deploy/values/staging.yaml and record the
+#    commit status "staging-smoke" (promote.yml requires it)
+#
+# Role docify-ops-power trusts main only (sub = ref:refs/heads/main), so run it
+# from main. Guard: AWS_ENABLED repo variable.
+name: start
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: server-power # never start and stop at the same time (F47)
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-south-1
+  DOMAIN: ${{ vars.DOMAIN || 'docify.work' }}
+  SERVER_NAME_TAG: docify-server
+
+jobs:
+  start:
+    name: start server + smoke staging
+    if: vars.AWS_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ops-power
+      statuses: write # commit status staging-smoke
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: AWS credentials (OIDC, docify-ops-power)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ops-power
+          role-session-name: gha-start-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Find the server
+        id: server
+        run: |
+          out="$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${SERVER_NAME_TAG}" \
+                      "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+            --query 'Reservations[].Instances[].[InstanceId,State.Name,StateTransitionReason]' \
+            --output text | head -n 1)"
+          if [ -z "$out" ]; then
+            echo "::error::No instance tagged Name=${SERVER_NAME_TAG} found"
+            exit 1
+          fi
+          read -r id state reason <<<"$out"
+          {
+            echo "id=$id"
+            echo "state=$state"
+            echo "reason=$reason"
+          } >> "$GITHUB_OUTPUT"
+          echo "Server $id is $state ($reason)"
+
+      - name: Backup freshness check (warn only)
+        env:
+          REASON: ${{ steps.server.outputs.reason }}
+        run: |
+          # StateTransitionReason looks like "User initiated (2026-10-20 17:30:00 GMT)"
+          stopped_at="$(sed -n 's/.*(\([0-9-]* [0-9:]*\) GMT).*/\1/p' <<<"$REASON")"
+          if [ -z "$stopped_at" ]; then
+            echo "No stop time found (server not stopped?) - skipping"
+            exit 0
+          fi
+          # shellcheck disable=SC2016 # JMESPath literal, not a shell expansion
+          newest="$(aws s3api list-objects-v2 --bucket "docify-backups-${AWS_ACCOUNT_ID}" --prefix postgres/ \
+            --query 'sort_by(Contents || `[]`, &LastModified)[-1].LastModified' --output text)"
+          if [ -z "$newest" ] || [ "$newest" = "None" ]; then
+            echo "::warning::No Postgres backup found in S3 at all"
+            exit 0
+          fi
+          if [ "$(date -u -d "$newest" +%s)" -lt "$(date -u -d "$stopped_at" +%s)" ]; then
+            echo "::warning::Newest backup ($newest) is older than the last stop ($stopped_at UTC) - the pre-stop backup did not run"
+          else
+            echo "Backup OK: newest $newest >= last stop $stopped_at UTC"
+          fi
+
+      - name: Start instance
+        env:
+          ID: ${{ steps.server.outputs.id }}
+          STATE: ${{ steps.server.outputs.state }}
+        run: |
+          if [ "$STATE" = "stopping" ]; then
+            aws ec2 wait instance-stopped --instance-ids "$ID"
+          fi
+          if [ "$STATE" != "running" ] && [ "$STATE" != "pending" ]; then
+            aws ec2 start-instances --instance-ids "$ID" >/dev/null
+          fi
+          aws ec2 wait instance-running --instance-ids "$ID"
+          echo "Instance $ID is running"
+
+      - name: Wait for prod + staging /api/health (10 min)
+        run: |
+          for url in "https://${DOMAIN}/api/health" "https://staging.${DOMAIN}/api/health"; do
+            ok=false
+            for _ in $(seq 1 60); do
+              code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$url" || true)"
+              if [ "$code" = "200" ]; then ok=true; break; fi
+              sleep 10
+            done
+            if ! $ok; then
+              echo "::error::$url did not become healthy within 10 minutes (last: $code)"
+              exit 1
+            fi
+            echo "$url healthy"
+          done
+
+      - name: Staging sha from Git
+        id: sha
+        run: |
+          sha="$(yq -r '.image.tag' deploy/values/staging.yaml)"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Staging should run $sha"
+
+      - name: Wait for staging /api/version == sha, then smoke
+        if: steps.sha.outputs.sha != '0000000000000000000000000000000000000000'
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          base="https://staging.${DOMAIN}"
+          for _ in $(seq 1 60); do
+            if curl -fsS --max-time 5 "$base/api/version" | grep -q "$SHA"; then break; fi
+            sleep 10
+          done
+          if bash scripts/smoke.sh "$base" "$SHA" staging; then
+            state=success
+          else
+            state=failure
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${SHA}" \
+            -f state="$state" -f context=staging-smoke \
+            -f description="start.yml smoke on staging: $state" -f target_url="$RUN_URL" >/dev/null
+          [ "$state" = success ]

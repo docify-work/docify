@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars (git-ignored by *.tfvars) and fill in.
+# In CI the same values come from TF_VAR_* (see .github/workflows/terraform.yml).
+
+domain        = "docify.work"
+instance_type = "m7i-flex.large" # D30 / Q7
+alert_email   = "you@example.com" # Q8 - SNS sends a confirmation mail first
+
+# Optional
+# dmarc_rua_email             = "dmarc-reports@example.com"
+# lambda_reserved_concurrency = 5            # only if the account quota > 10 (V14)
+# root_values_files           = ["values.yaml"]

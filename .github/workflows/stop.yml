@@ -1,0 +1,115 @@
+# "Stop Docify" button (Master Doc §14.2, §18.1, R1).
+#
+# 1. if the server is running: SSM Run Command on the server:
+#      kubectl -n data create job --from=cronjob/pg-backup pre-stop-<ts>
+#    and wait (<= 5 min) for that backup Job to complete -> RPO ~ 0
+# 2. stop the instance (even if the backup failed: the data is still safe on
+#    the EBS volume; the warning shows up on the run and in start.yml)
+#
+# The nightly EventBridge Scheduler stop (23:00 IST) is the safety net if
+# nobody presses this button. Guard: AWS_ENABLED repo variable.
+name: stop
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: server-power
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-south-1
+  SERVER_NAME_TAG: docify-server
+
+jobs:
+  stop:
+    name: backup + stop server
+    if: vars.AWS_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ops-power
+    steps:
+      - name: AWS credentials (OIDC, docify-ops-power)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ops-power
+          role-session-name: gha-stop-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Find the server
+        id: server
+        run: |
+          out="$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${SERVER_NAME_TAG}" \
+                      "Name=instance-state-name,Values=pending,running,stopping,stopped" \
+            --query 'Reservations[].Instances[].[InstanceId,State.Name]' \
+            --output text | head -n 1)"
+          if [ -z "$out" ]; then
+            echo "::error::No instance tagged Name=${SERVER_NAME_TAG} found"
+            exit 1
+          fi
+          read -r id state <<<"$out"
+          {
+            echo "id=$id"
+            echo "state=$state"
+          } >> "$GITHUB_OUTPUT"
+          echo "Server $id is $state"
+
+      - name: Pre-stop Postgres backup (SSM -> kubectl)
+        if: steps.server.outputs.state == 'running'
+        env:
+          ID: ${{ steps.server.outputs.id }}
+        run: |
+          job="pre-stop-$(date -u +%Y%m%d%H%M%S)"
+          # AWS-RunShellScript runs with /bin/sh (dash) -> POSIX sh only.
+          jq -n --arg job "$job" '{
+            commands: [
+              "set -eu",
+              "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml",
+              ("kubectl -n data create job --from=cronjob/pg-backup " + $job),
+              ("kubectl -n data wait --for=condition=complete job/" + $job + " --timeout=300s")
+            ],
+            executionTimeout: ["420"]
+          }' > params.json
+
+          cmd_id="$(aws ssm send-command \
+            --instance-ids "$ID" \
+            --document-name AWS-RunShellScript \
+            --comment "docify pre-stop backup ${job}" \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)"
+          echo "SSM command $cmd_id (job $job)"
+
+          status=Pending
+          for _ in $(seq 1 45); do
+            sleep 10
+            status="$(aws ssm get-command-invocation --command-id "$cmd_id" --instance-id "$ID" \
+              --query Status --output text 2>/dev/null || echo Pending)"
+            case "$status" in
+              Pending | InProgress | Delayed) continue ;;
+              *) break ;;
+            esac
+          done
+
+          aws ssm get-command-invocation --command-id "$cmd_id" --instance-id "$ID" \
+            --query '[StandardOutputContent,StandardErrorContent]' --output text || true
+
+          if [ "$status" = "Success" ]; then
+            echo "Backup job $job completed"
+          else
+            echo "::warning::Pre-stop backup did not complete (status: $status). Stopping anyway - data stays on the EBS volume."
+          fi
+
+      - name: Stop instance
+        if: steps.server.outputs.state != 'stopped'
+        env:
+          ID: ${{ steps.server.outputs.id }}
+        run: |
+          aws ec2 stop-instances --instance-ids "$ID" >/dev/null
+          aws ec2 wait instance-stopped --instance-ids "$ID"
+          echo "Instance $ID stopped"

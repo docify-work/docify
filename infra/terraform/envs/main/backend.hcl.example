@@ -1,0 +1,5 @@
+# Partial S3 backend configuration. Copy to backend.hcl (git-ignored) and run:
+#   terraform init -backend-config=backend.hcl
+# key / region / encrypt / use_lockfile are already set in versions.tf; only the
+# bucket is here because its name contains the account id (never commit it).
+bucket = "docify-tfstate-<aws-account-id>"

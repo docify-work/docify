@@ -1,0 +1,208 @@
+# Promote a tested sha from staging to PROD (Master Doc §14.2, D33, R4).
+#
+# ONE approval gate: the job uses the GitHub Environment "production"
+# (required reviewer). The prod OIDC role trusts only that environment
+# (sub = repo:docify-work/docify:environment:production), so prod can't be
+# touched any other way. After approval, in the same run:
+#   1. require commit status staging-smoke == success on <sha>
+#   2. require the server to be running (prod must be smoke-able)
+#   3. bot commit: deploy/values/prod.yaml image.tag = <sha> -> Argo CD rolls out prod
+#   4. wait for prod /api/version == sha
+#   5. deploy the SAME frontend artifact (built once by release.yml) to prod
+#   6. smoke prod
+# Guard: AWS_ENABLED repo variable.
+name: promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Full commit sha to promote (empty = what staging runs now, from deploy/values/staging.yaml)"
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: promote-prod
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-south-1
+  DOMAIN: ${{ vars.DOMAIN || 'docify.work' }}
+  SERVER_NAME_TAG: docify-server
+  DEPLOY_ENV: prod
+
+jobs:
+  promote:
+    name: promote to prod
+    if: vars.AWS_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ci-release-prod
+      statuses: read # check staging-smoke
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      DISTRIBUTION_ID: ${{ vars.CF_DISTRIBUTION_ID_PROD }}
+      INPUT_SHA: ${{ inputs.sha }}
+    steps:
+      - name: GitHub App token (docify-ci-bot)
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          # GitHub accepts the App ID or the Client ID as JWT issuer.
+          client-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Checkout (as the bot)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Resolve sha
+        id: sha
+        run: |
+          sha="${INPUT_SHA:-$(yq -r '.image.tag' deploy/values/staging.yaml)}"
+          if ! [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || [ "$sha" = "0000000000000000000000000000000000000000" ]; then
+            echo "::error::'$sha' is not a released 40-character commit sha"
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "Promoting $sha"
+
+      - name: Require staging-smoke == success
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          state="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/status" \
+            --jq '[.statuses[] | select(.context == "staging-smoke")][0].state // "missing"')"
+          if [ "$state" != "success" ]; then
+            echo "::error::staging-smoke on $SHA is '$state' (needs success). Start the server / fix staging first."
+            exit 1
+          fi
+          echo "staging-smoke: success"
+
+      - name: AWS credentials (OIDC, docify-ci-release-prod)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ci-release-prod
+          role-session-name: gha-promote-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Require a running server + the frontend artifact
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          running="$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${SERVER_NAME_TAG}" "Name=instance-state-name,Values=running" \
+            --query 'length(Reservations[].Instances[])' --output text)"
+          if [ "$running" = "0" ]; then
+            echo "::error::Server is asleep - run the 'start' workflow first"
+            exit 1
+          fi
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            echo "::error::Repo variable CF_DISTRIBUTION_ID_PROD is not set (terraform output distribution_ids)"
+            exit 1
+          fi
+          aws s3api head-object --bucket "docify-artifacts-${AWS_ACCOUNT_ID}" \
+            --key "frontend/${SHA}.tar.gz" >/dev/null \
+            || { echo "::error::frontend artifact for $SHA not found (expired after 30 d?)"; exit 1; }
+
+      - name: Bump prod image tag (bot commit, rebase-retry x3)
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          SHA: ${{ steps.sha.outputs.sha }}
+          VALUES_FILE: deploy/values/prod.yaml
+        run: |
+          bot_id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+
+          bump() {
+            yq -i '.image.tag = strenv(SHA) | .image.tag style="double"' "$VALUES_FILE"
+          }
+
+          bump
+          if git diff --quiet; then
+            echo "$VALUES_FILE already at $SHA"
+            exit 0
+          fi
+          git commit -am "chore(release): prod image ${SHA:0:12} [skip ci]"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "push rejected (attempt $attempt) - rebasing on the new main"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              git rebase --abort
+              git reset --hard origin/main
+              bump
+              git commit -am "chore(release): prod image ${SHA:0:12} [skip ci]"
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "::error::could not push the prod bump after 3 attempts"
+          exit 1
+
+      - name: Wait for prod /api/version == sha (15 min)
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          base="https://${DOMAIN}"
+          for _ in $(seq 1 90); do
+            if curl -fsS --max-time 5 "$base/api/version" | grep -q "$SHA"; then
+              echo "prod runs $SHA"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::prod did not report $SHA within 15 minutes (check Argo CD: docify-prod app)"
+          exit 1
+
+      - name: Deploy the frontend artifact to prod
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          bucket="s3://docify-web-${DEPLOY_ENV}-${AWS_ACCOUNT_ID}"
+          mkdir site
+          aws s3 cp "s3://docify-artifacts-${AWS_ACCOUNT_ID}/frontend/${SHA}.tar.gz" artifact.tar.gz --no-progress
+          tar -xzf artifact.tar.gz -C site
+
+          yq -o=json ".frontend + {\"env\": \"${DEPLOY_ENV}\", \"version\": \"${SHA}\"}" \
+            "deploy/values/${DEPLOY_ENV}.yaml" > site/config.json
+          cat site/config.json
+
+          if [ -d site/assets ]; then
+            aws s3 sync site/assets "$bucket/assets" --no-progress \
+              --cache-control "public,max-age=31536000,immutable"
+          fi
+          aws s3 sync site "$bucket" --no-progress --delete \
+            --exclude "assets/*" --exclude "index.html" --exclude "config.json" \
+            --cache-control "public,max-age=300"
+          aws s3 cp site/config.json "$bucket/config.json" --no-progress \
+            --cache-control "no-cache" --content-type "application/json"
+          aws s3 cp site/index.html "$bucket/index.html" --no-progress \
+            --cache-control "no-cache" --content-type "text/html; charset=utf-8"
+
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" \
+            --paths "/index.html" "/config.json" --query Invalidation.Id --output text
+
+      - name: Smoke prod
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          # The invalidation needs a moment to reach the edges.
+          sleep 30
+          bash scripts/smoke.sh "https://${DOMAIN}" "$SHA" prod

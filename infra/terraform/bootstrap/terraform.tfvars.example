@@ -1,0 +1,8 @@
+# Copy to terraform.tfvars (git-ignored) and fill in. Never commit real values.
+budget_email = "you@example.com"
+
+# Defaults (change only if needed):
+# region            = "ap-south-1"
+# github_owner      = "docify-work"
+# github_repo       = "docify"
+# budget_limits_usd = [5, 15, 30]

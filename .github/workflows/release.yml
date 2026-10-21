@@ -1,0 +1,341 @@
+# Release to STAGING on every push to main that changes the app (Master Doc §14.2).
+#
+#   image          build docify/backend:<sha> -> Trivy gate -> push to ECR
+#   frontend       build the SPA once -> s3://docify-artifacts-<acct>/frontend/<sha>.tar.gz (D27)
+#   staging-web    deploy that artifact to the staging bucket + config.json, invalidate
+#   bump           bot commit: deploy/values/staging.yaml image.tag = <sha> [skip ci]
+#                  -> Argo CD rolls out staging (GitOps, D12)
+#   smoke          if the server is awake: wait for /api/version == sha, run
+#                  scripts/smoke.sh, set commit status "staging-smoke";
+#                  if asleep: status "pending" (start.yml smokes it later)
+#
+# Roles: docify-ci-release-staging (sub = ref:refs/heads/main -> these jobs
+# must NOT declare an environment). Bot pushes use the docify-ci-bot GitHub App
+# (D34). Guard: AWS_ENABLED repo variable.
+name: release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      - "deploy/helm/docify/**"
+      - ".github/workflows/release.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ap-south-1
+  DOMAIN: ${{ vars.DOMAIN || 'docify.work' }}
+  SHA: ${{ github.sha }}
+  ECR_REPOSITORY: docify/backend
+  SERVER_NAME_TAG: docify-server
+
+jobs:
+  image:
+    name: backend image (build, scan, push)
+    if: vars.AWS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ci-release-staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: AWS credentials (OIDC, docify-ci-release-staging)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ci-release-staging
+          role-session-name: gha-release-image-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
+
+      - name: Already pushed? (tags are immutable)
+        id: exists
+        run: |
+          if aws ecr describe-images --repository-name "$ECR_REPOSITORY" --image-ids imageTag="$SHA" >/dev/null 2>&1; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            echo "Image $ECR_REPOSITORY:$SHA already exists - skipping build"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Buildx
+        if: steps.exists.outputs.found == 'false'
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build (load locally, don't push yet)
+        if: steps.exists.outputs.found == 'false'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: backend
+          file: backend/Dockerfile
+          platforms: linux/amd64 # must match the server (Q7: m7i-flex = amd64)
+          load: true
+          push: false
+          provenance: false
+          tags: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy gate (fail on fixable CRITICAL)
+        if: steps.exists.outputs.found == 'false'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          format: table
+
+      - name: Push
+        if: steps.exists.outputs.found == 'false'
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        run: docker push "$IMAGE"
+
+  frontend:
+    name: frontend artifact (build once)
+    if: vars.AWS_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ci-release-staging
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package
+        run: tar -C frontend/dist -czf "frontend-${SHA}.tar.gz" .
+
+      - name: AWS credentials (OIDC, docify-ci-release-staging)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ci-release-staging
+          role-session-name: gha-release-frontend-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Upload artifact to S3
+        run: aws s3 cp "frontend-${SHA}.tar.gz" "s3://docify-artifacts-${AWS_ACCOUNT_ID}/frontend/${SHA}.tar.gz" --no-progress
+
+  staging-web:
+    name: deploy staging frontend
+    needs: [image, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ci-release-staging
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      DEPLOY_ENV: staging
+      DISTRIBUTION_ID: ${{ vars.CF_DISTRIBUTION_ID_STAGING }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: AWS credentials (OIDC, docify-ci-release-staging)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ci-release-staging
+          role-session-name: gha-release-web-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Deploy artifact + config.json to the staging bucket
+        run: |
+          if [ -z "$DISTRIBUTION_ID" ]; then
+            echo "::error::Repo variable CF_DISTRIBUTION_ID_STAGING is not set (terraform output distribution_ids)"
+            exit 1
+          fi
+          bucket="s3://docify-web-${DEPLOY_ENV}-${AWS_ACCOUNT_ID}"
+          mkdir site
+          aws s3 cp "s3://docify-artifacts-${AWS_ACCOUNT_ID}/frontend/${SHA}.tar.gz" artifact.tar.gz --no-progress
+          tar -xzf artifact.tar.gz -C site
+
+          # Runtime config from the env's values file (frontend: block) + version.
+          yq -o=json ".frontend + {\"env\": \"${DEPLOY_ENV}\", \"version\": \"${SHA}\"}" \
+            "deploy/values/${DEPLOY_ENV}.yaml" > site/config.json
+          cat site/config.json
+
+          # 1) hashed assets first (immutable, keep old ones for cached index.html)
+          if [ -d site/assets ]; then
+            aws s3 sync site/assets "$bucket/assets" --no-progress \
+              --cache-control "public,max-age=31536000,immutable"
+          fi
+          # 2) other static files (favicon, robots.txt ...)
+          aws s3 sync site "$bucket" --no-progress --delete \
+            --exclude "assets/*" --exclude "index.html" --exclude "config.json" \
+            --cache-control "public,max-age=300"
+          # 3) entry points last, never cached by browsers
+          aws s3 cp site/config.json "$bucket/config.json" --no-progress \
+            --cache-control "no-cache" --content-type "application/json"
+          aws s3 cp site/index.html "$bucket/index.html" --no-progress \
+            --cache-control "no-cache" --content-type "text/html; charset=utf-8"
+
+          aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" \
+            --paths "/index.html" "/config.json" --query Invalidation.Id --output text
+
+  bump:
+    name: bump staging image tag (bot commit)
+    needs: [staging-web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read # the push uses the GitHub App token, not GITHUB_TOKEN
+    steps:
+      - name: GitHub App token (docify-ci-bot)
+        id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          # GitHub accepts the App ID or the Client ID as JWT issuer.
+          client-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Checkout (as the bot)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Commit + push with rebase-retry
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          APP_SLUG: ${{ steps.app.outputs.app-slug }}
+          VALUES_FILE: deploy/values/staging.yaml
+        run: |
+          bot_id="$(gh api "/users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
+
+          bump() {
+            yq -i '.image.tag = strenv(SHA) | .image.tag style="double"' "$VALUES_FILE"
+          }
+
+          bump
+          if git diff --quiet; then
+            echo "$VALUES_FILE already at $SHA"
+            exit 0
+          fi
+          git commit -am "chore(release): staging image ${SHA:0:12} [skip ci]"
+
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "pushed on attempt $attempt"
+              exit 0
+            fi
+            echo "push rejected (attempt $attempt) - rebasing on the new main"
+            git fetch origin main
+            if ! git rebase origin/main; then
+              # Someone else changed the same line: redo the bump on top of theirs.
+              git rebase --abort
+              git reset --hard origin/main
+              bump
+              git commit -am "chore(release): staging image ${SHA:0:12} [skip ci]"
+            fi
+            sleep $((attempt * 5))
+          done
+          echo "::error::could not push the staging bump after 3 attempts"
+          exit 1
+
+  smoke:
+    name: staging smoke + commit status
+    needs: [bump]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write # OIDC -> docify-ci-release-staging (ec2:DescribeInstances)
+      statuses: write # staging-smoke
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: AWS credentials (OIDC, docify-ci-release-staging)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/docify-ci-release-staging
+          role-session-name: gha-release-smoke-${{ github.run_id }}
+          mask-aws-account-id: true
+
+      - name: Smoke staging (or mark pending if the server sleeps)
+        run: |
+          status() {
+            gh api "repos/${GITHUB_REPOSITORY}/statuses/${SHA}" \
+              -f state="$1" -f context=staging-smoke -f description="$2" -f target_url="$RUN_URL" >/dev/null
+          }
+
+          running="$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=${SERVER_NAME_TAG}" "Name=instance-state-name,Values=running" \
+            --query 'length(Reservations[].Instances[])' --output text)"
+          if [ "$running" = "0" ]; then
+            status pending "server asleep - run the start workflow to smoke this sha"
+            echo "::notice::Server is asleep; staging-smoke left pending (F38)"
+            exit 0
+          fi
+
+          base="https://staging.${DOMAIN}"
+          echo "Waiting (<= 10 min) for $base/api/version to report $SHA (Argo CD sync)..."
+          live=false
+          for _ in $(seq 1 60); do
+            if curl -fsS --max-time 5 "$base/api/version" | grep -q "$SHA"; then live=true; break; fi
+            sleep 10
+          done
+          if ! $live; then
+            status failure "staging never reported version $SHA"
+            echo "::error::staging did not roll out $SHA within 10 minutes"
+            exit 1
+          fi
+
+          if bash scripts/smoke.sh "$base" "$SHA" staging; then
+            status success "smoke passed on staging"
+          else
+            status failure "smoke failed on staging"
+            exit 1
+          fi
