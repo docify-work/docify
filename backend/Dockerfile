@@ -21,7 +21,9 @@ LABEL org.opencontainers.image.title="docify-backend" \
       org.opencontainers.image.source="https://github.com/docify-work/docify" \
       org.opencontainers.image.revision="${GIT_SHA}" \
       org.opencontainers.image.licenses="MIT"
-RUN groupadd --system --gid 10001 docify \
+# pip isn't needed at runtime, and its vendored certifi lags behind security fixes (GHSA-6q48-6c7w-9gw2).
+RUN python -m pip uninstall --yes --quiet pip \
+ && groupadd --system --gid 10001 docify \
  && useradd --system --uid 10001 --gid 10001 --home-dir /app --shell /usr/sbin/nologin docify
 COPY --from=builder --chown=10001:10001 /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}" \
