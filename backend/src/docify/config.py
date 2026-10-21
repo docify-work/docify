@@ -14,7 +14,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # Looks for .env next to where you run it and at the repo root (backend/ is the usual cwd).
+    model_config = SettingsConfigDict(env_file=(".env", "../.env"), env_file_encoding="utf-8", extra="ignore")
 
     env: Literal["local", "test", "staging", "prod"] = "local"
     version: str = Field(default="dev", alias="APP_VERSION")
