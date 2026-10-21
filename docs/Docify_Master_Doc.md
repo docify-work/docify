@@ -25,11 +25,11 @@
 
 | Item                                 | Value                                                                  |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| **Current phase**                    | Phases 1–5 code ✅ (local), 6–10 config written ✅ (not deployed); frontend 🟨 in progress |
+| **Current phase**                    | Everything buildable without AWS is done: P1–P6 ✅, P7/P10/P11/P13 tooling written; P8+ ⛔ on AWS (Q11) |
 | **Last session**                     | 2026-10-21 · Build session (backend, infra, deploy, CI)                |
-| **Overall**                          | Repo live: github.com/docify-work/docify (public). Backend complete with 130+ tests (unit + integration on Postgres/Valkey/ElasticMQ), Lambda, Terraform (validated, not applied), Helm/Argo (validated on kind), CI green. Frontend being built. AWS blocked (Q11). |
-| **In-flight work**                   | frontend SPA (P1.7/P1.8 + P5 UI) |
-| **Next 3 tasks**                     | Finish + commit frontend → P6 kind smoke with real image → Owner: resolve Q11 (AWS org SCP), Q1 domain, create GitHub Apps (Dev) |
+| **Overall**                          | github.com/docify-work/docify (public), CI green. Backend 144 tests, frontend 41 tests, Docker image 96 MB, Helm/Argo/Terraform validated, app verified on kind (pod-kill 150/150 OK). AI in fake mode until keys are added. |
+| **In-flight work**                   | none |
+| **Next 3 tasks**                     | Owner: fix AWS org SCP (Q11) or new standalone account · buy `docify.work` (Q1) · create GitHub "Docify Dev" App + AI keys → then P8 `terraform apply` (bootstrap → envs/main) |
 | **Blockers**                         | **Q11 AWS org SCP** blocks all of Phase 8+ (deploy). Q1 domain (needed for OAuth/TLS in cloud). Real AI keys (owner will add later; `AI_MODE=fake` meanwhile). |
 | **Live AWS resources**               | none · server: n/a                                                     |
 | **AWS spend to date / credits left** | $0 / $100 (2nd $100 not yet earned — Free Plan activities)             |
@@ -1221,11 +1221,11 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | Phase | Name                      | Status | Main Argo apps enabled                     |
 | ----- | ------------------------- | ------ | ------------------------------------------ |
 | 0     | Setup                     | 🟨     | —                                          |
-| 1     | Basic app + auth          | 🟨     | —                                          |
+| 1     | Basic app + auth          | ✅     | —                                          |
 | 2     | Docker + Compose          | ✅     | —                                          |
 | 3     | CI                        | ✅     | —                                          |
-| 4     | Queue + worker + webhooks | 🟨     | —                                          |
-| 5     | AI features               | 🟨     | —                                          |
+| 4     | Queue + worker + webhooks | ✅     | —                                          |
+| 5     | AI features               | ✅     | —                                          |
 | 6     | Kubernetes (local)        | ✅     | (kind)                                     |
 | 7     | GitOps (local)            | 🟨     | (kind)                                     |
 | 8     | Terraform + AWS           | ⛔     | argocd, cert-manager, ESO, platform-config |
@@ -1259,8 +1259,8 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P1.4 Google + GitHub login (Dev GitHub App), §10.4 rules — ✅ GitHub + Google with PKCE; linking/takeover tested (D39)
 - [x] P1.5 Workspaces, memberships, invites, roles, settings (`auto_publish` default true), account page APIs — ✅ test_workspaces.py
 - [x] P1.6 GitHub install + attach repos flow (§9.2) — list repos only — ✅ test_github_install.py incl. hijack defence
-- [ ] P1.7 Frontend scaffold: router, API client (openapi-typescript), auth pages, guards
-- [ ] P1.8 Frontend: dashboard, repos, settings, members, invites, account, sleeping banner
+- [x] P1.7 Frontend scaffold: router, API client (openapi-typescript), auth pages, guards — ✅ frontend/ (Vite 8, React 19, TS, Tailwind 4, Radix, generated OpenAPI types)
+- [x] P1.8 Frontend: dashboard, repos, settings, members, invites, account, sleeping banner — ✅ compact UI kit + InfoTips, animations, dark/light; screenshots in docs/screenshots
 - [x] P1.9 Tests: auth flows, linking/takeover, cross-tenant 404s, install verification — ✅ 16 auth + 5 workspace + 4 install tests
 
 - **AC:** [ ] email signup → verify (Mailpit) → login · [ ] Google + GitHub login · [ ] invite accepted by second user · [ ] repo attached & listed
@@ -1288,7 +1288,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P4.3 `ingest` module + Lambda handler + dev route + smee; contract tests — ✅ ingest/, lambdas/webhook_ingest (+ drift test)
 - [x] P4.4 Handlers: installation_sync, repo_index (FakeEmbedder), repo_sync (compare), repo_purge — ✅ jobs/handlers/; test_pipeline.py
 - [x] P4.5 Retries (delete+resend with delay), DLQ, reconciler, housekeeping — ✅ reconcile.py, housekeeping.py
-- [ ] P4.6 Jobs page + retry
+- [x] P4.6 Jobs page + retry — ✅ frontend Jobs page + retry
 
 - **AC:** [ ] push → job succeeds · [ ] replayed delivery → no new job · [ ] 20 rapid pushes → ≤ 2 runs · [ ] force push → repo_index · [ ] poison message → DLQ
 
@@ -1298,7 +1298,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P5.2 Chunking + identifier splitting + embeddings + reembed — ✅ ai/chunking.py, indexer.py
 - [x] P5.3 File summaries, 3 docs, citations validator, update rules — ✅ ai/docgen.py, citations.py
 - [x] P5.4 Changelog entries — ✅ changelog_entries per sync
-- [ ] P5.5 Publish policy + review queue UI (CAS approve)
+- [x] P5.5 Publish policy + review queue UI (CAS approve) — ✅ review queue UI + CAS approve
 - [x] P5.6 Hybrid search (code/docs) + chat SSE + no-context gate — ✅ ai/rag.py, chat SSE (D42)
 - [x] P5.7 Demo workspace (`seed-demo`) + anonymous principal + limits — ✅ `docify seed-demo` (--from-dir / --github-repo)
 - [x] P5.8 Eval fixture + `docify eval`; tune `RAG_MIN_SIM` — ✅ fixture eval (fake embedder) hit@8 0.95, unanswerable 5/5; re-run with Voyage in P9
