@@ -187,11 +187,15 @@
   }
 }
 
-/* ---------------------------------------------------------------- hero film */
+/* ---------------------------------------------------------------- hero chapter progress (transform only) */
 
-/* On screens wider than 16:9 the film is capped to the viewport height; feather its sides into the page. */
-@media (min-aspect-ratio: 16/9) {
-  .l-hero-film {
-    mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
-  }
+.l-fill {
+  animation-name: l-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes l-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }

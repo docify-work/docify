@@ -1,16 +1,10 @@
 /**
- * The hero film (Remotion). Every pixel is a pure function of the frame, so it loops perfectly.
- *
- *  variant "full"  (desktop, 1920×1080): headline + copy on the left, live product stage on the right,
- *                  chapter progress under the copy. Real HTML buttons are overlaid by Hero.tsx.
- *  variant "stage" (mobile, 1280×720):   only the stage, shown under the HTML headline.
- *
- * Performance: no CSS filters (blur/drop-shadow), backgrounds are radial gradients that only translate,
- * motion is transform/opacity only.
+ * The hero stage film (Remotion): push → pipeline → doc rewrite → chat. Every pixel is a pure function
+ * of the frame, so it loops perfectly. No CSS filters; motion is transform/opacity only.
  */
 import type { CSSProperties, ReactNode } from "react";
 import { AbsoluteFill, Easing, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { CHAPTERS, FILM, LAYOUT } from "./config";
+import { FILM } from "./config";
 
 const C = {
   bg: "#fbfbfd",
@@ -31,166 +25,17 @@ const mono = 'ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospa
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const GRADIENT = "linear-gradient(100deg, #4f46e5 0%, #7c3aed 45%, #0891b2 100%)";
 
-export type FilmProps = { variant: "full" | "stage" };
-
-export function DocifyDemo({ variant }: FilmProps) {
+/** The live product stage: 4 scenes, transparent background so it sits directly on the hero. */
+export function DocifyDemo() {
   const frame = useCurrentFrame();
-  // Scenes start after the intro in the full film; the stage-only film has no intro.
-  const offset = variant === "full" ? FILM.intro : 0;
-  const t = Math.max(0, frame - offset);
-  const sceneIndex = Math.min(3, Math.floor(t / FILM.scene));
-  const sceneFrame = t - sceneIndex * FILM.scene;
-
-  if (variant === "stage") {
-    return (
-      <AbsoluteFill style={{ background: C.bg, fontFamily: font, color: C.fg, overflow: "hidden", textAlign: "left" }}>
-        <Backdrop fade={false} />
-        <div style={{ position: "absolute", left: 30, top: 36, width: 840, height: 660 }}>
-          <Stage sceneIndex={sceneIndex} sceneFrame={sceneFrame} />
-        </div>
-      </AbsoluteFill>
-    );
-  }
-
-  const stageIn = interpolate(frame, [FILM.intro - 20, FILM.intro + 10], [0, 1], { ...clamp, easing: Easing.out(Easing.cubic) });
+  const sceneIndex = Math.min(3, Math.floor(frame / FILM.scene));
+  const sceneFrame = frame - sceneIndex * FILM.scene;
   return (
-    <AbsoluteFill style={{ background: C.bg, fontFamily: font, color: C.fg, overflow: "hidden", textAlign: "left" }}>
-      <Backdrop fade />
-      <Copy />
-      <ChapterBar sceneIndex={sceneIndex} sceneFrame={sceneFrame} started={frame >= FILM.intro} />
-      <div
-        style={{
-          position: "absolute", left: 1060, top: 170, width: 780, height: 760,
-          opacity: stageIn, transform: `translateX(${(1 - stageIn) * 60}px)`,
-        }}
-      >
+    <AbsoluteFill style={{ fontFamily: font, color: C.fg, textAlign: "left" }}>
+      <div style={{ position: "absolute", left: 20, top: 16, width: 800, height: 648 }}>
         <Stage sceneIndex={sceneIndex} sceneFrame={sceneFrame} />
       </div>
     </AbsoluteFill>
-  );
-}
-
-/* ---------------------------------------------------------------------------------- backdrop */
-
-function Backdrop({ fade }: { fade: boolean }) {
-  const frame = useCurrentFrame();
-  const a = (frame / 300) * Math.PI * 2; // one slow orbit per 10 s (FILM.scene * 2 frames) → seamless loop
-  return (
-    <AbsoluteFill>
-      <div style={{
-        position: "absolute", width: 1100, height: 1100, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(129,140,248,0.22), transparent 62%)",
-        left: -260, top: -420, transform: `translate(${Math.cos(a) * 40}px, ${Math.sin(a) * 30}px)`,
-      }} />
-      <div style={{
-        position: "absolute", width: 1100, height: 1100, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(216,180,254,0.26), transparent 62%)",
-        right: -300, top: -300, transform: `translate(${Math.sin(a) * 40}px, ${Math.cos(a) * 30}px)`,
-      }} />
-      <div style={{
-        position: "absolute", width: 1000, height: 1000, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(103,232,249,0.16), transparent 62%)",
-        left: 700, bottom: -560,
-      }} />
-      <AbsoluteFill style={{
-        backgroundImage: `linear-gradient(to right, rgba(15,15,30,0.045) 1px, transparent 1px),
-          linear-gradient(to bottom, rgba(15,15,30,0.045) 1px, transparent 1px)`,
-        backgroundSize: "64px 64px",
-        maskImage: "radial-gradient(ellipse 80% 75% at 50% 40%, #000 35%, transparent 100%)",
-      }} />
-      {/* fade into the page below */}
-      {fade && <AbsoluteFill style={{ background: `linear-gradient(to bottom, transparent 84%, ${C.bg})` }} />}
-    </AbsoluteFill>
-  );
-}
-
-/* ---------------------------------------------------------------------------------- left copy */
-
-function Copy() {
-  const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
-  const pill = interpolate(frame, [0, 12], [0, 1], clamp);
-  const lines = [["Your", "code", "changes."], ["Your", "docs", "keep", "up."]];
-  const sub = interpolate(frame, [24, 40], [0, 1], clamp);
-  const checks = interpolate(frame, [34, 50], [0, 1], clamp);
-  let idx = 0;
-  return (
-    <>
-      <div style={{ position: "absolute", left: LAYOUT.left, top: 210, width: 860 }}>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 12, padding: "6px 18px 6px 6px", borderRadius: 999,
-          background: C.card, border: `1px solid ${C.border}`, fontSize: 20, color: C.muted,
-          opacity: pill, transform: `translateY(${(1 - pill) * 12}px)`, boxShadow: "0 1px 2px rgba(15,15,30,0.05)",
-        }}>
-          <span style={{ background: C.indigo, color: "#fff", fontWeight: 600, fontSize: 17, padding: "4px 12px", borderRadius: 999 }}>New</span>
-          Docs that update themselves on every push
-        </div>
-
-        <div style={{ marginTop: 34, fontSize: 100, fontWeight: 650, lineHeight: 1, letterSpacing: -4.6 }}>
-          {lines.map((line, li) => (
-            <div key={li} style={{ display: "flex", gap: 24 }}>
-              {line.map((w) => {
-                const p = spring({ frame: frame - 4 - idx++ * 3, fps, config: { damping: 16, stiffness: 120 } });
-                const grad = w === "docs";
-                return (
-                  <span key={w + li} style={{ display: "inline-block", clipPath: "inset(-20% -15% 0 -15%)", paddingBottom: 14 }}>
-                    <span style={{
-                      display: "inline-block", transform: `translateY(${(1 - p) * 110}%)`, opacity: p,
-                      ...(grad ? { background: GRADIENT, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" } : {}),
-                    }}>{w}</span>
-                  </span>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        <p style={{
-          marginTop: 26, fontSize: 28, lineHeight: 1.5, color: C.muted, maxWidth: 800,
-          opacity: sub, transform: `translateY(${(1 - sub) * 14}px)`,
-        }}>
-          Connect a GitHub repo. Docify writes the docs with AI, rewrites only what changed on every push, and answers
-          questions with links to the exact lines.
-        </p>
-      </div>
-
-      {/* the real, clickable buttons are HTML overlaid at LAYOUT.ctaTop (see Hero.tsx) */}
-
-      <div style={{
-        position: "absolute", left: LAYOUT.left, top: LAYOUT.ctaTop + LAYOUT.ctaHeight + 28, display: "flex", gap: 30,
-        fontSize: 19, color: C.subtle, opacity: checks,
-      }}>
-        {["Free to try", "Read-only GitHub access", "Line-level citations"].map((c) => (
-          <span key={c} style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: C.emerald, fontWeight: 700 }}>✓</span>{c}
-          </span>
-        ))}
-      </div>
-    </>
-  );
-}
-
-function ChapterBar({ sceneIndex, sceneFrame, started }: { sceneIndex: number; sceneFrame: number; started: boolean }) {
-  const frame = useCurrentFrame();
-  const show = interpolate(frame, [36, 54], [0, 1], clamp);
-  return (
-    <div style={{ position: "absolute", left: LAYOUT.left, top: LAYOUT.chaptersTop, display: "flex", gap: LAYOUT.chapterGap, opacity: show }}>
-      {CHAPTERS.map((label, i) => {
-        const fill = !started ? 0 : i < sceneIndex ? 1 : i === sceneIndex ? sceneFrame / FILM.scene : 0;
-        const on = started && i === sceneIndex;
-        return (
-          <div key={label} style={{ width: LAYOUT.chapterWidth, height: LAYOUT.chapterHeight }}>
-            <div style={{ height: 4, borderRadius: 4, background: "rgba(15,15,30,0.08)", overflow: "hidden" }}>
-              <div style={{ height: "100%", width: "100%", background: GRADIENT, transformOrigin: "left", transform: `scaleX(${fill})` }} />
-            </div>
-            <div style={{ marginTop: 14, fontSize: 19, color: on ? C.fg : C.subtle, fontWeight: on ? 600 : 400 }}>
-              <span style={{ fontFamily: mono, fontSize: 15, color: on ? C.indigo : C.subtle, marginRight: 8 }}>0{i + 1}</span>
-              {label}
-            </div>
-          </div>
-        );
-      })}
-    </div>
   );
 }
 
@@ -296,8 +141,8 @@ const NODES = [
 ];
 
 function PipelineScene({ f }: { f: number }) {
-  const W = 780;
-  const PAD = 66; // end nodes sit well inside the stage
+  const W = 800;
+  const PAD = 68; // end nodes sit well inside the stage
   const gap = (W - 2 * PAD) / (NODES.length - 1);
   const travel = interpolate(f, [16, 110], [0, NODES.length - 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   const note = interpolate(f, [92, 112], [0, 1], clamp);
