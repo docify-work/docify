@@ -36,7 +36,7 @@ dev = [
     "pytest-asyncio>=1.2",
     "pytest-cov>=7.0",
     "respx>=0.22",
-    "ruff>=0.14",
+    "ruff>=0.17.2",
     "mypy>=1.18",
     "types-pyyaml",
     "boto3-stubs[sqs,s3,sesv2]",
