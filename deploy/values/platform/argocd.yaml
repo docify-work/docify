@@ -68,9 +68,11 @@ configs:
 
 controller:
   replicas: 1
+  # Caches every resource in the cluster: with prod + staging + data + monitoring it needs
+  # ~450-600Mi; 400Mi was OOMKilled in a crash loop (2026-11-01) and stalled all syncs.
   resources:
-    requests: { cpu: 100m, memory: 200Mi }
-    limits: { memory: 400Mi }
+    requests: { cpu: 100m, memory: 300Mi }
+    limits: { memory: 1Gi }
 
 repoServer:
   replicas: 1
