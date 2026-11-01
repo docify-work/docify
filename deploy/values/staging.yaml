@@ -54,7 +54,7 @@ certificate:
 
 # Flip to true in P10 (needs the monitoring app's ServiceMonitor CRD).
 serviceMonitor:
-  enabled: false
+  enabled: true
 
 # Read by release.yml to build the SPA's config.json (not by the chart).
 frontend:

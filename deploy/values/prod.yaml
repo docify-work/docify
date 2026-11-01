@@ -52,7 +52,7 @@ certificate:
   issuerName: letsencrypt-prod
 
 serviceMonitor:
-  enabled: false          # P10
+  enabled: true          # P10
 
 frontend:
   env: prod

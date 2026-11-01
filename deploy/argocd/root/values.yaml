@@ -92,7 +92,7 @@ apps:
 
   # ---------------------------------------------------------------- wave 0
   monitoring:
-    enabled: false              # P10
+    enabled: true               # P10 (2026-11-01)
     wave: 0
     namespace: monitoring
     kubePrometheusStack:
