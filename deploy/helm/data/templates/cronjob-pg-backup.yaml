@@ -66,6 +66,9 @@ spec:
                   set -euo pipefail
                   ts="$(date +%Y%m%dT%H%M%S)"
                   day="$(date +%F)"
+                  # k3s programs NetworkPolicy rules for a NEW pod a moment after it
+                  # starts; the first connect is refused until then (seen 2026-11-01).
+                  for i in $(seq 1 30); do pg_isready -q && break; sleep 2; done
                   pg_dumpall --no-password | gzip -6 > /backup/dump.sql.gz
                   # Fail loudly on a truncated/corrupt archive.
                   gzip -t /backup/dump.sql.gz
