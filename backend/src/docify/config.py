@@ -65,6 +65,10 @@ class Settings(BaseSettings):
 
     # --- AI ---
     ai_mode: Literal["fake", "real"] = "fake"
+    # D61: "bedrock" = Amazon Nova (LLM) + Titan (embeddings) via the instance role - paid from AWS
+    # credits, no API keys. "anthropic" = Anthropic API + Voyage (needs keys, billed separately).
+    ai_provider: Literal["anthropic", "bedrock"] = "anthropic"
+    bedrock_region: str = "ap-south-1"
     anthropic_api_key: SecretStr = SecretStr("")
     voyage_api_key: SecretStr = SecretStr("")
     # Owner decision (Q4, 2026-10-21): Haiku for everything for now.
@@ -118,8 +122,11 @@ class Settings(BaseSettings):
             problems.append("SESSION_PEPPER must be a real random value (>= 32 chars)")
         if not self.origin_verify_header or len(self.origin_verify_header.get_secret_value()) < 16:
             problems.append("ORIGIN_VERIFY_HEADER must be set")
-        if self.ai_mode == "real" and not self.anthropic_api_key.get_secret_value():
-            problems.append("ANTHROPIC_API_KEY is required with AI_MODE=real")
+        if self.ai_mode == "real" and self.ai_provider == "anthropic":
+            if not self.anthropic_api_key.get_secret_value():
+                problems.append("ANTHROPIC_API_KEY is required with AI_MODE=real and AI_PROVIDER=anthropic")
+            if not self.voyage_api_key.get_secret_value():
+                problems.append("VOYAGE_API_KEY is required with AI_MODE=real and AI_PROVIDER=anthropic")
         if problems:
             raise RuntimeError("Refusing to start: " + "; ".join(problems))
 

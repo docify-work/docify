@@ -177,6 +177,21 @@ data "aws_iam_policy_document" "instance" {
     actions   = ["route53:GetChange"]
     resources = ["arn:${local.partition}:route53:::change/*"]
   }
+
+  # --- Bedrock (D61): ONLY Amazon's own models (paid from AWS credits) ---
+  # Nova via the apac.* cross-region inference profile (which may route to other APAC
+  # regions -> foundation-model ARN with a region wildcard) + Titan Text Embeddings V2.
+  # Third-party models (Claude etc. = AWS Marketplace, not covered by credits) are
+  # implicitly denied: a config typo can't put a charge on the card.
+  statement {
+    sid     = "BedrockAmazonModelsOnly"
+    actions = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+    resources = [
+      "arn:${local.partition}:bedrock:${local.region}:${local.account_id}:inference-profile/apac.amazon.nova-*",
+      "arn:${local.partition}:bedrock:*::foundation-model/amazon.nova-*",
+      "arn:${local.partition}:bedrock:${local.region}::foundation-model/amazon.titan-embed-text-v2:0",
+    ]
+  }
 }
 
 resource "aws_iam_role_policy" "instance" {
