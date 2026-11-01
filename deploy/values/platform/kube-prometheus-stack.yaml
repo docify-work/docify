@@ -130,8 +130,8 @@ grafana:
       allowed_auth_providers: default
   sidecar:
     resources:
-      requests: { cpu: 5m, memory: 32Mi }
-      limits: { memory: 96Mi }
+      requests: { cpu: 5m, memory: 48Mi }
+      limits: { memory: 128Mi }
     dashboards:
       enabled: true
       label: grafana_dashboard
@@ -160,9 +160,10 @@ grafana:
       url: http://loki.monitoring.svc:3100
       jsonData:
         maxLines: 1000
+  # 192Mi was OOMKilled on start (Grafana 12 + provisioning, 2026-11-01).
   resources:
-    requests: { cpu: 20m, memory: 96Mi }
-    limits: { memory: 192Mi }
+    requests: { cpu: 20m, memory: 128Mi }
+    limits: { memory: 384Mi }
   # No `helm test` pod (Argo CD would show it as an orphan/unknown).
   testFramework:
     enabled: false
