@@ -2,7 +2,7 @@
 #
 # ONE approval gate: the job uses the GitHub Environment "production"
 # (required reviewer). The prod OIDC role trusts only that environment
-# (sub = repo:docify-work/docify:environment:production), so prod can't be
+# (sub = repo:docify-work@<id>/docify@<id>:environment:production, immutable subject), so prod can't be
 # touched any other way. After approval, in the same run:
 #   1. require commit status staging-smoke == success on <sha>
 #   2. require the server to be running (prod must be smoke-able)

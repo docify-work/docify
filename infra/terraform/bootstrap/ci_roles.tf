@@ -6,7 +6,8 @@
 # the OIDC provider below and the role's trust policy, then hands back ~1 h
 # credentials. The trust policy pins:
 #   aud = sts.amazonaws.com              (token minted for AWS)
-#   sub = repo:<owner>/<repo>:<context>  (EXACT match, no wildcards)
+#   sub = repo:<owner>@<owner_id>/<repo>@<repo_id>:<context>  (EXACT match,
+#         no wildcards; GitHub immutable subject claims)
 # The `sub` context decides which workflow jobs can use which role:
 #   pull_request              -> docify-ci-plan            (read-only plan)
 #   environment:infra         -> docify-ci-infra           (apply, approval gate)
@@ -28,7 +29,15 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 locals {
-  repo_sub_prefix = "repo:${var.github_owner}/${var.github_repo}"
+  # GitHub "immutable subject" claims (repo setting use_immutable_subject = true)
+  # embed the numeric owner/repo ids: repo:<owner>@<owner_id>/<repo>@<repo_id>.
+  # A deleted-and-recreated repo with the same name gets a new id, so it can't
+  # inherit these roles. Ids: gh api repos/<owner>/<repo> --jq '.owner.id, .id'
+  repo_sub_prefix = (
+    var.github_owner_id != "" && var.github_repo_id != ""
+    ? "repo:${var.github_owner}@${var.github_owner_id}/${var.github_repo}@${var.github_repo_id}"
+    : "repo:${var.github_owner}/${var.github_repo}"
+  )
 
   ci_roles = {
     "docify-ci-plan"            = "${local.repo_sub_prefix}:pull_request"

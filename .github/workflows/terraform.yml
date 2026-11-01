@@ -3,7 +3,7 @@
 # Runs on every push to main that touches infra/** (or by hand). The job uses
 # the GitHub Environment "infra" (required reviewer = Ganesh), so nothing is
 # applied without an approval click; the OIDC role docify-ci-infra trusts ONLY
-# that environment (sub = repo:docify-work/docify:environment:infra).
+# that environment (sub = repo:docify-work@<id>/docify@<id>:environment:infra, immutable subject).
 #
 # bootstrap/ is NOT applied here - it has local state and is run by the admin.
 #

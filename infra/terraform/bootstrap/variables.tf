@@ -16,6 +16,18 @@ variable "github_repo" {
   default     = "docify"
 }
 
+variable "github_owner_id" {
+  description = "Numeric GitHub id of the repo owner, used by immutable OIDC subject claims (public, not a secret). Empty = legacy sub format."
+  type        = string
+  default     = "345409863"
+}
+
+variable "github_repo_id" {
+  description = "Numeric GitHub id of the repository, used by immutable OIDC subject claims (public, not a secret). Empty = legacy sub format."
+  type        = string
+  default     = "1428051638"
+}
+
 variable "budget_email" {
   description = "Email that receives budget + cost-anomaly alerts. Never commit it: pass via terraform.tfvars (git-ignored) or TF_VAR_budget_email."
   type        = string
