@@ -24,7 +24,7 @@ postgres:
     repository: pgvector/pgvector
     tag: 0.8.7-pg17
     pullPolicy: IfNotPresent
-  # Tuning for an 8 GiB node (m7i-flex.large, D30) - §5.5.
+  # Tuning for an 8 GiB node (t4g.large, D56) - §5.5.
   # For a 4 GiB node halve shared_buffers and effective_cache_size.
   settings:
     shared_buffers: 256MB

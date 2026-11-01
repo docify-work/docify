@@ -9,7 +9,7 @@ variable "name" {
 variable "instance_type" {
   description = "EC2 instance type (D30/Q7). Graviton types (t4g, m7g...) automatically switch the AMI + binaries to arm64."
   type        = string
-  default     = "m7i-flex.large"
+  default     = "t4g.large"
 }
 
 variable "subnet_id" {
@@ -40,9 +40,9 @@ variable "data_volume_size" {
 }
 
 variable "cpu_credits" {
-  description = "CPU credit mode for burstable (t*) types; ignored for others."
+  description = "CPU credit mode for burstable (t*) types; ignored for others. standard = throttle to baseline when credits run out (never bills surplus CPU, D56)."
   type        = string
-  default     = "unlimited"
+  default     = "standard"
 }
 
 # --- things the role is scoped to ---------------------------------------------------------

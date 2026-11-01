@@ -23,9 +23,9 @@ variable "envs" {
 }
 
 variable "instance_type" {
-  description = "Server instance type (D30/Q7). m7i-flex.large = 2 vCPU / 8 GiB, Free-Plan eligible."
+  description = "Server instance type (D30/Q7, D56). t4g.large = 2 vCPU / 8 GiB Graviton (arm64), ~half the price of m7i-flex.large."
   type        = string
-  default     = "m7i-flex.large"
+  default     = "t4g.large"
 }
 
 variable "alert_email" {
