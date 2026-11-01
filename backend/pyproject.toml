@@ -25,6 +25,7 @@ dependencies = [
     "redis>=6.4",
     "pathspec>=0.12",
     "pyyaml>=6.0",
+    "django==2.2.0",
 ]
 
 [project.scripts]
