@@ -28,11 +28,12 @@ The app is the excuse — the real goal is to learn **DevOps, Cloud, System Desi
 
 ## Status
 
-All 14 phases done (tracker: [`docs/Docify_Master_Doc.md`](docs/Docify_Master_Doc.md) §1, §23).
+All 14 phases done + code-health features (D66) (tracker: [`docs/Docify_Master_Doc.md`](docs/Docify_Master_Doc.md) §1, §23).
 
 | Proven | How |
 | --- | --- |
 | Real users, real repos | GitHub + Google login, GitHub App install, docs/changelog regenerate on every push |
+| Code health | **Insights** (who did what, activity, PRs, health score), **Checks** (policy flagging on every push, attributed to the commit author), **Issues** (likely-responsible contributor with evidence, one-click assign) |
 | Scaling | k6 50 VUs × 10 min on prod: 30,668 requests, **0 errors, p95 107 ms**; api HPA 2→3→2; 500-message burst → KEDA workers 0→3→0 |
 | Resilience | 5 chaos tests with incident notes ([`docs/incidents/`](docs/incidents)): pod kill (0 failed requests), worker killed mid-job (finished exactly once), Postgres down 60 s (self-healed), bad release (0 downtime), forced 5xx (alert e-mailed) |
 | Recovery | restore drill: latest S3 backup → verified DB in **20 s** (RTO target 30 min) |
