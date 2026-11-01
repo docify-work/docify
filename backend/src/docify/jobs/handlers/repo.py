@@ -20,6 +20,7 @@ from docify.jobs.errors import NonRetryableError
 
 INACTIVE = ("disconnected", "suspended")
 CONTENTS_API_MAX = 50  # above this, one tarball download is cheaper than N contents calls
+BULK_MIN_FILES = 25  # ratio-based "bulk change -> full re-index" only from this many changed files
 
 
 def _now() -> datetime:
@@ -136,11 +137,22 @@ async def handle_repo_sync(ctx: JobContext) -> None:
     files_changed: list[dict[str, Any]] = (cmp or {}).get("files") or []
     async with ctx.read() as db:
         total_files = len((await db.execute(select(File.path).where(File.repo_id == repo.id))).all())
-    if cmp is None or cmp.get("status") not in ("ahead", "identical") or len(files_changed) >= 300 \
-            or (total_files and len(files_changed) > 0.2 * total_files):
+    # Upgrade to a full re-index for history rewrites and bulk changes. The ratio rule only applies to
+    # real bulk changes (>= BULK_MIN_FILES): in a 5-file repo any normal PR touches > 20 % of the files,
+    # and that used to skip the incremental path - and with it the changelog (found 2026-11-01).
+    bulk = len(files_changed) >= BULK_MIN_FILES and total_files and len(files_changed) > 0.2 * total_files
+    if cmp is None or cmp.get("status") not in ("ahead", "identical") or len(files_changed) >= 300 or bulk:
         ctx.log.info("sync.upgrade_to_index", status=(cmp or {}).get("status"), files=len(files_changed))
+        previous_sha = repo.last_processed_sha
         await _set_repo(ctx, repo, status="indexing")
         await full_index(ctx, gh, repo, head)
+        commits = (cmp or {}).get("commits") or []
+        if cmp is not None and cmp.get("status") == "ahead" and commits:
+            # Still record what changed: a full re-index must not make pushes vanish from the changelog.
+            changed = sorted({f["filename"] for f in files_changed}
+                             | {f["previous_filename"] for f in files_changed if f.get("previous_filename")})
+            await docgen.write_changelog(ctx, repo, from_sha=previous_sha, to_sha=head, commits=commits,
+                                         changed=changed)
         return
     await incremental(ctx, gh, repo, head, cmp, files_changed)
 

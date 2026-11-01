@@ -122,6 +122,45 @@ async def test_push_incremental_sync_updates_only_affected_docs(outbox: MemorySe
     assert len(log["items"]) == 1
 
 
+async def test_small_repo_push_touching_most_files_stays_incremental_with_changelog(
+        outbox: MemorySender, gh: FakeGitHub) -> None:
+    # Regression (2026-11-01): in a small repo a normal PR touches > 20 % of the files; that used to upgrade
+    # the sync to a full re-index, which skipped the changelog entry.
+    c, _ws, repo_id = await setup_repo(outbox, gh)
+    old = gh.head
+    gh.head = "d" * 40
+    touched = ["README.md", "app/main.py", "app/routes/tasks.py", "app/config.py"]
+    for path in touched:
+        gh.files[path] += b"\n# tweak\n"
+    gh.compare = {"status": "ahead", "commits": [{"commit": {"message": "Round shares up (#1)"}}],
+                  "files": [{"filename": p, "status": "modified", "sha": "x"} for p in touched]}
+    await get_queue().send({"v": 1, "kind": "github_event", "delivery_id": "s1", "event": "push",
+                            "installation_id": gh.installation_id, "repo_id": gh.repo_id, "before": old,
+                            "after": gh.head, "forced": False})
+    gh.calls.clear()
+    await drain()
+    assert "tarball" not in gh.calls  # stayed incremental
+    log = (await c.get(f"/api/repos/{repo_id}/changelog")).json()
+    assert [i["pr_numbers"] for i in log["items"]] == [[1]]
+
+
+async def test_bulk_change_upgrade_to_index_still_writes_changelog(outbox: MemorySender, gh: FakeGitHub) -> None:
+    c, _ws, repo_id = await setup_repo(outbox, gh)
+    old = gh.head
+    gh.head = "e" * 40
+    many = [{"filename": f"generated/file_{i}.py", "status": "added", "sha": "x"} for i in range(30)]
+    gh.compare = {"status": "ahead", "commits": [{"commit": {"message": "Vendor generated clients (#9)"}}],
+                  "files": many}
+    await get_queue().send({"v": 1, "kind": "github_event", "delivery_id": "b1", "event": "push",
+                            "installation_id": gh.installation_id, "repo_id": gh.repo_id, "before": old,
+                            "after": gh.head, "forced": False})
+    gh.calls.clear()
+    await drain()
+    assert "tarball" in gh.calls  # bulk change -> full re-index
+    log = (await c.get(f"/api/repos/{repo_id}/changelog")).json()
+    assert [i["pr_numbers"] for i in log["items"]] == [[9]]
+
+
 async def test_force_push_triggers_full_index(outbox: MemorySender, gh: FakeGitHub) -> None:
     _, _, repo_id = await setup_repo(outbox, gh)
     gh.head = "c" * 40
