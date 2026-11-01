@@ -13,7 +13,7 @@ variable "cluster_version" {
 variable "node_instance_types" {
   description = "Spot instance types for the managed node group (arm64: images are built for linux/arm64)."
   type        = list(string)
-  default     = ["t4g.medium"]
+  default     = ["t4g.medium", "t4g.large", "m6g.medium", "m7g.medium", "c6g.large", "c7g.large", "r6g.medium"]
 }
 
 variable "node_min" {
@@ -25,7 +25,7 @@ variable "node_min" {
 variable "node_max" {
   description = "Maximum nodes (Cluster Autoscaler ceiling)."
   type        = number
-  default     = 3
+  default     = 5
 }
 
 variable "rds_instance_class" {

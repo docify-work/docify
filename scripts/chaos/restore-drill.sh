@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Restore drill (P13, runbook R7, then every 3 months): restore the LATEST S3 backup into a throwaway
-# Postgres in namespace restore-drill, run `docify verify-db` against each restored env DB, compare row
+# Postgres in namespace restore-drill, migrate it to head (like a real R7 restore: the backup can be
+# older than the running code), run `docify verify-db` against each restored env DB, compare row
 # counts with live, print the elapsed time (RTO target < 30 min). Live data is never touched.
 # Runs ON the server (kubectl + instance role):
 #   aws ssm start-session ...  then  sudo bash scripts/chaos/restore-drill.sh
@@ -27,7 +28,7 @@ kubectl -n "$NS" run pg --image="$pg_image" --restart=Never --port=5432 \
   --env=POSTGRES_PASSWORD="$pw" --labels=app=pg >/dev/null
 kubectl -n "$NS" expose pod pg --port=5432 >/dev/null
 kubectl -n "$NS" wait --for=condition=Ready pod/pg --timeout=180s >/dev/null
-until kubectl -n "$NS" exec pg -- pg_isready -q -U postgres; do sleep 2; done
+until kubectl -n "$NS" exec pg -- pg_isready -q -U postgres 2>/dev/null; do sleep 2; done
 t "scratch postgres ready ($pg_image)"
 
 kubectl -n "$NS" cp "$tmp/dump.sql.gz" pg:/tmp/dump.sql.gz
@@ -35,6 +36,9 @@ kubectl -n "$NS" cp "$tmp/dump.sql.gz" pg:/tmp/dump.sql.gz
 kubectl -n "$NS" exec pg -- bash -c 'gunzip -c /tmp/dump.sql.gz | psql -q -U postgres -d postgres -v ON_ERROR_STOP=0' \
   > "$tmp/restore.log" 2>&1 || true
 t "restored ($(grep -c ERROR "$tmp/restore.log" || true) psql errors - expected: role \"postgres\" already exists)"
+# The dump also carries ALTER ROLE postgres ... PASSWORD (live hash): set the scratch password again
+# (local socket = trust inside the container).
+kubectl -n "$NS" exec pg -- psql -q -U postgres -d postgres -c "ALTER ROLE postgres PASSWORD '${pw}'" >/dev/null
 
 rc=0
 for env in prod staging; do
@@ -42,7 +46,7 @@ for env in prod staging; do
   t "verify-db $db"
   kubectl -n "$NS" run "verify-$env" --image="$app_image" --restart=Never --rm -i --quiet \
     --env=DATABASE_URL="postgresql+asyncpg://postgres:${pw}@pg.${NS}.svc:5432/${db}" \
-    --command -- docify verify-db || rc=1
+    --command -- sh -c "docify migrate >/dev/null 2>&1 && docify verify-db 2>/dev/null" || rc=1
   live=$(kubectl -n data exec postgres-0 -- psql -U postgres -d "$db" -Atc \
     "select (select count(*) from repositories)||' repos, '||(select count(*) from chunks)||' chunks, '||(select count(*) from document_versions)||' doc versions'")
   t "live $db now: $live"
