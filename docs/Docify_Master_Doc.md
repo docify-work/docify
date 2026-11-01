@@ -25,18 +25,18 @@
 
 | Item                                 | Value                                                                  |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| **Current phase**                    | Everything buildable without AWS is done: P1–P6 ✅, P7/P10/P11/P13 tooling written; P8+ ⛔ on AWS (Q11) |
-| **Last session**                     | 2026-10-21 · Build session (backend, infra, deploy, CI)                |
+| **Current phase**                                     | **P8 ✅ infra live in Mumbai** (2026-11-01): bootstrap + envs/main applied, server boots k3s + Argo unattended, OIDC CI apply works. Next: **P9** (image → ECR, secrets, GitHub Apps, deploy). P7.2 ci-bot still open |
+| **Last session**                                     | 2026-11-01 · AWS setup + Phase 8 deploy |
 | **Overall**                          | github.com/docify-work/docify (public), CI green. Backend 144 tests, frontend 41 tests, Docker image 96 MB, Helm/Argo/Terraform validated, app verified on kind (pod-kill 150/150 OK). AI in fake mode until keys are added. |
 | **In-flight work**                   | none |
-| **Next 3 tasks**                     | ✅ AWS SCP/Mumbai done (Q11) · ✅ `docify.work` bought (Q1) · create GitHub "Docify Dev" App + AI keys → then P8 `terraform apply` (bootstrap → envs/main) |
+| **Next 3 tasks**                                     | P7.2 `docify-ci-bot` App (release bump) · P9.4 staging/prod GitHub Apps + Google clients · `init-params.sh` real secrets → first release to staging |
 | **Blockers**                         | **Q11:** 2026-11-01 Paid plan + advanced features activated; `ap-south-1` added to the org region SCP → Mumbai works. Managed SCP no longer has the `iam:*Provider*` deny (only org-escape + managed-role protection) → OIDC should work; confirm in P8. See `docs/AWS_Mumbai_Setup_Summary.md`. Real AI keys pending (`AI_MODE=fake` meanwhile). Domain bought ✅ (DNS → Route 53 at deploy). |
-| **Live AWS resources**               | mgmt account: budgets `docify-credit-burn` (gross $200, alerts $1/$50/$150/$180) + `docify-card-charge` (>$0.01 = card charged). Docify account: IAM `docify-spend-freeze` + `docify-budgets-action-role` (action not wired yet) · server: n/a |
+| **Live AWS resources**                                     | **Docify acct (ap-south-1):** envs/main (VPC, `docify-server` t4g.large — **stopped** when idle, auto-stop 23:00 IST, CloudFront ×2, Lambda ×2, SQS ×4, S3 ×5, ECR, SNS, SES, Route 53 zone) + bootstrap (tfstate bucket, OIDC, 5 CI roles, $5/$15/$30 budgets, anomaly monitor) + budget `docify-server-autostop` (gross $200, **action: stop server at 90 %**, instance id pinned — update after a server replace). **Mgmt acct:** budgets `docify-credit-burn` + `docify-card-charge`, anomaly alert |
 | **AWS spend to date / credits left** | ~$0 / **$200** (all 5 Free Plan activities done 2026-11-01)            |
 | **Free-plan expiry date**            | n/a — **Paid plan** since 2026-11-01 (no spend limit ⚠). Credits expire 2027-10-12 ($100) / 2027-10-30 ($100) |
 | **Open ⚠ verify items**              | see §26.2 (21 open)                                                    |
 | **Doc review status**                | v1.3 — implementation started; decisions D38–D46 added                 |
-| **Environments live**                | none                                                                   |
+| **Environments live**                                     | none yet (infra only; app arrives in P9) |
 
 ---
 
@@ -131,6 +131,8 @@ Jira/Slack/Drive · MCP/agents/fine-tuning · rich-text editor · version-diff U
 | D54 | 10-21 | Accepted | **Marketing landing page** (`frontend/src/pages/landing/`): always-light (white), full-bleed, own nav/footer. Libraries: `motion` (already used), `lenis` (smooth scroll), `remotion` + `@remotion/player` (in-browser product film, lazy-loaded only near the viewport, 111 kB gz). Everything respects `prefers-reduced-motion`; landing chunk 29 kB gz | owner asked for a highly animated, professional landing; Remotion is free for individuals/teams ≤ 3 people (re-check licence if Docify becomes a company) | static landing, GSAP |
 | D55 | 10-21 | Accepted | **Theme rule:** public pages (landing, auth, privacy) are always **light**; the app has **Light (default) / Dark / System**, chosen via a top-bar toggle and the account menu, saved in localStorage, applied as `<html data-theme>` by `public/theme-init.js` before first paint (external file → CSP-safe, no flash) | owner request: white everywhere, two themes inside the app | OS-only `prefers-color-scheme` |
 | D56 | 11-01 | Accepted | **Server = t4g.large (Graviton arm64, 8 GiB, $0.0448/h Mumbai) with `cpu_credits = standard`**; backend image built natively on `ubuntu-24.04-arm` (`linux/arm64`) | Paid plan (Q11) removed the Free-Plan instance restriction; same 8 GiB as m7i-flex.large (§13.4 peak ≈ 3.7 GiB doesn't fit 4 GiB) at ~45 % of the price. `standard` credits throttle instead of billing surplus CPU (card-safety). All deps have aarch64 wheels; third-party images are multi-arch | m7i-flex.large ($0.10/h) · t3.medium (4 GiB, too small) · t3.large ($0.09/h) |
+| D57 | 11-01 | Accepted | **OIDC trust = GitHub immutable subject claims** `repo:<owner>@<owner_id>/<repo>@<repo_id>:<context>` (bootstrap vars `github_owner_id`/`github_repo_id`, public ids) | The repo has `use_immutable_subject = true`; legacy `repo:<owner>/<repo>` subs were rejected (`Not authorized to perform sts:AssumeRoleWithWebIdentity`). Immutable ids also stop a re-created repo with the same name from inheriting the roles | turn immutable subjects off |
+| D58 | 11-01 | Accepted | **Kubelet settings in a KubeletConfiguration drop-in** (`/var/lib/rancher/k3s/agent/etc/kubelet.conf.d/50-docify.conf`); only the ECR credential-provider flags stay in `kubelet-arg` | k3s v1.36 kubelet refuses `--shutdown-grace-period*` ("unknown flag") → k3s crash-looped on first boot; reserved/eviction/swap flags are deprecated too | pin an older k3s |
 
 ### 3.2 Differences from `Docify_Project_Plan.md`
 
@@ -1246,8 +1248,8 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P0.3 Repo skeleton per §5.0 (README, LICENSE MIT, .gitignore, .editorconfig, PR template, CODEOWNERS, CLAUDE.md) — ✅ commit 6da72e4
 - [x] P0.4 ✅ 2026-11-01: Paid plan + org `Docify-Team`; **root MFA on management account** (authenticator app); CLI via `aws login` (profiles `docify`, `docify-mgmt`); everyday access = Builder ID → AccountFullAccessRole (no IAM user needed). Original text: AWS account (Free Plan); root MFA; record expiry in §1; run `aws ec2 describe-instance-types --filters Name=free-tier-eligible,Values=true --region ap-south-1` and record result in D30; IAM admin user + MFA; `aws login` works
 - [x] P0.5 ✅ 2026-11-01 (mgmt account): budgets `docify-credit-burn` (alerts $1/$50/$150/$180 of $200 credits) + `docify-card-charge` (>$0.01 billed to card) + Cost Anomaly Detection (default monitor, daily email ≥ $1). Replaces the planned $5/$15/$30.
-- [ ] P0.6 Domain + Route 53 hosted zone
-- [ ] P0.7 SES domain identity (DKIM) + production access request
+- [x] P0.6 Domain + Route 53 hosted zone — ✅ 2026-11-01 zone created, Namecheap → 4 awsdns NS, delegation verified at the .work registry; imported into envs/main
+- [x] P0.7 SES domain identity (DKIM) + production access request — ✅ 2026-11-01 identity + Easy DKIM 2048 + MAIL FROM `mail.` + DMARC + suppression list, verified (SUCCESS), imported into envs/main. ⏭ production-access request deferred to P9 (needs the live site)
 - [ ] P0.8 Anthropic + Voyage accounts, keys, spend limits $5/mo
 - [ ] P0.9 Google Cloud project + OAuth consent screen (External, In production)
 - [ ] P0.10 Tools: git, gh, uv, Python 3.13, Node 24, Docker Desktop, kubectl, helm, kind, terraform ≥ 1.11, awscli ≥ 2.32 + session-manager-plugin, k6
@@ -1325,13 +1327,13 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 ### Phase 8 — Terraform + AWS
 
-- [x] P8.1 `bootstrap/` (state, OIDC provider, CI roles) + import budgets/anomaly — ✅ code only, validated — not applied (Q11)
-- [x] P8.2 Modules network, server, storage, registry, queues, ingest, params, ses (import), dns (import zone), edge, scheduler, alerts — ✅ code only, validated — not applied (Q11)
+- [x] P8.1 `bootstrap/` (state, OIDC provider, CI roles) + import budgets/anomaly — ✅ applied 2026-11-01 (local state, backed up to `s3://<state-bucket>/bootstrap/`); OIDC subjects use GitHub **immutable** claims (D57)
+- [x] P8.2 Modules network, server, storage, registry, queues, ingest, params, ses (import), dns (import zone), edge, scheduler, alerts — ✅ applied 2026-11-01: first apply local (10 imports via git-ignored import blocks), then CI `terraform.yml` = No changes
 - [x] P8.3 `bootstrap.sh` (data vol safety, k3s, ecr provider, DNS unit, Argo CD) — ✅ infra/server/bootstrap.sh (bash -n + shellcheck)
 - [x] P8.4 Workflows `release.yml` (image part), `terraform.yml`, `ci.yml` infra job (plan on PR), `start.yml`, `stop.yml`; Lambda quota check (§5.4) — ✅ workflows written, guarded by vars.AWS_ENABLED
 - [x] P8.5 `scripts/init-params.sh`; set real secrets — ✅ scripts/init-params.sh
 
-- **AC:** [ ] CI `terraform apply` creates all · [ ] instance boots k3s + Argo unattended · [ ] Start/Stop work · [ ] 23:00 auto-stop observed · [ ] `terraform plan` clean · [ ] `terraform state pull | grep -c CHANGE_ME` = 0 secrets in state
+- **AC:** [x] CI `terraform apply` creates all (first apply local because of imports; CI apply via OIDC ✅ No changes) · [x] instance boots k3s + Argo unattended (replacement instance: bootstrap complete, 5/5 Argo apps Synced/Healthy) · [x] Start/Stop work (`stop.yml` ✅; `start.yml` starts the server ✅, k3s/Argo/`/data` healthy, origin DNS re-pointed to new IP; its health-wait step needs the app → P9) · [ ] 23:00 auto-stop observed (schedule `cron(0 23 * * ? *)` Asia/Kolkata in place) · [x] `terraform plan` clean (laptop + CI) · [x] `terraform state pull | grep -c CHANGE_ME` = 0
 
 ### Phase 9 — Deploy to AWS
 
@@ -1493,6 +1495,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | 2026-10-21 | Landing polish | Landing page rebuilt: white theme + app Light/Dark/System toggle (D55); Geist font; **hero = animated copy (left) + Remotion product stage with 4-step progress (right)**, aligned to the nav width, film pauses off-screen; startup footer CTA; smooth nav scroll; lag fixed (no animated blur/blend/gradients, off-screen loops paused: ~120 fps idle, 0 long tasks). |
 | 2026-11-01 | AWS credits | CLI signed in to the Docify AWS account (`aws login --profile docify`, ap-southeast-2, AccountFullAccessRole). Completed all 5 Free Plan activities: Budgets (then replaced by `docify-credit-burn` + `docify-card-charge`), Lambda function URL, EC2 t3.micro, RDS Postgres db.t4g.micro, Bedrock Nova Micro in the playground. Test resources deleted afterwards. Credits $100 → **$200**. | — | §1 | ~$0 | — |
 | 2026-11-01 | AWS Mumbai | Followed `docs/pdf/aws_mumbai_region_final_plan.pdf`: credits checked ($200), **upgraded to Paid plan** (RuPay card, $20 limit), **activated advanced features** (org `Docify-Team`, irreversible, spend limits removed), added `ap-south-1` to the `RegionFloor` statement of `AdvancedModeRegionRestrictionSecurityControlPolicy`. CLI profiles: `docify` (project, ap-south-1), `docify-mgmt` (management). Budgets moved to the management account. | — | §1 | $0 | Wire budget action (stop server at $180) when the server exists |
+| 2026-11-01 | Phase 8 deploy | P0.4–P0.7 done (root MFA, anomaly alerts, Route 53 zone + Namecheap NS, SES verified). Server switched to **t4g.large** (D56). Bootstrap applied (24) → envs/main applied (10 imports + 128). Fixed on the way: SG description apostrophe, SG-rules-before-instance ordering, OIDC immutable subject (D57), k8s 1.36 kubelet flags (D58), Lambda zip file mode (laptop = CI hash). Server replaced → unattended bootstrap ✅, Argo 5/5 healthy; stop/start via Actions ✅; CI terraform = No changes. Budget action stops the server at $180 gross. Server left **stopped**. | — | §1, §23 P0/P8, §3 D56–D58 | ~$0.10 | P7.2 ci-bot, P9 (secrets, GitHub Apps, first release) |
 
 ---
 

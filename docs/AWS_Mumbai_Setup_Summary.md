@@ -18,7 +18,7 @@ This follows `docs/pdf/aws_mumbai_region_final_plan.pdf`. All 7 steps are comple
 
 - **Org `Docify-Team`:** the management account (billing and credits), the `Docify` project account (where we build, in ap-south-1), and an Identity Delegated Admin account.
 - **CLI profiles:** `docify` (project account, region ap-south-1) and `docify-mgmt` (management account). If a session expires, run `aws login --profile <name>` and pick the matching session in the browser.
-- **Live AWS resources:** none that cost money. **No server exists yet**; Phase 8 creates it.
+- **Live AWS resources:** Phase 8 infrastructure in Mumbai (see Master Doc §1). The server `docify-server` (t4g.large, ~$0.05/h while running) is **stopped when idle** and auto-stops at 23:00 IST.
 
 ## Protecting the credit card
 
@@ -28,7 +28,7 @@ The goal is **$0 on the card**. Since step 5 there is **no hard spend cap**, so 
 |---|---|---|
 | `docify-credit-burn` budget | management account | Emails when credit use (counted before credits) passes $1, $50, $150 or $180, or when it's forecast to pass $200 |
 | `docify-card-charge` budget | management account | Emails if **anything** is billed after credits (> $0.01), so the card is being charged |
-| `docify-spend-freeze` IAM policy + `docify-budgets-action-role` | Docify account | Ready, but **not wired yet**. When the server exists, add a Budgets action that stops it at $180 used |
+| `docify-server-autostop` budget + `docify-budgets-action-role` | Docify account | **Stops the server automatically** at $180 used (before credits). `docify-spend-freeze` policy kept for later CI-role freezes |
 
 ⚠ **Ways the card could still be charged:**
 1. Total usage goes past $200.
@@ -38,6 +38,6 @@ The goal is **$0 on the card**. Since step 5 there is **no hard spend cap**, so 
 
 ## Still open
 
-- Wire the Budgets **stop-server action** right after the Phase 8 server is created.
-- **GitHub OIDC (Phase 8):** the old `iam:*Provider*` block is no longer present. The managed SCP now only blocks leaving the org and edits to AWS-managed roles. Confirm this when Terraform creates the OIDC provider.
+- ✅ **Stop-server action wired (2026-11-01):** budget `docify-server-autostop` in the Docify account (usage before credits, $200 window) stops the server automatically at **90 % = $180** and emails. It pins the instance id, so after a server **replace** the action must be updated (`aws budgets update-budget-action`).
+- ✅ **GitHub OIDC works:** CI `terraform.yml` signs in with no stored keys. Trust policies use GitHub's immutable subject claims (Master Doc D57).
 - Supriya's **Fresh Deploy** project is not in this org, so it isn't affected.
