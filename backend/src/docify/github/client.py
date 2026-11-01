@@ -227,13 +227,18 @@ class InstallationClient:
         """Issues (not PRs). Needs issues:read for private repos; public repos fall back to anonymous reads."""
         params: dict[str, Any] = {"state": state, "per_page": min(limit, 100), "sort": "updated"}
         r = await self._get(f"/repos/{full_name}/issues", params=params, allow_404=True)
-        if r.status_code in (403, 404):
-            r = await self.app.http.get(f"{self.base}/repos/{full_name}/issues", params=params,
-                                        headers={"Accept": "application/vnd.github+json",
-                                                 "X-GitHub-Api-Version": "2022-11-28"})
-        if r.status_code != 200:
-            raise GitHubNotFound(f"issues of {full_name} ({r.status_code})")
-        return [i for i in r.json() if "pull_request" not in i][:limit]
+        items = [i for i in r.json() if "pull_request" not in i] if r.status_code == 200 else []
+        # Without the Issues permission GitHub answers 200 with pull requests only (seen 2026-11-02).
+        # Public repos: their issues are public data, so read them anonymously instead.
+        if not items:
+            anon = await self.app.http.get(f"{self.base}/repos/{full_name}/issues", params=params,
+                                           headers={"Accept": "application/vnd.github+json",
+                                                    "X-GitHub-Api-Version": "2022-11-28"})
+            if anon.status_code == 200:
+                return [i for i in anon.json() if "pull_request" not in i][:limit]
+            if r.status_code != 200:
+                raise GitHubNotFound(f"issues of {full_name} ({r.status_code})")
+        return items[:limit]
 
     async def languages(self, full_name: str) -> dict[str, int]:
         r = await self._get(f"/repos/{full_name}/languages", allow_404=True)

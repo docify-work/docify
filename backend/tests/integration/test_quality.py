@@ -143,3 +143,26 @@ async def test_issue_suspects_insights_and_github_import(outbox: MemorySender, g
     # Anonymous visitors can't write.
     c.cookies.clear()
     assert (await c.post(f"/api/workspaces/{slug}/issues", headers=H, json={"title": "x y z"})).status_code == 401
+
+
+async def test_merged_pr_number_reaches_findings_from_feature_commits(outbox: MemorySender, gh: FakeGitHub) -> None:
+    # Regression (prod 2026-11-02): the flagged line lives in the feature commit, the PR number only in the
+    # merge commit -> every commit of the push gets the PR number.
+    c, ws, _ = await setup_repo(outbox, gh)
+    feature = fake_commit("1" * 40, "Mallory Dev", "mallory", "2026-10-12T09:00:00Z", "feat: footer credit",
+                          ["app/main.py"], patches={"app/main.py": "@@ -1,1 +1,2 @@\n x = 1\n+print('claude-sonnet')"})
+    merge = fake_commit("2" * 40, "Mallory Dev", "mallory", "2026-10-12T09:05:00Z",
+                        "Merge pull request #12 from acme/feat", [], patches={})
+    old = gh.head
+    gh.head = merge["sha"]
+    gh.files["app/main.py"] += b"\nprint('claude-sonnet')\n"
+    gh.history += [feature, merge]
+    gh.compare = {"status": "ahead", "commits": [{k: v for k, v in x.items() if k != "files"} for x in (feature, merge)],
+                  "files": [{"filename": "app/main.py", "status": "modified", "sha": "x"}]}
+    await get_queue().send({"v": 1, "kind": "github_event", "delivery_id": "pr12", "event": "push",
+                            "installation_id": gh.installation_id, "repo_id": gh.repo_id, "before": old,
+                            "after": gh.head, "forced": False})
+    await drain()
+    items = (await c.get(f"/api/workspaces/{ws['slug']}/findings")).json()["items"]
+    f = next(i for i in items if i["source"] == "push")
+    assert (f["commit_sha"], f["pr_number"], f["author_login"]) == ("1" * 40, 12, "mallory")

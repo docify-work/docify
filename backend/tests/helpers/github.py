@@ -74,6 +74,7 @@ class FakeGitHub:
              "created_at": "2026-10-21T10:00:00Z"},
         ]
         self.blame_login = "grace"
+        self.app_has_issues_permission = False  # like the real Docify App: token sees PRs only
         self.suspended = False
         self.user_sees_repo = True  # org member with read access to this repo?
         self.calls: list[str] = []
@@ -107,8 +108,7 @@ class FakeGitHub:
             {"number": 3, "title": "Add bcrypt", "state": "closed", "merged_at": "2026-10-05T14:30:00Z",
              "created_at": "2026-10-05T12:30:00Z", "updated_at": "2026-10-05T14:30:00Z", "user": {"login": "grace"},
              "html_url": "https://github.com/acme/taskly/pull/3"}]))
-        m.get(url__regex=rf"{API}/repos/{self.full_name}/issues.*").mock(
-            side_effect=lambda req: httpx.Response(200, json=self.issues))
+        m.get(url__regex=rf"{API}/repos/{self.full_name}/issues.*").mock(side_effect=self._issues)
         m.post(f"{API}/graphql").mock(side_effect=self._graphql)
         m.get(url__regex=rf"{API}/repos/{self.full_name}/compare/.+").mock(side_effect=self._compare)
         m.get(url__regex=rf"{API}/repos/{self.full_name}/contents/.+").mock(side_effect=self._contents)
@@ -134,6 +134,12 @@ class FakeGitHub:
         ref = request.url.path.rsplit("/", 1)[1]
         found = next((c for c in self.history if c["sha"] == ref), None)
         return httpx.Response(200, json=found if found else {"sha": self.head})
+
+    def _issues(self, request: httpx.Request) -> httpx.Response:
+        authed = "authorization" in request.headers
+        if authed and not self.app_has_issues_permission:
+            return httpx.Response(200, json=[i for i in self.issues if "pull_request" in i])
+        return httpx.Response(200, json=self.issues)
 
     def _graphql(self, request: httpx.Request) -> httpx.Response:
         import json as _json

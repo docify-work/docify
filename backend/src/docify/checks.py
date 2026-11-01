@@ -237,6 +237,9 @@ async def scan_pushed_commits(db: AsyncSession, repo: Repository, commits: list[
     if not policies:
         return 0
     rows: list[dict[str, Any]] = []
+    # A merged PR arrives as feature commits + one merge commit ("Merge pull request #N"): the flagged line is
+    # in a feature commit, so give every commit of this push the PR number found in it.
+    push_pr = next((n for n in (_pr(str((c.get("commit") or {}).get("message") or "")) for c in commits) if n), None)
     for c in commits:
         meta = c.get("commit") or {}
         author = meta.get("author") or {}
@@ -246,7 +249,7 @@ async def scan_pushed_commits(db: AsyncSession, repo: Repository, commits: list[
         attrib = {"commit_sha": c.get("sha"), "commit_message": message.splitlines()[0][:300] if message else None,
                   "author_name": str(author.get("name") or login or "unknown")[:200], "author_login": login,
                   "committed_at": datetime.fromisoformat(str(when).replace("Z", "+00:00")) if when else None,
-                  "pr_number": _pr(message)}
+                  "pr_number": _pr(message) or push_pr}
         for f in c.get("files") or []:
             if f.get("status") == "removed" or not f.get("patch"):
                 continue

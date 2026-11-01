@@ -96,21 +96,23 @@ async def analyze(db: AsyncSession, issue: Issue, repos: list[Repository]) -> li
 
     def credit_ranges(repo: Repository, path: str, ranges: list[dict[str, Any]], lo: int | None, hi: int | None,
                       weight: float, why: str) -> bool:
-        lines: dict[tuple[str | None, str], int] = defaultdict(int)
-        sample: dict[tuple[str | None, str], dict[str, Any]] = {}
+        lines: dict[tuple[str | None, str | None], int] = defaultdict(int)
+        sample: dict[tuple[str | None, str | None], dict[str, Any]] = {}
         for r in ranges:
             a, b = r["start"], r["end"]
             if lo is not None and hi is not None:
                 a, b = max(a, lo), min(b, hi)
             if b < a:
                 continue
-            k = (r["login"], r["name"])
+            k = (r["login"], None if r["login"] else r["name"])  # one entry per person, not per name spelling
             lines[k] += b - a + 1
             if k not in sample or (r["date"] and sample[k]["date"] and r["date"] > sample[k]["date"]):
                 sample[k] = r
         total = sum(lines.values())
-        for (login, name), n in lines.items():
-            r = sample[(login, name)]
+        for key, n in lines.items():
+            r = sample[key]
+            login = key[0]
+            name = r["name"]
             share = n / total
             span = f"{path}:{lo}-{hi}" if lo else path
             board.add(login, name, weight * share,
