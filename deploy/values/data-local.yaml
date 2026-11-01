@@ -39,3 +39,7 @@ localSecrets:
 
 backup:
   enabled: false
+
+# No monitoring stack (ServiceMonitor CRD) on kind.
+exporter:
+  enabled: false

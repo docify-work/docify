@@ -41,3 +41,4 @@ backend.hcl
 # Local secret files for scripts/init-params.sh --from-dir (never commit)
 .secrets/
 secrets/
+*.tfplan
