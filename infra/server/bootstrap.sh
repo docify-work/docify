@@ -194,12 +194,28 @@ default-local-storage-path: /data/local-path
 kubelet-arg:
   - "image-credential-provider-config=/etc/rancher/k3s/ecr-credential-provider.yaml"
   - "image-credential-provider-bin-dir=/usr/local/bin"
-  - "system-reserved=cpu=100m,memory=300Mi"
-  - "kube-reserved=cpu=100m,memory=300Mi"
-  - "eviction-hard=memory.available<200Mi,nodefs.available<10%"
-  - "fail-swap-on=false"
-  - "shutdown-grace-period=180s"
-  - "shutdown-grace-period-critical-pods=30s"
+EOF
+
+# Kubelet settings go in a KubeletConfiguration drop-in, not kubelet-arg flags:
+# Kubernetes 1.36 removed --shutdown-grace-period* as flags (kubelet refuses to
+# start: "unknown flag"), and the other ones are deprecated as flags too.
+# k3s merges every file in this directory into the kubelet config.
+mkdir -p /var/lib/rancher/k3s/agent/etc/kubelet.conf.d
+cat >/var/lib/rancher/k3s/agent/etc/kubelet.conf.d/50-docify.conf <<'EOF'
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+systemReserved:
+  cpu: 100m
+  memory: 300Mi
+kubeReserved:
+  cpu: 100m
+  memory: 300Mi
+evictionHard:
+  memory.available: 200Mi
+  nodefs.available: "10%"
+failSwapOn: false
+shutdownGracePeriod: 180s
+shutdownGracePeriodCriticalPods: 30s
 EOF
 
 # k3s must never start without /data mounted (otherwise Postgres would

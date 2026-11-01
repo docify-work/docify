@@ -27,6 +27,9 @@ data "archive_file" "code" {
   source_dir  = var.source_dir
   output_path = "${var.build_dir}/${local.function_name}.zip"
   excludes    = ["__pycache__", "tests", ".pytest_cache"]
+  # Same permission bits on Windows and Linux -> same zip -> same hash, so a
+  # laptop apply and a CI apply don't keep re-uploading the function.
+  output_file_mode = "0644"
 }
 
 # Create the log group ourselves so retention is 7 d (default = never expire).
