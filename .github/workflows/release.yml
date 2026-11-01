@@ -85,6 +85,9 @@ jobs:
           context: backend
           file: backend/Dockerfile
           platforms: linux/arm64 # must match the server (D56: t4g.large = arm64)
+          # APP_VERSION inside the image (/api/version) -> smoke + start.yml compare it to the sha.
+          build-args: |
+            GIT_SHA=${{ github.sha }}
           load: true
           push: false
           provenance: false
