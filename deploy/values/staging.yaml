@@ -7,11 +7,13 @@
 # parameter at deploy time (see deploy/README.md "Account id injection").
 # =============================================================================
 env: staging
+
 image:
   # Built as <aws.accountId>.dkr.ecr.ap-south-1.amazonaws.com/docify/backend
   ecrRepository: docify/backend
   # Bumped by release.yml (bot commit) on every merge to main. Do not edit by hand.
   tag: "802a317316cf2b1a042892ddf995f1b40d10ec3c"
+
 config:
   PUBLIC_BASE_URL: "https://staging.docify.work"
   EMAIL_FROM: "Docify Staging <no-reply@docify.work>"
@@ -23,26 +25,32 @@ config:
   GOOGLE_CLIENT_ID: "224400653695-4jugar068188j8ki98ngl064962amhgm.apps.googleusercontent.com"
   # Real AI is off until the provider is chosen (Bedrock vs Anthropic, §1). Fake AI = $0.
   AI_MODE: fake
+
 api:
-  replicas: 1 # staging: no HPA, one pod (§13.3)
+  replicas: 1             # staging: no HPA, one pod (§13.3)
   autoscaling:
     enabled: false
   pdb:
     enabled: false
+
 keda:
   enabled: true
   minReplicas: 0
-  maxReplicas: 1 # staging max 1 (memory, §13.4)
+  maxReplicas: 1          # staging max 1 (memory, §13.4)
+
 ingress:
   className: traefik
   host: origin-staging.docify.work
+
 certificate:
   enabled: true
   # Switch to letsencrypt-prod once a staging-issuer cert works (P9.1).
-  issuerName: letsencrypt-staging
+  issuerName: letsencrypt-prod
+
 # Flip to true in P10 (needs the monitoring app's ServiceMonitor CRD).
 serviceMonitor:
   enabled: false
+
 # Read by release.yml to build the SPA's config.json (not by the chart).
 frontend:
   env: staging

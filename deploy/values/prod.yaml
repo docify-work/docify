@@ -44,7 +44,7 @@ ingress:
 certificate:
   enabled: true
   # Switch to letsencrypt-prod once a staging-issuer cert works (P9.1).
-  issuerName: letsencrypt-staging
+  issuerName: letsencrypt-prod
 
 serviceMonitor:
   enabled: false          # P10
