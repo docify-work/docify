@@ -6,6 +6,7 @@ import re
 from urllib.parse import quote
 
 CITATION = re.compile(r"\[\[([^\[\]:\n]+):(\d+)(?:-(\d+))?\]\]")
+BARE_CITATION = re.compile(r"\[\[([^\[\]:\n]+)\]\]")  # [[path]] without lines
 
 
 def extract(text: str) -> list[tuple[str, int, int]]:
@@ -32,7 +33,19 @@ def validate(text: str, line_counts: dict[str, int]) -> tuple[str, int]:
             return ""
         return f"[[{path}:{a}-{b}]]"
 
+    def _whole_file(m: re.Match[str]) -> str:
+        # Some models (seen with Nova Lite) cite a file without lines: [[README.md]]. Known file -> cite the
+        # whole file so it renders as a link; unknown -> drop it (never leave raw markers in published docs).
+        nonlocal removed
+        path = m.group(1).strip()
+        total = line_counts.get(path)
+        if not total:
+            removed += 1
+            return ""
+        return f"[[{path}:1-{total}]]"
+
     fixed = CITATION.sub(_fix, text)
+    fixed = BARE_CITATION.sub(_whole_file, fixed)
     fixed = re.sub(r"[ \t]+([.,;:])", r"\1", fixed)
     return fixed, removed
 

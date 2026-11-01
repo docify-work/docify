@@ -151,3 +151,13 @@ def test_backoff(attempts: int, low: int, high: int) -> None:
 
     for _ in range(20):
         assert low <= backoff_s(attempts) <= high
+
+
+def test_citation_without_lines_becomes_whole_file_link() -> None:
+    # Nova sometimes cites [[path]] without lines; it must never stay as a raw marker (2026-11-01).
+    text, removed = citations.validate("Layout: [[README.md]] and [[missing.txt]] here.", {"README.md": 12})
+    assert text == "Layout: [[README.md:1-12]] and  here."
+    assert removed == 1
+    rendered = citations.render(text, "acme/taskly", "a" * 40)
+    assert "[`README.md:1-12`](https://github.com/acme/taskly/blob/" in rendered
+    assert "[[" not in rendered
