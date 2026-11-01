@@ -216,6 +216,9 @@ class Repository(IdMixin, TimestampMixin, Base):
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     size_kb: Mapped[int | None] = mapped_column(Integer)
     github_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Snapshot of GitHub repo facts for Insights (stars, forks, languages, PRs...), refreshed lazily (D66).
+    github_stats: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    github_stats_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     sync_lease_owner: Mapped[str | None] = mapped_column(String(100))
     sync_lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -349,6 +352,99 @@ class Commit(IdMixin, TimestampMixin, Base):
     additions: Mapped[int | None] = mapped_column(Integer)
     deletions: Mapped[int | None] = mapped_column(Integer)
     tsv: Mapped[Any] = mapped_column(TSVECTOR, Computed("to_tsvector('english', message)", persisted=True))
+
+
+# ----------------------------------------------------------------------------- checks + issues (D66)
+
+SEVERITIES = ("info", "low", "medium", "high", "critical")
+POLICY_KINDS = ("regex", "terms")
+FINDING_STATUSES = ("open", "acknowledged", "resolved", "false_positive")
+ISSUE_STATUSES = ("open", "in_progress", "resolved", "closed")
+ISSUE_SOURCES = ("docify", "github", "finding")
+
+
+class Policy(IdMixin, TimestampMixin, Base):
+    """A workspace rule checked against every line added by a push (and on demand over current code)."""
+
+    __tablename__ = "policies"
+    __table_args__ = (
+        _check_in("kind", POLICY_KINDS, "kind"),
+        _check_in("severity", SEVERITIES, "severity"),
+        UniqueConstraint("workspace_id", "name"),
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(120))
+    description: Mapped[str | None] = mapped_column(Text)
+    kind: Mapped[str] = mapped_column(String(10))
+    pattern: Mapped[str] = mapped_column(Text)  # regex, or newline-separated terms
+    severity: Mapped[str] = mapped_column(String(10))
+    paths: Mapped[str | None] = mapped_column(Text)  # comma-separated globs; empty = all files
+    enabled: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    template: Mapped[str | None] = mapped_column(String(40))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+
+
+class Finding(IdMixin, TimestampMixin, Base):
+    __tablename__ = "findings"
+    __table_args__ = (
+        _check_in("status", FINDING_STATUSES, "status"),
+        _check_in("severity", SEVERITIES, "severity"),
+        UniqueConstraint("repo_id", "fingerprint"),
+        Index("ix_findings_ws_status", "workspace_id", "status"),
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    repo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"), index=True)
+    policy_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("policies.id", ondelete="SET NULL"))
+    policy_name: Mapped[str] = mapped_column(String(120))
+    severity: Mapped[str] = mapped_column(String(10))
+    status: Mapped[str] = mapped_column(String(20), server_default=text("'open'"))
+    source: Mapped[str] = mapped_column(String(10))  # push | scan
+    fingerprint: Mapped[str] = mapped_column(String(64))
+    path: Mapped[str] = mapped_column(Text)
+    line: Mapped[int | None] = mapped_column(Integer)
+    snippet: Mapped[str] = mapped_column(Text)  # secrets are redacted before storing
+    match: Mapped[str] = mapped_column(String(200))
+    commit_sha: Mapped[str | None] = mapped_column(String(40))
+    commit_message: Mapped[str | None] = mapped_column(Text)
+    author_name: Mapped[str | None] = mapped_column(String(200))
+    author_login: Mapped[str | None] = mapped_column(String(100))
+    committed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    pr_number: Mapped[int | None] = mapped_column(Integer)
+    assignee_login: Mapped[str | None] = mapped_column(String(100))
+    note: Mapped[str | None] = mapped_column(Text)
+    resolved_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Issue(IdMixin, TimestampMixin, Base):
+    __tablename__ = "issues"
+    __table_args__ = (
+        _check_in("status", ISSUE_STATUSES, "status"),
+        _check_in("severity", SEVERITIES, "severity"),
+        _check_in("source", ISSUE_SOURCES, "source"),
+        UniqueConstraint("workspace_id", "number"),
+        Index("ix_issues_ws_status", "workspace_id", "status"),
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
+    repo_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("repositories.id", ondelete="SET NULL"))
+    number: Mapped[int] = mapped_column(Integer)
+    title: Mapped[str] = mapped_column(String(300))
+    body: Mapped[str | None] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), server_default=text("'open'"))
+    severity: Mapped[str] = mapped_column(String(10), server_default=text("'medium'"))
+    source: Mapped[str] = mapped_column(String(10))
+    paths: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default=text("'{}'"))
+    github_number: Mapped[int | None] = mapped_column(Integer)
+    github_url: Mapped[str | None] = mapped_column(Text)
+    github_author: Mapped[str | None] = mapped_column(String(100))
+    finding_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("findings.id", ondelete="SET NULL"))
+    suspects: Mapped[list[dict[str, Any]]] = mapped_column(JSONB, server_default=text("'[]'"))
+    analyzed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    assignee_login: Mapped[str | None] = mapped_column(String(100))
+    assigned_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 # ----------------------------------------------------------------------------- jobs

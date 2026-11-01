@@ -112,10 +112,30 @@ async def record_commits(ctx: JobContext, gh: InstallationClient, repo: Reposito
                     await db.execute(insert(Commit).values(rows[i:i + 200])
                                      .on_conflict_do_nothing(index_elements=["repo_id", "sha"]))
         ctx.log.info("history.recorded", commits=len(rows))
-        return len(rows)
     except Exception as exc:  # best-effort: history must never fail an index/sync
         ctx.log.warning("history.failed", error=type(exc).__name__)
         return 0
+    await _run_checks(ctx, gh, repo, detailed, first_time=not known)
+    return len(rows)
+
+
+async def _run_checks(ctx: JobContext, gh: InstallationClient, repo: Repository, detailed: list[dict[str, Any]],
+                      *, first_time: bool) -> None:
+    """Policy checks (D66). New pushes: scan the lines each new commit added (author = that commit).
+    First history for a repo: scan the current code once instead (old commits are not "new pushes")."""
+    from docify import checks
+
+    try:
+        async with ctx.tx() as db:
+            if first_time:
+                n = await checks.scan_repo(db, repo, gh)
+            else:
+                oldest_first = sorted(detailed, key=lambda c: str(((c.get("commit") or {}).get("author") or {})
+                                                                 .get("date") or ""))
+                n = await checks.scan_pushed_commits(db, repo, oldest_first)
+        ctx.log.info("checks.done", findings=n, mode="scan" if first_time else "push")
+    except Exception as exc:  # best-effort, like history
+        ctx.log.warning("checks.failed", error=type(exc).__name__)
 
 
 # ----------------------------------------------------------------------------- retrieval

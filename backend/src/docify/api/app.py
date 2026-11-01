@@ -12,7 +12,7 @@ from fastapi import APIRouter, FastAPI
 from docify import __version__
 from docify.api.errors import install_error_handlers
 from docify.api.middleware import DocifyMiddleware
-from docify.api.routers import auth, chat, dev, github, health, me, repos, workspaces
+from docify.api.routers import auth, chat, dev, github, health, me, quality, repos, workspaces
 from docify.cache import close_valkey
 from docify.config import get_settings
 from docify.db.session import dispose_engine, init_engine
@@ -59,7 +59,7 @@ def create_app(*, start_background: bool = True) -> FastAPI:
     app.add_middleware(DocifyMiddleware)
 
     api = APIRouter(prefix="/api")
-    for r in (health, auth, me, workspaces, github, repos, chat):
+    for r in (health, auth, me, workspaces, github, repos, chat, quality):
         api.include_router(r.router)
     if s.is_local:
         api.include_router(dev.router)

@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import time
 from collections.abc import AsyncIterator
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -199,6 +200,50 @@ class InstallationClient:
         if r.status_code != 200:
             return None
         return dict(r.json())
+
+    async def blame(self, full_name: str, ref: str, path: str) -> list[dict[str, Any]]:
+        """Line ranges -> commit/author for one file (GraphQL; installation tokens need only contents:read)."""
+        owner, name = full_name.split("/", 1)
+        query = ("query($o:String!,$n:String!,$e:String!,$p:String!){repository(owner:$o,name:$n){object(expression:$e)"
+                 "{... on Commit{blame(path:$p){ranges{startingLine endingLine commit{oid committedDate messageHeadline"
+                 " author{name user{login}}}}}}}}}")
+        r = await self.app.http.post(f"{self.base}/graphql", headers=_headers(self.token),
+                                     json={"query": query, "variables": {"o": owner, "n": name, "e": ref, "p": path}})
+        _check(r, self.installation_id)
+        r.raise_for_status()
+        obj = (((r.json().get("data") or {}).get("repository") or {}).get("object") or {})
+        out = []
+        for rg in ((obj.get("blame") or {}).get("ranges") or []):
+            c = rg.get("commit") or {}
+            a = c.get("author") or {}
+            when = c.get("committedDate")
+            out.append({"start": rg["startingLine"], "end": rg["endingLine"], "sha": c.get("oid"),
+                        "message": c.get("messageHeadline"), "name": a.get("name") or "unknown",
+                        "login": (a.get("user") or {}).get("login"),
+                        "date": datetime.fromisoformat(when.replace("Z", "+00:00")) if when else None})
+        return out
+
+    async def list_issues(self, full_name: str, *, state: str = "all", limit: int = 100) -> list[dict[str, Any]]:
+        """Issues (not PRs). Needs issues:read for private repos; public repos fall back to anonymous reads."""
+        params: dict[str, Any] = {"state": state, "per_page": min(limit, 100), "sort": "updated"}
+        r = await self._get(f"/repos/{full_name}/issues", params=params, allow_404=True)
+        if r.status_code in (403, 404):
+            r = await self.app.http.get(f"{self.base}/repos/{full_name}/issues", params=params,
+                                        headers={"Accept": "application/vnd.github+json",
+                                                 "X-GitHub-Api-Version": "2022-11-28"})
+        if r.status_code != 200:
+            raise GitHubNotFound(f"issues of {full_name} ({r.status_code})")
+        return [i for i in r.json() if "pull_request" not in i][:limit]
+
+    async def languages(self, full_name: str) -> dict[str, int]:
+        r = await self._get(f"/repos/{full_name}/languages", allow_404=True)
+        return dict(r.json()) if r.status_code == 200 else {}
+
+    async def list_pulls(self, full_name: str, *, limit: int = 100) -> list[dict[str, Any]]:
+        r = await self._get(f"/repos/{full_name}/pulls", params={"state": "all", "per_page": min(limit, 100),
+                                                                "sort": "updated", "direction": "desc"},
+                            allow_404=True)
+        return list(r.json()) if r.status_code == 200 else []
 
     async def pulls_for_commit(self, full_name: str, sha: str) -> list[dict[str, Any]]:
         r = await self._get(f"/repos/{full_name}/commits/{sha}/pulls", allow_404=True)

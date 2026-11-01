@@ -377,3 +377,186 @@ class Page[T](BaseModel):
 class DemoOut(Out):
     workspace_slug: str | None
     available: bool
+
+
+# ----------------------------------------------------------------------------- checks, issues, insights (D66)
+
+Severity = Literal["info", "low", "medium", "high", "critical"]
+
+
+class PolicyOut(Out):
+    id: uuid.UUID
+    name: str
+    description: str | None
+    kind: Literal["regex", "terms"]
+    pattern: str
+    severity: Severity
+    paths: str | None
+    enabled: bool
+    template: str | None
+    created_at: datetime
+
+
+class PolicyIn(BaseModel):
+    name: str = Field(min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    kind: Literal["regex", "terms"] = "terms"
+    pattern: str = Field(min_length=1, max_length=500)
+    severity: Severity = "medium"
+    paths: str | None = Field(default=None, max_length=300)
+    enabled: bool = True
+
+
+class PolicyPatch(BaseModel):
+    name: str | None = Field(default=None, min_length=2, max_length=120)
+    description: str | None = Field(default=None, max_length=1000)
+    kind: Literal["regex", "terms"] | None = None
+    pattern: str | None = Field(default=None, min_length=1, max_length=500)
+    severity: Severity | None = None
+    paths: str | None = Field(default=None, max_length=300)
+    enabled: bool | None = None
+
+
+class PolicyTestIn(BaseModel):
+    kind: Literal["regex", "terms"]
+    pattern: str = Field(min_length=1, max_length=500)
+    sample: str = Field(max_length=5000)
+
+
+class PolicyTestOut(Out):
+    ok: bool
+    error: str | None = None
+    matches: list[dict[str, Any]] = []
+
+
+class PolicyTemplateOut(Out):
+    key: str
+    name: str
+    description: str
+    kind: str
+    severity: str
+    paths: str
+    enabled: bool
+
+
+class ScanIn(BaseModel):
+    repo_id: uuid.UUID | None = None
+
+
+class ScanOut(Out):
+    repos: int
+    findings_created: int
+
+
+class FindingOut(Out):
+    id: uuid.UUID
+    repo_id: uuid.UUID
+    repo_full_name: str = ""
+    policy_id: uuid.UUID | None
+    policy_name: str
+    severity: Severity
+    status: Literal["open", "acknowledged", "resolved", "false_positive"]
+    source: str
+    path: str
+    line: int | None
+    snippet: str
+    match: str
+    commit_sha: str | None
+    commit_message: str | None
+    author_name: str | None
+    author_login: str | None
+    committed_at: datetime | None
+    pr_number: int | None
+    assignee_login: str | None
+    note: str | None
+    issue_number: int | None = None
+    url: str | None = None
+    created_at: datetime
+
+
+class FindingsOut(Out):
+    items: list[FindingOut]
+    counts: dict[str, int]
+
+
+class FindingPatch(BaseModel):
+    status: Literal["open", "acknowledged", "resolved", "false_positive"] | None = None
+    assignee_login: str | None = Field(default=None, max_length=100)
+    note: str | None = Field(default=None, max_length=2000)
+
+
+class SuspectReason(Out):
+    text: str
+    url: str | None = None
+
+
+class Suspect(Out):
+    login: str | None
+    name: str
+    score: float
+    confidence: float
+    reasons: list[SuspectReason]
+
+
+class IssueOut(Out):
+    id: uuid.UUID
+    number: int
+    repo_id: uuid.UUID | None
+    repo_full_name: str | None = None
+    title: str
+    body: str | None
+    status: Literal["open", "in_progress", "resolved", "closed"]
+    severity: Severity
+    source: Literal["docify", "github", "finding"]
+    paths: list[str]
+    github_number: int | None
+    github_url: str | None
+    github_author: str | None
+    finding_id: uuid.UUID | None
+    suspects: list[Suspect]
+    analyzed_at: datetime | None
+    assignee_login: str | None
+    assigned_at: datetime | None
+    created_at: datetime
+    closed_at: datetime | None
+
+
+class IssueIn(BaseModel):
+    title: str = Field(min_length=3, max_length=300)
+    body: str | None = Field(default=None, max_length=20000)
+    repo_id: uuid.UUID | None = None
+    severity: Severity = "medium"
+    paths: list[str] = Field(default_factory=list, max_length=20)
+
+
+class IssuePatch(BaseModel):
+    title: str | None = Field(default=None, min_length=3, max_length=300)
+    body: str | None = Field(default=None, max_length=20000)
+    status: Literal["open", "in_progress", "resolved", "closed"] | None = None
+    severity: Severity | None = None
+    assignee_login: str | None = Field(default=None, max_length=100)
+    unassign: bool = False
+
+
+class GithubIssueOut(Out):
+    number: int
+    title: str
+    state: str
+    author: str | None
+    labels: list[str]
+    comments: int
+    url: str
+    created_at: datetime
+    imported_issue_number: int | None = None
+
+
+class GithubImportIn(BaseModel):
+    repo_id: uuid.UUID
+    number: int = Field(ge=1)
+
+
+class ContributorOut(Out):
+    login: str | None
+    name: str
+    commits: int
+    last_commit: datetime

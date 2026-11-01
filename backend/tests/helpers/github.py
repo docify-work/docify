@@ -35,10 +35,14 @@ def fixture_files() -> dict[str, bytes]:
     return {p.relative_to(FIXTURE).as_posix(): p.read_bytes() for p in FIXTURE.rglob("*") if p.is_file()}
 
 
-def fake_commit(sha: str, name: str, login: str, date: str, message: str, files: list[str]) -> dict[str, Any]:
+def fake_commit(sha: str, name: str, login: str, date: str, message: str, files: list[str],
+                patches: dict[str, str] | None = None) -> dict[str, Any]:
+    patches = patches or {}
     return {"sha": sha, "author": {"login": login},
             "commit": {"message": message, "author": {"name": name, "email": f"{login}@example.com", "date": date}},
-            "files": [{"filename": f} for f in files], "stats": {"additions": 10, "deletions": 1}}
+            "files": [{"filename": f, "status": "modified", **({"patch": patches[f]} if f in patches else {})}
+                      for f in files],
+            "stats": {"additions": 10, "deletions": 1}}
 
 
 class FakeGitHub:
@@ -61,6 +65,15 @@ class FakeGitHub:
         self.user_installations = [installation_id]
         self.github_user = {"id": 777, "login": "octo", "name": "Octo Cat", "avatar_url": None}
         self.emails = [{"email": "octo@example.com", "primary": True, "verified": True}]
+        self.issues: list[dict[str, Any]] = [
+            {"number": 1, "title": "Password hashing is too slow on login", "state": "open", "user": {"login": "zoe"},
+             "labels": [{"name": "bug"}], "comments": 2, "html_url": "https://github.com/acme/taskly/issues/1",
+             "created_at": "2026-10-20T10:00:00Z", "body": "Login takes 3 s; see app/auth.py"},
+            {"number": 2, "title": "A pull request", "state": "open", "user": {"login": "zoe"}, "labels": [],
+             "comments": 0, "html_url": "https://github.com/acme/taskly/pull/2", "pull_request": {},
+             "created_at": "2026-10-21T10:00:00Z"},
+        ]
+        self.blame_login = "grace"
         self.suspended = False
         self.user_sees_repo = True  # org member with read access to this repo?
         self.calls: list[str] = []
@@ -88,6 +101,15 @@ class FakeGitHub:
         m.get(url__regex=rf"{API}/repos/{self.full_name}/commits/[^/]+/pulls").mock(
             return_value=httpx.Response(200, json=[]))
         m.get(url__regex=rf"{API}/repos/{self.full_name}/tarball/.+").mock(side_effect=self._tarball)
+        m.get(url__regex=rf"{API}/repos/{self.full_name}/languages").mock(
+            return_value=httpx.Response(200, json={"Python": 12000, "Markdown": 800}))
+        m.get(url__regex=rf"{API}/repos/{self.full_name}/pulls.*").mock(return_value=httpx.Response(200, json=[
+            {"number": 3, "title": "Add bcrypt", "state": "closed", "merged_at": "2026-10-05T14:30:00Z",
+             "created_at": "2026-10-05T12:30:00Z", "updated_at": "2026-10-05T14:30:00Z", "user": {"login": "grace"},
+             "html_url": "https://github.com/acme/taskly/pull/3"}]))
+        m.get(url__regex=rf"{API}/repos/{self.full_name}/issues.*").mock(
+            side_effect=lambda req: httpx.Response(200, json=self.issues))
+        m.post(f"{API}/graphql").mock(side_effect=self._graphql)
         m.get(url__regex=rf"{API}/repos/{self.full_name}/compare/.+").mock(side_effect=self._compare)
         m.get(url__regex=rf"{API}/repos/{self.full_name}/contents/.+").mock(side_effect=self._contents)
         # OAuth (user-to-server)
@@ -112,6 +134,17 @@ class FakeGitHub:
         ref = request.url.path.rsplit("/", 1)[1]
         found = next((c for c in self.history if c["sha"] == ref), None)
         return httpx.Response(200, json=found if found else {"sha": self.head})
+
+    def _graphql(self, request: httpx.Request) -> httpx.Response:
+        import json as _json
+
+        path = _json.loads(request.content)["variables"]["p"]
+        n = max(1, (self.files.get(path) or b"").count(b"\n") + 1)
+        return httpx.Response(200, json={"data": {"repository": {"object": {"blame": {"ranges": [
+            {"startingLine": 1, "endingLine": n, "commit": {"oid": "c" * 40, "committedDate": "2026-10-05T12:30:00Z",
+                                                            "messageHeadline": "Add password hashing with bcrypt (#3)",
+                                                            "author": {"name": "Grace Hopper",
+                                                                       "user": {"login": self.blame_login}}}}]}}}}})
 
     def _tarball(self, request: httpx.Request) -> httpx.Response:
         self.calls.append("tarball")
