@@ -25,18 +25,18 @@
 
 | Item                                 | Value                                                                  |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| **Current phase**                                     | **P8 ✅ infra live in Mumbai** (2026-11-01): bootstrap + envs/main applied, server boots k3s + Argo unattended, OIDC CI apply works. Next: **P9** (image → ECR, secrets, GitHub Apps, deploy). P7.2 ci-bot still open |
+| **Current phase**                                     | **P9 ✅ live** (2026-11-01): `https://docify.work` (prod) + `https://staging.docify.work`, login with GitHub + Google, release → staging → promote (approval) → prod, backups to S3, push-while-asleep processed after Start. AI = **fake** until the provider is chosen. Next: P10 monitoring |
 | **Last session**                                     | 2026-11-01 · AWS setup + Phase 8 deploy |
 | **Overall**                          | github.com/docify-work/docify (public), CI green. Backend 144 tests, frontend 41 tests, Docker image 96 MB, Helm/Argo/Terraform validated, app verified on kind (pod-kill 150/150 OK). AI in fake mode until keys are added. |
 | **In-flight work**                   | none |
-| **Next 3 tasks**                                     | P7.2 `docify-ci-bot` App (release bump) · P9.4 staging/prod GitHub Apps + Google clients · `init-params.sh` real secrets → first release to staging |
+| **Next 3 tasks**                                     | Choose AI provider (Bedrock = credits / Anthropic = card ⚠) → real keys + `AI_MODE: real` · SES production access (approval pending) · P10 monitoring (kube-prometheus-stack, Loki, Grafana) |
 | **Blockers**                         | **Q11:** 2026-11-01 Paid plan + advanced features activated; `ap-south-1` added to the org region SCP → Mumbai works. Managed SCP no longer has the `iam:*Provider*` deny (only org-escape + managed-role protection) → OIDC should work; confirm in P8. See `docs/AWS_Mumbai_Setup_Summary.md`. Real AI keys pending (`AI_MODE=fake` meanwhile). Domain bought ✅ (DNS → Route 53 at deploy). |
 | **Live AWS resources**                                     | **Docify acct (ap-south-1):** envs/main (VPC, `docify-server` t4g.large — **stopped** when idle, auto-stop 23:00 IST, CloudFront ×2, Lambda ×2, SQS ×4, S3 ×5, ECR, SNS, SES, Route 53 zone) + bootstrap (tfstate bucket, OIDC, 5 CI roles, $5/$15/$30 budgets, anomaly monitor) + budget `docify-server-autostop` (gross $200, **action: stop server at 90 %**, instance id pinned — update after a server replace). **Mgmt acct:** budgets `docify-credit-burn` + `docify-card-charge`, anomaly alert |
 | **AWS spend to date / credits left** | ~$0 / **$200** (all 5 Free Plan activities done 2026-11-01)            |
 | **Free-plan expiry date**            | n/a — **Paid plan** since 2026-11-01 (no spend limit ⚠). Credits expire 2027-10-12 ($100) / 2027-10-30 ($100) |
 | **Open ⚠ verify items**              | see §26.2 (21 open)                                                    |
 | **Doc review status**                | v1.3 — implementation started; decisions D38–D46 added                 |
-| **Environments live**                                     | none yet (infra only; app arrives in P9) |
+| **Environments live**                                     | **prod** `https://docify.work` + **staging** `https://staging.docify.work` (one t4g.large; server sleeps when idle — auto-stop 23:00 IST, Start via `start.yml`) |
 
 ---
 
@@ -134,6 +134,7 @@ Jira/Slack/Drive · MCP/agents/fine-tuning · rich-text editor · version-diff U
 | D57 | 11-01 | Accepted | **OIDC trust = GitHub immutable subject claims** `repo:<owner>@<owner_id>/<repo>@<repo_id>:<context>` (bootstrap vars `github_owner_id`/`github_repo_id`, public ids) | The repo has `use_immutable_subject = true`; legacy `repo:<owner>/<repo>` subs were rejected (`Not authorized to perform sts:AssumeRoleWithWebIdentity`). Immutable ids also stop a re-created repo with the same name from inheriting the roles | turn immutable subjects off |
 | D58 | 11-01 | Accepted | **Kubelet settings in a KubeletConfiguration drop-in** (`/var/lib/rancher/k3s/agent/etc/kubelet.conf.d/50-docify.conf`); only the ECR credential-provider flags stay in `kubelet-arg` | k3s v1.36 kubelet refuses `--shutdown-grace-period*` ("unknown flag") → k3s crash-looped on first boot; reserved/eviction/swap flags are deprecated too | pin an older k3s |
 | D59 | 11-01 | Accepted | **Prod GitHub App `Docify (docify-work)` is public** (installable by any account); `Docify Staging`, `Docify Dev` and `docify-ci-bot` stay private. Supersedes D21 for prod | Docify's purpose is connecting other people's repos; a private App can only be installed on docify-work (first test with a `Ganesh-Mk` repo failed). AI cost stays bounded by `AI_DAILY_BUDGET_USD` (2.00) and `AI_WS_MONTHLY_BUDGET_USD` (3.00), and AI is `fake` until the provider is chosen | keep private + transfer repos to docify-work |
+| D60 | 11-01 | Accepted | **Image-tag bump = `sed` on the single `  tag: "<40 hex>"` line + `yq` read-back check** (release.yml + promote.yml) | `yq -i` re-formatted the whole values file on every bump (blank lines, comment alignment) → merge conflicts with human edits | `yq -i` with formatting flags |
 
 ### 3.2 Differences from `Docify_Project_Plan.md`
 
@@ -1322,9 +1323,9 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 ### Phase 7 — GitOps (local)
 
 - [x] P7.1 Argo CD on kind, `deploy/argocd/local` root, Application health check, waves — ✅ deploy/argocd/{root,local}
-- [ ] P7.2 Create `docify-ci-bot` GitHub App; ruleset bypass; bump script with rebase-retry
+- [x] P7.2 Create `docify-ci-bot` GitHub App; ruleset bypass; bump script with rebase-retry — ✅ 2026-11-01 App via `create-github-app.py --env ci-bot` (contents write), secrets `CI_BOT_APP_ID`/`CI_BOT_PRIVATE_KEY`; **no bypass needed** (ruleset only blocks deletion/force-push, D38); bump edits only the tag line (D60)
 
-- **AC:** [ ] tag change in Git → Argo deploys · [ ] manual edit reverted by selfHeal
+- **AC:** [x] tag change in Git → Argo deploys (bot bump → staging rollout, 2026-11-01) · [ ] manual edit reverted by selfHeal
 
 ### Phase 8 — Terraform + AWS
 
@@ -1338,14 +1339,14 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 ### Phase 9 — Deploy to AWS
 
-- [ ] P9.1 cert-manager DNS-01 (staging → prod issuer), ESO stores, KEDA
-- [ ] P9.2 Data chart + db-bootstrap + backups (CronJob + pre-stop) + DLM
-- [ ] P9.3 docify staging/prod apps; CloudFront behaviours, SPA function, headers, origin header
-- [ ] P9.4 Staging + prod GitHub Apps, Google clients
-- [ ] P9.5 `release.yml` full, `promote.yml`, `eval.yml`, smoke tests
-- [ ] P9.6 `docify seed-demo` on staging + prod (demo workspace attached to owner's installation)
+- [x] P9.1 cert-manager DNS-01 (staging → prod issuer), ESO stores, KEDA — ✅ staging issuer issued first, then both envs on `letsencrypt-prod` (CloudFront rejects untrusted origin certs); ESO synced from SSM; KEDA enabled
+- [x] P9.2 Data chart + db-bootstrap + backups (CronJob + pre-stop) + DLM — ✅ Postgres + Valkey up; `pg-backup` waits for postgres first (k3s NetworkPolicy race on new pods); dump in `s3://docify-backups-*/postgres/<date>/`
+- [x] P9.3 docify staging/prod apps; CloudFront behaviours, SPA function, headers, origin header — ✅ both apps Synced/Healthy behind CloudFront
+- [x] P9.4 Staging + prod GitHub Apps, Google clients — ✅ `Docify Staging` (private) + `Docify` (**public**, D59); Google project `Docify` (in production) with 2 web clients; secrets in SSM via `init-params.sh --from-dir .secrets --generate`; public ids in `deploy/values/*.yaml`
+- [x] P9.5 `release.yml` full, `promote.yml`, `eval.yml`, smoke tests — ✅ release (arm64 image on `ubuntu-24.04-arm`, GIT_SHA build-arg → `/api/version`) + promote green; `eval.yml` not run yet (needs real AI)
+- [x] P9.6 `docify seed-demo` on staging + prod — ✅ `--from-dir` fixture (13 files) on both; prod demo admin = owner. Attaching a real GitHub repo to the demo is optional later
 
-- **AC:** [ ] `https://<domain>` works, login on prod · [ ] push while asleep → processed after Start · [ ] backup object in S3 · [ ] promote flow with approval
+- **AC:** [x] `https://<domain>` works, login on prod (GitHub + Google, 2026-11-01) · [x] push while asleep → processed after Start (test repo push queued in SQS while stopped; after `start.yml` the worker processed the new sha, DLQ 0) · [x] backup object in S3 · [x] promote flow with approval
 
 ### Phase 10 — Monitoring
 
@@ -1497,6 +1498,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | 2026-11-01 | AWS credits | CLI signed in to the Docify AWS account (`aws login --profile docify`, ap-southeast-2, AccountFullAccessRole). Completed all 5 Free Plan activities: Budgets (then replaced by `docify-credit-burn` + `docify-card-charge`), Lambda function URL, EC2 t3.micro, RDS Postgres db.t4g.micro, Bedrock Nova Micro in the playground. Test resources deleted afterwards. Credits $100 → **$200**. | — | §1 | ~$0 | — |
 | 2026-11-01 | AWS Mumbai | Followed `docs/pdf/aws_mumbai_region_final_plan.pdf`: credits checked ($200), **upgraded to Paid plan** (RuPay card, $20 limit), **activated advanced features** (org `Docify-Team`, irreversible, spend limits removed), added `ap-south-1` to the `RegionFloor` statement of `AdvancedModeRegionRestrictionSecurityControlPolicy`. CLI profiles: `docify` (project, ap-south-1), `docify-mgmt` (management). Budgets moved to the management account. | — | §1 | $0 | Wire budget action (stop server at $180) when the server exists |
 | 2026-11-01 | Phase 8 deploy | P0.4–P0.7 done (root MFA, anomaly alerts, Route 53 zone + Namecheap NS, SES verified). Server switched to **t4g.large** (D56). Bootstrap applied (24) → envs/main applied (10 imports + 128). Fixed on the way: SG description apostrophe, SG-rules-before-instance ordering, OIDC immutable subject (D57), k8s 1.36 kubelet flags (D58), Lambda zip file mode (laptop = CI hash). Server replaced → unattended bootstrap ✅, Argo 5/5 healthy; stop/start via Actions ✅; CI terraform = No changes. Budget action stops the server at $180 gross. Server left **stopped**. | — | §1, §23 P0/P8, §3 D56–D58 | ~$0.10 | P7.2 ci-bot, P9 (secrets, GitHub Apps, first release) |
+| 2026-11-01 | Phase 9 deploy | P7.2 ci-bot; P9.4 staging/prod GitHub Apps + Google clients; 14 SSM secrets; KEDA/data/staging/prod enabled; LE staging→prod issuer; first release + promote green; login on prod (GitHub + Google); prod App made public (D59); backup in S3; push-while-asleep test with a `tip-splitter` sample repo; demo seeded. Fixed: release bump re-formatting (D60), missing GIT_SHA build-arg, pg-backup NetworkPolicy race. AI = fake. | — | §1, §23 P7/P9, §3 D59–D60 | ~$0.20 | AI provider, SES prod access, P10 |
 
 ---
 
