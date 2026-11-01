@@ -25,11 +25,11 @@
 
 | Item                                 | Value                                                                  |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| **Current phase**                                     | **P9 ✅ live with real AI** (2026-11-01): `https://docify.work` + staging on **Amazon Bedrock** (Nova Micro/Lite + Titan V2, D61, paid from AWS credits). Browser-tested end to end (login, connect repo, index, docs, search, chat, PR merge → docs + changelog). Next: P10 monitoring |
+| **Current phase**                                     | **P10 ✅ monitoring live** (2026-11-01) on top of P9 (prod + staging, real AI on Bedrock). Next: P11 scaling/load tests |
 | **Last session**                                     | 2026-11-01 · AWS setup + Phase 8 deploy |
 | **Overall**                          | github.com/docify-work/docify (public), CI green. Backend 144 tests, frontend 41 tests, Docker image 96 MB, Helm/Argo/Terraform validated, app verified on kind (pod-kill 150/150 OK). AI in fake mode until keys are added. |
 | **In-flight work**                   | none |
-| **Next 3 tasks**                                     | SES production access (approval pending) · P10 monitoring (kube-prometheus-stack, Loki, Grafana) · ⚠ verify next day that Bedrock usage shows as credit-covered in Billing |
+| **Next 3 tasks**                                     | ⚠ Check Billing: Bedrock + EC2 show as credit-covered (24 h lag) · SES production access (submitted 2026-11-01, PENDING) · P11 scaling + load test (also the real 5xx-burst alert test) |
 | **Blockers**                         | **Q11:** 2026-11-01 Paid plan + advanced features activated; `ap-south-1` added to the org region SCP → Mumbai works. Managed SCP no longer has the `iam:*Provider*` deny (only org-escape + managed-role protection) → OIDC should work; confirm in P8. See `docs/AWS_Mumbai_Setup_Summary.md`. Real AI keys pending (`AI_MODE=fake` meanwhile). Domain bought ✅ (DNS → Route 53 at deploy). |
 | **Live AWS resources**                                     | **Docify acct (ap-south-1):** envs/main (VPC, `docify-server` t4g.large — **stopped** when idle, auto-stop 23:00 IST, CloudFront ×2, Lambda ×2, SQS ×4, S3 ×5, ECR, SNS, SES, Route 53 zone) + bootstrap (tfstate bucket, OIDC, 5 CI roles, $5/$15/$30 budgets, anomaly monitor) + budget `docify-server-autostop` (gross $200, **action: stop server at 90 %**, instance id pinned — update after a server replace). **Mgmt acct:** budgets `docify-credit-burn` + `docify-card-charge`, anomaly alert |
 | **AWS spend to date / credits left** | ~$0 / **$200** (all 5 Free Plan activities done 2026-11-01)            |
@@ -136,6 +136,7 @@ Jira/Slack/Drive · MCP/agents/fine-tuning · rich-text editor · version-diff U
 | D59 | 11-01 | Accepted | **Prod GitHub App `Docify (docify-work)` is public** (installable by any account); `Docify Staging`, `Docify Dev` and `docify-ci-bot` stay private. Supersedes D21 for prod | Docify's purpose is connecting other people's repos; a private App can only be installed on docify-work (first test with a `Ganesh-Mk` repo failed). AI cost stays bounded by `AI_DAILY_BUDGET_USD` (2.00) and `AI_WS_MONTHLY_BUDGET_USD` (3.00), and AI is `fake` until the provider is chosen | keep private + transfer repos to docify-work |
 | D60 | 11-01 | Accepted | **Image-tag bump = `sed` on the single `  tag: "<40 hex>"` line + `yq` read-back check** (release.yml + promote.yml) | `yq -i` re-formatted the whole values file on every bump (blank lines, comment alignment) → merge conflicts with human edits | `yq -i` with formatting flags |
 | D61 | 11-01 | Accepted | **AI provider = Amazon Bedrock**: `AI_PROVIDER=bedrock`, LLM = Nova Micro (summary/changelog) + Nova Lite (docs/chat) via `apac.*` inference profiles (Converse API; JSON via forced tool call), embeddings = Titan Text Embeddings V2 (1024-d, same dim → no migration). Auth = instance role; **IAM allows only `amazon.nova-*` + `amazon.titan-embed-text-v2:0`** | Owner rule: $0 on the card. AWS first-party models are billed as "Amazon Bedrock" and covered by the promotional credits; Claude on Bedrock is sold via AWS Marketplace (not covered). Mumbai prices/1M tokens: Nova Micro $0.041/$0.164, Nova Lite $0.071/$0.284, Titan $0.024. Eval on the fixture: hit@8 0.95, unanswerable 5/5 at RAG_MIN_SIM 0.45 (unchanged) | Anthropic API (card) · Claude on Bedrock (Marketplace, card) |
+| D62 | 11-01 | Accepted | **Argo CD application-controller 300Mi/1Gi; Grafana 128Mi/384Mi** | Controller caches every cluster resource: with both envs + data + monitoring it uses ~540Mi; at 400Mi it was OOMKilled in a loop, which stalled every sync (a prod promote timed out). Grafana 12 OOMKilled at 192Mi on start. Recovery note: when the controller is down, Argo can't apply its own fix — patch the StatefulSet, remove the stale `operation`, hard-refresh | keep limits, drop monitoring |
 
 ### 3.2 Differences from `Docify_Project_Plan.md`
 
@@ -864,7 +865,7 @@ Node allocatable ≈ RAM − 0.2 GiB OS overhead − 0.6 GiB reserved − 0.2 Gi
 | Component                                                                     | Request / limit (Mi)                                     |
 | ----------------------------------------------------------------------------- | -------------------------------------------------------- |
 | Traefik, CoreDNS, metrics-server, local-path                                  | 150 / 300                                                |
-| Argo CD (controller, repo-server, server, redis)                              | 400 / 800                                                |
+| Argo CD (controller, repo-server, server, redis)                              | 500 / 1200 (controller alone ~540Mi measured)                                                |
 | cert-manager (3)                                                              | 100 / 200                                                |
 | External Secrets (3)                                                          | 100 / 200                                                |
 | KEDA (operator, metrics, webhook)                                             | 150 / 300                                                |
@@ -1351,11 +1352,11 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 
 ### Phase 10 — Monitoring
 
-- [x] P10.1 kube-prometheus-stack (k3s settings), Loki + Alloy, Grafana + SNS contact point — ✅ values written (deploy/values/platform), not deployed
+- [x] P10.1 kube-prometheus-stack (k3s settings), Loki + Alloy, Grafana + SNS contact point — ✅ deployed 2026-11-01 (monitoring app Synced/Healthy); Grafana raised to 128Mi/384Mi (192Mi OOMKilled)
 - [x] P10.2 App metrics, dashboards as code, alerts (§16.4) — ✅ metrics in code, dashboards + alerts as code
-- [ ] P10.3 **Measure memory (§13.4)**, record, decide D30 follow-up
+- [x] P10.3 **Measure memory (§13.4)**, record, decide D30 follow-up — ✅ 2026-11-01 with everything running: node **~4.7 GiB used of 7.6** (Argo controller 540Mi, Prometheus 390Mi, Grafana ~190Mi, Loki 106Mi, each api ~100Mi). 8 GiB (t4g.large, D56) confirmed; 4 GiB would not fit
 
-- **AC:** [ ] dashboards live · [ ] forced 5xx burst → alert email
+- **AC:** [x] dashboards live (Docify Overview + Workers & Jobs + 24 k8s dashboards, 10 alert rules, SNS contact point) · [~] forced 5xx burst → alert email: alert **delivery** proven (Grafana receiver test → SNS → email delivered, 1/1) and the 5xx rule query evaluates on live metrics; a real 5xx burst was not forced — probes are excluded from the request metric and any staging failure big enough also makes pods unready (traffic never reaches the counter). Revisit with a load test in P11
 
 ### Phase 11 — Scaling
 
@@ -1501,6 +1502,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | 2026-11-01 | Phase 8 deploy | P0.4–P0.7 done (root MFA, anomaly alerts, Route 53 zone + Namecheap NS, SES verified). Server switched to **t4g.large** (D56). Bootstrap applied (24) → envs/main applied (10 imports + 128). Fixed on the way: SG description apostrophe, SG-rules-before-instance ordering, OIDC immutable subject (D57), k8s 1.36 kubelet flags (D58), Lambda zip file mode (laptop = CI hash). Server replaced → unattended bootstrap ✅, Argo 5/5 healthy; stop/start via Actions ✅; CI terraform = No changes. Budget action stops the server at $180 gross. Server left **stopped**. | — | §1, §23 P0/P8, §3 D56–D58 | ~$0.10 | P7.2 ci-bot, P9 (secrets, GitHub Apps, first release) |
 | 2026-11-01 | Phase 9 deploy | P7.2 ci-bot; P9.4 staging/prod GitHub Apps + Google clients; 14 SSM secrets; KEDA/data/staging/prod enabled; LE staging→prod issuer; first release + promote green; login on prod (GitHub + Google); prod App made public (D59); backup in S3; push-while-asleep test with a `tip-splitter` sample repo; demo seeded. Fixed: release bump re-formatting (D60), missing GIT_SHA build-arg, pg-backup NetworkPolicy race. AI = fake. | — | §1, §23 P7/P9, §3 D59–D60 | ~$0.20 | AI provider, SES prod access, P10 |
 | 2026-11-01 | Bedrock + browser test | Bedrock provider (Nova + Titan) + IAM "Amazon models only"; staging then prod switched to `AI_MODE=real`; demo re-seeded; eval 0.95/1.00. Browser test on prod (Chrome): landing, demo, docs with citations + versions, chat (answer + citations; off-topic refused), search, re-index, jobs, review, members, settings; two PRs on a test repo merged in the browser → docs v4 + changelog. **Fixed**: small-repo pushes were upgraded to full index (ratio rule) and lost their changelog entry; `[[path]]` citations without lines left raw markers. | — | §1, §3 D61 | ~$0.01 AI | SES prod access, P10 |
+| 2026-11-01 | P10 monitoring + SES | SES production access requested (PENDING). Monitoring enabled; Argo controller OOM crash loop (400Mi) fixed → 1Gi, Grafana OOM fixed → 384Mi; all 10 apps Synced/Healthy. Dashboards + 10 alert rules + SNS contact point verified via API; test alert delivered by SNS. Memory measured ~4.7/7.6 GiB. | — | §1, §23 P10, §3 D62, §13.4 | ~$0 | P11, billing check, SES approval |
 
 ---
 
