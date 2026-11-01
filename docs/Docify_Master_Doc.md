@@ -25,12 +25,12 @@
 
 | Item                                 | Value                                                                  |
 | ------------------------------------ | ---------------------------------------------------------------------- |
-| **Current phase**                                     | **P10 ✅ monitoring live** (2026-11-01) on top of P9 (prod + staging, real AI on Bedrock). Next: P11 scaling/load tests |
-| **Last session**                                     | 2026-11-01 · AWS setup + Phase 8 deploy |
-| **Overall**                          | github.com/docify-work/docify (public), CI green. Backend 144 tests, frontend 41 tests, Docker image 96 MB, Helm/Argo/Terraform validated, app verified on kind (pod-kill 150/150 OK). AI in fake mode until keys are added. |
+| **Current phase**                                     | **All phases done (P0–P14)** 2026-11-02 · P11 load tests ✅, P12 EKS lab ✅ (destroyed), P13 chaos + restore drill ✅, P14 docs ✅. Left: demo video (Ganesh), SES production access (denied → re-apply), optional hardening (IRSA-style k3s OIDC, cosign) |
+| **Last session**                                     | 2026-11-01/02 · chat who/when (D63) + P11–P14 |
+| **Overall**                          | github.com/docify-work/docify (public), CI green. Backend 175 tests, frontend 44 tests. Prod + staging live on k3s (Bedrock AI). k6: 30,668 req, 0 errors, p95 107 ms. 5 chaos tests + restore drill (RTO 20 s) documented in `docs/incidents/`. |
 | **In-flight work**                   | none |
-| **Next 3 tasks**                                     | ⚠ Check Billing: Bedrock + EC2 show as credit-covered (24 h lag) · SES production access (submitted 2026-11-01, PENDING) · P11 scaling + load test (also the real 5xx-burst alert test) |
-| **Blockers**                         | **Q11:** 2026-11-01 Paid plan + advanced features activated; `ap-south-1` added to the org region SCP → Mumbai works. Managed SCP no longer has the `iam:*Provider*` deny (only org-escape + managed-role protection) → OIDC should work; confirm in P8. See `docs/AWS_Mumbai_Setup_Summary.md`. Real AI keys pending (`AI_MODE=fake` meanwhile). Domain bought ✅ (DNS → Route 53 at deploy). |
+| **Next 3 tasks**                                     | ⚠ Billing check 2–3 Nov: EC2/Bedrock/EKS/RDS credit-covered, $0 net (`docs/Cost_Report.md`) · SES production access: denied 2026-11-01 → reply/re-apply · record the demo video (`docs/Demo_Script.md`) |
+| **Blockers**                         | none (SES production access denied — only affects e-mail to unverified addresses) |
 | **Live AWS resources**                                     | **Docify acct (ap-south-1):** envs/main (VPC, `docify-server` t4g.large — **stopped** when idle, auto-stop 23:00 IST, CloudFront ×2, Lambda ×2, SQS ×4, S3 ×5, ECR, SNS, SES, Route 53 zone) + bootstrap (tfstate bucket, OIDC, 5 CI roles, $5/$15/$30 budgets, anomaly monitor) + budget `docify-server-autostop` (gross $200, **action: stop server at 90 %**, instance id pinned — update after a server replace). **Mgmt acct:** budgets `docify-credit-burn` + `docify-card-charge`, anomaly alert |
 | **AWS spend to date / credits left** | ~$0 / **$200** (all 5 Free Plan activities done 2026-11-01)            |
 | **Free-plan expiry date**            | n/a — **Paid plan** since 2026-11-01 (no spend limit ⚠). Credits expire 2027-10-12 ($100) / 2027-10-30 ($100) |
@@ -138,6 +138,8 @@ Jira/Slack/Drive · MCP/agents/fine-tuning · rich-text editor · version-diff U
 | D61 | 11-01 | Accepted | **AI provider = Amazon Bedrock**: `AI_PROVIDER=bedrock`, LLM = Nova Micro (summary/changelog) + Nova Lite (docs/chat) via `apac.*` inference profiles (Converse API; JSON via forced tool call), embeddings = Titan Text Embeddings V2 (1024-d, same dim → no migration). Auth = instance role; **IAM allows only `amazon.nova-*` + `amazon.titan-embed-text-v2:0`** | Owner rule: $0 on the card. AWS first-party models are billed as "Amazon Bedrock" and covered by the promotional credits; Claude on Bedrock is sold via AWS Marketplace (not covered). Mumbai prices/1M tokens: Nova Micro $0.041/$0.164, Nova Lite $0.071/$0.284, Titan $0.024. Eval on the fixture: hit@8 0.95, unanswerable 5/5 at RAG_MIN_SIM 0.45 (unchanged) | Anthropic API (card) · Claude on Bedrock (Marketplace, card) |
 | D62 | 11-01 | Accepted | **Argo CD application-controller 300Mi/1Gi; Grafana 128Mi/384Mi** | Controller caches every cluster resource: with both envs + data + monitoring it uses ~540Mi; at 400Mi it was OOMKilled in a loop, which stalled every sync (a prod promote timed out). Grafana 12 OOMKilled at 192Mi on start. Recovery note: when the controller is down, Argo can't apply its own fix — patch the StatefulSet, remove the stale `operation`, hard-refresh | keep limits, drop monitoring |
 | D63 | 11-01 | Accepted | **Chat answers "who / when" from git history**: new `commits` table (default-branch history: sha, author name + GitHub login, date, message, PR #, files changed; no e-mails). Filled on full index (up to 300 commits, file lists for the newest 120), on each sync from the compare's commits, and backfilled on a no-op sync. Chat: history-intent questions get `<commit>` blocks (message match, then commits touching the retrieved files, then latest) + a `<repository>` facts block; follow-ups ("this feature") retrieve with the previous user turn prepended. Commit sources render as commit chips | Browser test: "who created this new feature" answered "couldn't find this" - chat only saw code. Git history is the source of truth for authorship; no extra LLM calls, GitHub API calls stay bounded |
+| D64 | 11-01 | Accepted | **Synthetic `loadtest` queue messages for burst tests** (`kind=loadtest`, simulated work ≤ 30 s, no AI/GitHub calls), accepted only when `LOADTEST_MESSAGES=true` (staging + prod values) | KEDA scale tests need hundreds of jobs; real AI would cost money and fake AI would need a redeploy. Only principals that can `SendMessage` to the queue can inject them; messages are dropped as unknown when the flag is off |
+| D65 | 11-01 | Accepted | **EKS lab = arm64 spot with 7 Graviton instance types, node max 5, own SQS queue, staging identity, plain-HTTP ALB** | Images are arm64-only; one spot type was reclaimed twice and then unavailable (incident 2026-11-01); mixed types lower max-pods per node, so headroom is needed; a shared staging queue would let lab workers drop staging jobs; no CloudFront/ACM for a one-evening lab (origin secret still enforced) |
 
 ### 3.2 Differences from `Docify_Project_Plan.md`
 
@@ -176,8 +178,6 @@ flowchart TB
         U["Browser"]
         GH["GitHub: App, OAuth, API, webhooks"]
         GO["Google OAuth"]
-        ANT["Anthropic API"]
-        VOY["Voyage AI"]
     end
 
     subgraph AWS["AWS ap-south-1 (ACM in us-east-1)"]
@@ -192,6 +192,8 @@ flowchart TB
         S3B["S3 backups, repo-cache, artifacts"]
         R53["Route 53"]
         SCH["EventBridge Scheduler"]
+        BR["Bedrock: Nova Micro/Lite + Titan V2 (D61)"]
+        BUD["Budgets: card $0.01 alert, credit burn, 90% auto-stop"]
 
         subgraph EC2["EC2 (k3s, Ubuntu 24.04)"]
             TR["Traefik"]
@@ -220,10 +222,9 @@ flowchart TB
     WKs --> PG
     APIp --> VK
     APIs --> VK
-    WKp --> ANT
-    WKp --> VOY
+    WKp --> BR
     WKp --> GH
-    APIp --> ANT
+    APIp --> BR
     APIp --> SES
     APIp -.-> GO
     PLAT -.-> SSM
@@ -232,9 +233,10 @@ flowchart TB
     PLAT -.-> SNS
     PG -.->|"nightly dump"| S3B
     SCH -.->|"stop 23:00 IST"| EC2
+    BUD -.->|"SSM stop at 90% of credits"| EC2
 ```
 
-(Staging api/worker talk to the same external services as prod; edges omitted for readability.)
+(Staging api/worker talk to the same external services as prod; edges omitted for readability. Refreshed 2026-11-01 (P14): AI moved from Anthropic + Voyage to Amazon Bedrock (D61); chat also reads the `commits` table (D63). The one-evening EKS lab (P12) is in §24.)
 
 ### 4.2 Network & security boundaries
 
@@ -244,7 +246,7 @@ flowchart LR
     CFE -->|"HTTPS 443"| SG["Security Group<br/>inbound 443 only from<br/>CloudFront origin-facing prefix list"]
     SG --> NODE["EC2 in public subnet<br/>IMDSv2, origin TLS via Let's Encrypt"]
     ADMIN["Ganesh laptop"] -->|"SSM Session Manager<br/>port-forward 6443"| NODE
-    NODE -->|"outbound only"| OUT["AWS APIs, GitHub,<br/>Anthropic, Voyage, LE"]
+    NODE -->|"outbound only"| OUT["AWS APIs incl. Bedrock,<br/>GitHub, Let's Encrypt"]
 ```
 
 - VPC `10.20.0.0/16`: 2 public subnets (AZ a, b), 2 private subnets (reserved for EKS lab / RDS). **No NAT.** S3 gateway endpoint (free).
@@ -1213,12 +1215,12 @@ Backend coverage ≥ 70% (enforced from P5).
 | R4  | Deploy prod             | Actions → Promote → approve `production`                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | R5  | Rollback                | revert bump commit (or promote older sha); frontend: re-run deploy with old sha                                                                                                                                                                                                                                                                                                                                                                           |
 | R6  | Set/rotate secret       | `aws ssm put-parameter --name /docify/<env>/<path> --type SecureString --overwrite --value file://…` → `kubectl -n docify-<env> annotate externalsecret docify-app force-sync=$(date +%s) --overwrite` → `kubectl -n docify-<env> rollout restart deploy`. **For `db/password`:** also force-sync `postgres-passwords` (ns `data`) → re-sync the `data` app (re-runs `db-bootstrap`, which ALTERs the role) → force-sync `docify-db` → restart api/worker |
-| R7  | Restore Postgres        | disable auto-sync for docify apps → scale api/worker 0 → download dump → `psql` in postgres pod → `docify verify-db` → re-enable sync                                                                                                                                                                                                                                                                                                                     |
+| R7  | Restore Postgres        | drill: `scripts/chaos/restore-drill.sh` (20 s, 2026-11-02) · real restore: disable auto-sync for root + data + docify apps (selfHeal reverts manual scaling in seconds) → scale api/worker 0 → download dump → `psql` in postgres pod → `docify verify-db` → re-enable sync                                                                                                                                                                                                                                                                                                                     |
 | R8  | Replay DLQ              | inspect (`aws sqs receive-message`), fix cause, SQS console "Start DLQ redrive"                                                                                                                                                                                                                                                                                                                                                                           |
 | R9  | Disk full               | `du -sh /data/*`; lower Prometheus/Loki retention; `VACUUM`; grow EBS (modify-volume + `resize2fs`, online)                                                                                                                                                                                                                                                                                                                                               |
 | R10 | Off mode                | Stop (backup) → `terraform destroy` (protected: state, backups, ECR) → later `apply` + R7                                                                                                                                                                                                                                                                                                                                                                 |
 | R11 | Rebuild server          | `terraform apply -replace=module.server.aws_instance.this` → Argo apps Healthy → smoke                                                                                                                                                                                                                                                                                                                                                                    |
-| R12 | EKS lab teardown        | delete Ingress + LoadBalancer Services → wait for ALB deletion → `terraform destroy` → `whats-running.sh` clean                                                                                                                                                                                                                                                                                                                                           |
+| R12 | EKS lab teardown        | `helm uninstall docify` (deletes the Ingress → ALB) → wait until no `k8s-docifyla*` ALB → delete the `eks-lab` Route 53 record → uninstall keda/ESO/autoscaler/LBC → `terraform destroy` → `whats-running.sh` clean (done 2026-11-02 00:06 IST)                                                                                                                                                                                                                                                                                                                                           |
 | R13 | GitHub App key rotation | new key → R6 → verify → delete old key                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | R14 | Incident note           | `docs/incidents/YYYY-MM-DD-<slug>.md`: impact, timeline, root cause, fix, follow-ups                                                                                                                                                                                                                                                                                                                                                                      |
 
@@ -1259,7 +1261,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [ ] P0.9 Google Cloud project + OAuth consent screen (External, In production)
 - [ ] P0.10 Tools: git, gh, uv, Python 3.13, Node 24, Docker Desktop, kubectl, helm, kind, terraform ≥ 1.11, awscli ≥ 2.32 + session-manager-plugin, k6
 
-- **AC:** [ ] repo protected · [ ] `aws sts get-caller-identity` via `aws login` · [ ] budget alert emails configured · [ ] SES request submitted · [ ] instance-type list recorded
+- **AC:** [x] repo protected (ruleset `main-protection`: no deletion, no force-push) · [x] `aws sts get-caller-identity` via `aws login` · [x] budget alert emails configured · [x] SES request submitted (2026-11-01: DENIED → re-apply/appeal, §25) · [x] instance-type list recorded (D56)
 
 ### Phase 1 — Basic app + auth
 
@@ -1273,7 +1275,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P1.8 Frontend: dashboard, repos, settings, members, invites, account, sleeping banner — ✅ compact UI kit + InfoTips, animations, dark/light; screenshots in docs/screenshots
 - [x] P1.9 Tests: auth flows, linking/takeover, cross-tenant 404s, install verification — ✅ 16 auth + 5 workspace + 4 install tests
 
-- **AC:** [x] email signup → verify (Mailpit) → login · [~] Google + GitHub login (GitHub ✅ live with `Docify Dev` App 2026-10-21; Google pending OAuth client) · [x] invite accepted by second user (tests) · [x] repo attached & listed (`docify-work/docify` indexed → Ready, live)
+- **AC:** [x] email signup → verify (Mailpit) → login · [x] Google + GitHub login (both live on prod 2026-11-01) · [x] invite accepted by second user (tests) · [x] repo attached & listed (`docify-work/docify` indexed → Ready, live)
 
 ### Phase 2 — Docker + Compose
 
@@ -1281,15 +1283,15 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P2.2 `docker-compose.yml` (§20.1), `.env.example`, Makefile — ✅ docker-compose.yml, .env.example, Makefile
 - [x] P2.3 hadolint clean — ✅ hadolint clean (local + CI)
 
-- **AC:** [ ] `make up` → app works at `localhost:5173` · [ ] `docker run … id -u` = 10001
+- **AC:** [x] local stack works (compose services + api/worker + Vite, used for every session) · [x] container `id -u` = 10001 (verified in the prod pod 2026-11-02)
 
 ### Phase 3 — CI
 
 - [x] P3.1 `ci.yml` (backend, frontend, lambda, docker+Trivy, actionlint, hadolint), path filters — ✅ .github/workflows/ci.yml
 - [x] P3.2 Actions pinned by SHA; explicit permissions — ✅ all actions SHA-pinned
-- [ ] P3.3 Required checks in ruleset
+- [~] P3.3 Required checks in ruleset — superseded by D38 (direct pushes to `main` + bot bumps can't carry checks); ruleset blocks deletion/force-push, CI `all-green` gates releases
 
-- **AC:** [ ] PR shows all checks green · [ ] a known-vulnerable base image fails Trivy
+- **AC:** [x] all checks green on every push/PR (`all-green`) · [~] Trivy gate fails HIGH/CRITICAL (configured with `exit-code: 1`; a deliberately vulnerable base image was not pushed)
 
 ### Phase 4 — Queue + worker + webhooks
 
@@ -1300,7 +1302,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P4.5 Retries (delete+resend with delay), DLQ, reconciler, housekeeping — ✅ reconcile.py, housekeeping.py
 - [x] P4.6 Jobs page + retry — ✅ frontend Jobs page + retry
 
-- **AC:** [ ] push → job succeeds · [ ] replayed delivery → no new job · [ ] 20 rapid pushes → ≤ 2 runs · [ ] force push → repo_index · [ ] poison message → DLQ
+- **AC:** [x] push → job succeeds (live: tip-splitter PRs #1/#2) · [x] replayed delivery → no new job · [x] 20 rapid pushes → ≤ 2 runs · [x] force push → repo_index · [x] poison message → DLQ (integration tests `test_pipeline.py`/`test_jobs.py`)
 
 ### Phase 5 — AI features
 
@@ -1313,7 +1315,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P5.7 Demo workspace (`seed-demo`) + anonymous principal + limits — ✅ `docify seed-demo` (--from-dir / --github-repo)
 - [x] P5.8 Eval fixture + `docify eval`; tune `RAG_MIN_SIM` — ✅ fixture eval (fake embedder) hit@8 0.95, unanswerable 5/5; re-run with Voyage in P9
 
-- **AC:** [ ] connect repo → 3 docs + changelog with working permalinks · [ ] push → only affected docs updated · [ ] chat cites sources; unrelated question → "I don't know" · [ ] budget block works · [ ] eval hit@8 ≥ 0.8
+- **AC:** [x] connect repo → 3 docs + changelog with working permalinks (live) · [x] push → only affected docs updated · [x] chat cites sources; unrelated question → "I don't know" · [x] budget block works (test) · [x] eval hit@8 0.95 ≥ 0.8
 
 ### Phase 6 — Kubernetes (local)
 
@@ -1328,7 +1330,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P7.1 Argo CD on kind, `deploy/argocd/local` root, Application health check, waves — ✅ deploy/argocd/{root,local}
 - [x] P7.2 Create `docify-ci-bot` GitHub App; ruleset bypass; bump script with rebase-retry — ✅ 2026-11-01 App via `create-github-app.py --env ci-bot` (contents write), secrets `CI_BOT_APP_ID`/`CI_BOT_PRIVATE_KEY`; **no bypass needed** (ruleset only blocks deletion/force-push, D38); bump edits only the tag line (D60)
 
-- **AC:** [x] tag change in Git → Argo deploys (bot bump → staging rollout, 2026-11-01) · [ ] manual edit reverted by selfHeal
+- **AC:** [x] tag change in Git → Argo deploys (bot bump → staging rollout, 2026-11-01) · [x] manual edit reverted by selfHeal (2026-11-02: `postgres` scaled to 0 by hand → Argo re-created it in 4 s, incident chaos-3)
 
 ### Phase 8 — Terraform + AWS
 
@@ -1338,7 +1340,7 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P8.4 Workflows `release.yml` (image part), `terraform.yml`, `ci.yml` infra job (plan on PR), `start.yml`, `stop.yml`; Lambda quota check (§5.4) — ✅ workflows written, guarded by vars.AWS_ENABLED
 - [x] P8.5 `scripts/init-params.sh`; set real secrets — ✅ scripts/init-params.sh
 
-- **AC:** [x] CI `terraform apply` creates all (first apply local because of imports; CI apply via OIDC ✅ No changes) · [x] instance boots k3s + Argo unattended (replacement instance: bootstrap complete, 5/5 Argo apps Synced/Healthy) · [x] Start/Stop work (`stop.yml` ✅; `start.yml` starts the server ✅, k3s/Argo/`/data` healthy, origin DNS re-pointed to new IP; its health-wait step needs the app → P9) · [ ] 23:00 auto-stop observed (schedule `cron(0 23 * * ? *)` Asia/Kolkata in place) · [x] `terraform plan` clean (laptop + CI) · [x] `terraform state pull | grep -c CHANGE_ME` = 0
+- **AC:** [x] CI `terraform apply` creates all (first apply local because of imports; CI apply via OIDC ✅ No changes) · [x] instance boots k3s + Argo unattended (replacement instance: bootstrap complete, 5/5 Argo apps Synced/Healthy) · [x] Start/Stop work (`stop.yml` ✅; `start.yml` starts the server ✅, k3s/Argo/`/data` healthy, origin DNS re-pointed to new IP; its health-wait step needs the app → P9) · [x] 23:00 auto-stop observed (2026-11-01 23:00:56 IST `stopping`; Start workflow → serving again in 134 s) · [x] `terraform plan` clean (laptop + CI) · [x] `terraform state pull | grep -c CHANGE_ME` = 0
 
 ### Phase 9 — Deploy to AWS
 
@@ -1357,48 +1359,48 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [x] P10.2 App metrics, dashboards as code, alerts (§16.4) — ✅ metrics in code, dashboards + alerts as code
 - [x] P10.3 **Measure memory (§13.4)**, record, decide D30 follow-up — ✅ 2026-11-01 with everything running: node **~4.7 GiB used of 7.6** (Argo controller 540Mi, Prometheus 390Mi, Grafana ~190Mi, Loki 106Mi, each api ~100Mi). 8 GiB (t4g.large, D56) confirmed; 4 GiB would not fit
 
-- **AC:** [x] dashboards live (Docify Overview + Workers & Jobs + 24 k8s dashboards, 10 alert rules, SNS contact point) · [~] forced 5xx burst → alert email: alert **delivery** proven (Grafana receiver test → SNS → email delivered, 1/1) and the 5xx rule query evaluates on live metrics; a real 5xx burst was not forced — probes are excluded from the request metric and any staging failure big enough also makes pods unready (traffic never reaches the counter). Revisit with a load test in P11
+- **AC:** [x] dashboards live (Docify Overview + Workers & Jobs + 24 k8s dashboards, 10 alert rules, SNS contact point) · [x] forced 5xx burst → alert email (2026-11-02, staging REVOKE trick: rule fired, SNS delivered 1/1, incident chaos-5). Earlier: alert **delivery** proven (Grafana receiver test → SNS → email delivered, 1/1) and the 5xx rule query evaluates on live metrics; a real 5xx burst was not forced — probes are excluded from the request metric and any staging failure big enough also makes pods unready (traffic never reaches the counter). Revisit with a load test in P11
 
 ### Phase 11 — Scaling
 
-- [ ] P11.1 HPA/KEDA tuning; k6 scripts; burst generator (fake AI on staging)
+- [x] P11.1 HPA/KEDA tuning; k6 scripts; burst generator — ✅ `scripts/load/api.js` (k6), `scripts/load/burst.sh` + gated `loadtest` worker messages (D64, $0 instead of fake AI)
 
-- **AC:** [ ] screenshots: api 2→3→2; workers 0→max→0; no errors · [ ] results in §27
+- **AC:** [x] api 2→3→2 (prod, k6 50 VUs × 10 min: 30,668 req, 0 errors, p95 107 ms; HPA 3 replicas ~80 s after load start) · [x] workers 0→3→0 (500-message burst drained in ~4 min, back to 0 after the 5 min cooldown) · [x] results in §27 (replica timelines recorded as text from `kubectl`, no screenshots)
 
 ### Phase 12 — EKS lab (1 day)
 
-- [ ] P12.1 Paid plan if required (Q10); `envs/eks-lab`: EKS (public node subnets, no NAT), managed node group 1–3 × t3.medium spot, Pod Identity, Cluster Autoscaler, AWS Load Balancer Controller, RDS PG17 `db.t4g.micro` + pgvector
-- [ ] P12.2 Deploy chart with `values/eks-lab.yaml`
-- [ ] P12.3 Teardown R12 same day
+- [x] P12.1 Paid plan if required (Q10); `envs/eks-lab`: EKS (public node subnets, no NAT), managed node group 1–3 × t3.medium spot, Pod Identity, Cluster Autoscaler, AWS Load Balancer Controller, RDS PG17 `db.t4g.micro` + pgvector — ✅ 2026-11-01 (D65: arm64 spot, 7 Graviton types, own queue)
+- [x] P12.2 Deploy chart with `values/eks-lab.yaml` — ✅ migrate on RDS, ESO via Pod Identity, demo seeded, chat answered via ALB
+- [x] P12.3 Teardown R12 same day — ✅ 00:06 IST, 35 destroyed, `whats-running.sh` clean
 
-- **AC:** [ ] app on EKS + RDS · [ ] node scale-out seen · [ ] `whats-running.sh` clean · [ ] lab cost recorded
+- **AC:** [x] app on EKS + RDS · [x] node scale-out seen (3→5 by Cluster Autoscaler for 6×500m api pods, then 5→3) · [x] `whats-running.sh` clean · [x] lab cost recorded (≈ $0.25, `docs/Cost_Report.md`)
 
 ### Phase 13 — Break it + hardening
 
-- [ ] P13.1 Chaos scripts + runbooks verified; restore drill timed
-- [ ] P13.2 Hardening: IRSA-style OIDC for k3s (D16), postgres-exporter, IAM review, optional cosign
+- [x] P13.1 Chaos scripts + runbooks verified; restore drill timed — ✅ 5 chaos tests + restore drill (`docs/incidents/2026-11-02-*`), scripts fixed from what we learned
+- [~] P13.2 Hardening: IRSA-style OIDC for k3s (D16), postgres-exporter, IAM review, optional cosign — ✅ postgres-exporter + *Docify Postgres* dashboard, ✅ IAM review (`docs/Security_Review.md`); ⏭ IRSA-style k3s OIDC deferred (risk accepted, D16; Pod Identity proven on EKS in P12); ⏭ cosign optional, not done
 
-- **AC:** [ ] incident note per chaos test · [ ] RTO measured
+- **AC:** [x] incident note per chaos test (6 notes) · [x] RTO measured (restore drill 20 s; target 30 min)
 
 ### Phase 14 — Wrap up
 
-- [ ] P14.1 Diagrams refreshed, cost report, demo video, README, resume bullets
+- [~] P14.1 Diagrams refreshed, cost report, demo video, README, resume bullets — ✅ §4.1 diagram (Bedrock, budgets), `docs/Cost_Report.md`, README, `docs/Resume_Bullets.md`, `docs/Demo_Script.md`; ⏭ **demo video: Ganesh records it** following the demo script
 
-- **AC:** [ ] interviewer flow works end-to-end (Start → demo)
+- **AC:** [x] interviewer flow works end-to-end (Start workflow → 134 s → login, docs, chat incl. who/when, changelog on push — 2026-11-01/02)
 
 ### MVP checklist (mirrors Plan §12)
 
-- [ ] Sign in with GitHub, Google, email+password
-- [ ] Admin connects repo → docs generated
-- [ ] Push updates docs (or waits for approval)
-- [ ] Chat answers with file links
-- [ ] All AWS infra via `terraform apply` / `destroy`
-- [ ] Merge → staging automatic; prod after approval
-- [ ] Grafana: traffic, errors, latency, queue, AI cost
-- [ ] Load test shows scale up/down
-- [ ] Killing a pod → no downtime; bad release rolled back in minutes
-- [ ] No secrets in Git; images scanned
-- [ ] Start/Stop + auto-stop work; budget alerts active; bill within plan
+- [~] Sign in with GitHub, Google, email+password — GitHub + Google live; email+password works but verification mails only reach SES-verified addresses until SES production access is granted (denied 2026-11-01, §25)
+- [x] Admin connects repo → docs generated
+- [x] Push updates docs (or waits for approval)
+- [x] Chat answers with file links (+ commit links for who/when, D63)
+- [x] All AWS infra via `terraform apply` / `destroy` (EKS lab applied + destroyed 2026-11-01)
+- [x] Merge → staging automatic; prod after approval
+- [x] Grafana: traffic, errors, latency, queue, AI cost (+ Postgres)
+- [x] Load test shows scale up/down
+- [x] Killing a pod → no downtime; bad release rolled back in minutes
+- [x] No secrets in Git; images scanned
+- [x] Start/Stop + auto-stop work; budget alerts active; bill within plan (CE $0 so far — confirm 2–3 Nov)
 
 ---
 
@@ -1426,15 +1428,15 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | --- | ----------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Q1  | Domain name + registrar (Route 53 ≈ $14/yr .com; credits likely don't cover ⚠)                                    | P0.6     | Route 53                                                              | ✅ | 2026-10-21: **`docify.work` purchased** (external registrar). DNS moves to Route 53 at deploy time (P0.6/P8): create hosted zone → set the 4 Route 53 nameservers at the registrar → import zone into Terraform. |
 | Q2  | GitHub owner (personal vs org); confirm repo public (D13)                                                         | P0.2     | personal, public                                                      | ✅ | it'll be seperate new github account. [github.com/docify-work](https://github.com/docify-work) You need to  connect username and email id of github remote user in this project. → Done 2026-10-20: `<gh-owner>` = `docify-work`; local git `user.name=docify-work`, `user.email=<id>+docify-work@users.noreply.github.com`; remote `origin` = `https://docify-work@github.com/docify-work/docify.git` (repo not created yet) |
-| Q3  | AWS account email / billing owner                                                                                 | P0.4     | —                                                                     | ⬜     |                                                                                                                                                                                  |
+| Q3  | AWS account email / billing owner                                                                                 | P0.4     | —                                                                     | ✅ | 2026-11-01: billing owner = the Docify org management account (docify.work@ e-mail, card on file); usage paid from $200 credits, card guarded by budgets (`docs/AWS_Mumbai_Setup_Summary.md`) |
 | Q4  | LLM models + AI budget (D17, §11.6)                                                                               | P5       | Haiku 5.5 bulk + Sonnet 5.5 docs; $2/day app cap; $5/mo provider caps | ✅ | 2026-10-21: **Haiku only for now** (`claude-haiku-5-5` for all tasks); no key shared yet → code runs with fake AI; test with real key later (D17) |
-| Q5  | Let friends connect their own repos? (needs public App + quotas)                                                  | P9       | no                                                                    | ⬜     |                                                                                                                                                                                  |
-| Q6  | Anonymous demo chat allowed?                                                                                      | P5       | yes, 5/day/IP, 100/day global                                         | ⬜     |                                                                                                                                                                                  |
+| Q5  | Let friends connect their own repos? (needs public App + quotas)                                                  | P9       | no                                                                    | ✅ | 2026-11-01: **yes** — prod GitHub App made public (D59) so friends can install it; per-workspace quotas + AI budgets apply |
+| Q6  | Anonymous demo chat allowed?                                                                                      | P5       | yes, 5/day/IP, 100/day global                                         | ✅ | yes — public `demo` workspace with anonymous chat 5/day/IP, 100/day global (config defaults, live) |
 | Q7  | **Instance type** (D30 → **D56: t4g.large**, 2026-11-01): m7i-flex.large (Free Plan, 8 GiB, ≈ $0.10/h) vs Paid plan + t3.medium (tight) / t3.large | P0.4, P8 | **m7i-flex.large**                                                    | ✅ | 2026-10-21: **m7i-flex.large** (D30) |
-| Q8  | Alert email address(es)                                                                                           | P10      | Ganesh                                                                | ⬜     |                                                                                                                                                                                  |
+| Q8  | Alert email address(es)                                                                                           | P10      | Ganesh                                                                | ✅ | 2026-11-01: Ganesh's alert e-mail (GitHub secret `ALERT_EMAIL` → SNS); real alert delivered 2026-11-02 |
 | Q9  | Sync Plan doc with §3.2 differences?                                                                              | —        | yes, after Ganesh reviews §3.2                                        | ⬜     |                                                                                                                                                                                  |
 | Q11 | **AWS account is a member of an AWS Organization** (management account is a different account) and an SCP explicitly denies EC2, Lambda, SQS, ECR, SSM, SNS, EventBridge Scheduler, SES (S3, IAM, Route 53, CloudFront, Cost Explorer work). Who owns that org, and can the SCP be removed / the account leave the org? | P0.4 (everything) | standalone account, not in any org (D31) | ✅ | 2026-11-01: Free Plan org → Paid plan + advanced features; we now own org `Docify-Team` (management account) and added `ap-south-1` to its region SCP. See `docs/AWS_Mumbai_Setup_Summary.md`. |
-| Q10 | When to upgrade to Paid plan (needed before month 6; maybe for EKS)                                               | P12      | just before P12 or month 5                                            | ⬜     |                                                                                                                                                                                  |
+| Q10 | When to upgrade to Paid plan (needed before month 6; maybe for EKS)                                               | P12      | just before P12 or month 5                                            | ✅ | 2026-11-01: **Paid plan** activated (needed for Mumbai + advanced features); EKS lab ran on it in P12 |
 
 ---
 
@@ -1504,6 +1506,9 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 | 2026-11-01 | Phase 9 deploy | P7.2 ci-bot; P9.4 staging/prod GitHub Apps + Google clients; 14 SSM secrets; KEDA/data/staging/prod enabled; LE staging→prod issuer; first release + promote green; login on prod (GitHub + Google); prod App made public (D59); backup in S3; push-while-asleep test with a `tip-splitter` sample repo; demo seeded. Fixed: release bump re-formatting (D60), missing GIT_SHA build-arg, pg-backup NetworkPolicy race. AI = fake. | — | §1, §23 P7/P9, §3 D59–D60 | ~$0.20 | AI provider, SES prod access, P10 |
 | 2026-11-01 | Bedrock + browser test | Bedrock provider (Nova + Titan) + IAM "Amazon models only"; staging then prod switched to `AI_MODE=real`; demo re-seeded; eval 0.95/1.00. Browser test on prod (Chrome): landing, demo, docs with citations + versions, chat (answer + citations; off-topic refused), search, re-index, jobs, review, members, settings; two PRs on a test repo merged in the browser → docs v4 + changelog. **Fixed**: small-repo pushes were upgraded to full index (ratio rule) and lost their changelog entry; `[[path]]` citations without lines left raw markers. | — | §1, §3 D61 | ~$0.01 AI | SES prod access, P10 |
 | 2026-11-01 | P10 monitoring + SES | SES production access requested (PENDING). Monitoring enabled; Argo controller OOM crash loop (400Mi) fixed → 1Gi, Grafana OOM fixed → 384Mi; all 10 apps Synced/Healthy. Dashboards + 10 alert rules + SNS contact point verified via API; test alert delivered by SNS. Memory measured ~4.7/7.6 GiB. | — | §1, §23 P10, §3 D62, §13.4 | ~$0 | P11, billing check, SES approval |
+| 2026-11-01 | Chat who/when + P11 load tests | Browser test found chat couldn't answer "who created this feature" → **D63** commits table + history-aware retrieval + follow-up resolution, migration 0003; live on prod: answers author/date with commit links. P11: k6 kit + gated `loadtest` messages (D64). Prod k6 50 VUs × 10 min: 30,668 req, 0 errors, p95 107 ms; api HPA 2→3 (~80 s) →2; 500-msg burst → workers 0→3→0. Real 5xx alert fired on staging and was e-mailed (SNS 1/1). 23:00 auto-stop observed; Start → serving in 134 s | — | §1, §3 D63–D64, §23 P7/P8/P10/P11 | ~$0.01 Bedrock | billing check |
+| 2026-11-01/02 | P12 EKS lab | `envs/eks-lab` implemented (D65) and applied 23:02: EKS 1.36, arm64 spot, Pod Identity ×5, EKS add-ons, LBC, Cluster Autoscaler, ESO, KEDA, RDS PG17. Chart deployed (migrations on RDS, demo seeded, chat via ALB with origin secret). Spot reclaimed twice → UnfulfillableCapacity → 7 Graviton types (incident). Scale-out 3→5 nodes for 6 api pods (max-pods finding), KEDA 0→3→0 on the lab queue, scale-in 5→3. Destroyed 00:06 (35 resources), `whats-running.sh` clean | — | §3 D65, §22 R12, §23 P12 | ≈ $0.25 credits | — |
+| 2026-11-02 | P13 chaos + hardening, P14 wrap-up | Chaos: pod kill 400/400 OK; worker killed mid-job → re-claimed (fence 2), finished once; Postgres down 60 s → 503s, recovered 6 s after DB (first try: Argo selfHeal re-created it in 4 s = P7 AC); bad release blocked by the migrate hook, 0 errors, revert rollback ~5.5 min (Argo poll). Restore drill RTO 20 s (2 script fixes). postgres-exporter + dashboard live. IAM review (`docs/Security_Review.md`). P14: §4.1 diagram, README, `Cost_Report.md`, `Demo_Script.md`, `Resume_Bullets.md`; MVP checklist + open questions closed | — | §1, §23 P13/P14 + MVP, §25, `docs/incidents/` | ~$0 | demo video, SES |
 
 ---
 

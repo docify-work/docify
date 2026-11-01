@@ -1,6 +1,8 @@
 # Docify
 
-> Docify reads a GitHub repo, writes documentation for it with AI, keeps that documentation updated when the code changes, and lets people search and chat with it — answers link to the exact file lines.
+> Docify reads a GitHub repo, writes documentation for it with AI, keeps that documentation updated when the code changes, and lets people search and chat with it — answers link to the exact file lines and commits ("who added this, and when?").
+
+**Live:** [docify.work](https://docify.work) (prod) · [staging.docify.work](https://staging.docify.work) — the server sleeps from 23:00 IST; *Actions → Start Docify* wakes it in ~2 min.
 
 The app is the excuse — the real goal is to learn **DevOps, Cloud, System Design and Scaling** by building, shipping and running a real product end to end on a small budget.
 
@@ -17,19 +19,25 @@ The app is the excuse — the real goal is to learn **DevOps, Cloud, System Desi
 | Backend | Python 3.13 · FastAPI · SQLAlchemy 2 (async) · Alembic · server-side sessions · GitHub/Google OAuth |
 | Worker | SQS consumer with row leases + fencing, coalescing, retries, reconciler |
 | Data | Postgres 17 + pgvector (hybrid vector + full-text search) · Valkey 8 |
-| AI | Anthropic Claude (Haiku) for summaries, docs, changelog and chat · Voyage `voyage-code-3` embeddings |
+| AI | Amazon Bedrock: Nova Micro (summaries, changelog) + Nova Lite (docs, chat) · Titan Text Embeddings V2 (pluggable: Anthropic + Voyage also supported) |
 | Platform | k3s on one EC2 instance · Argo CD (GitOps, app-of-apps) · Helm · cert-manager · External Secrets · KEDA · Traefik |
 | Infra | Terraform (S3 backend) · CloudFront · Lambda webhook ingest → SQS · SSM · SES · Route 53 · ECR · EventBridge Scheduler |
-| CI/CD | GitHub Actions (SHA-pinned) with OIDC · Trivy · hadolint · kubeconform · tflint |
-| Observability | Prometheus · Grafana (dashboards + alerts as code) · Loki · Alloy |
+| CI/CD | GitHub Actions (SHA-pinned) with OIDC · Trivy · hadolint · kubeconform · tflint · staging → prod promotion with approval |
+| Scaling | HPA (api 2→3), KEDA on SQS depth (workers 0→3→0), k6 load tests; EKS lab with Cluster Autoscaler + Pod Identity + RDS |
+| Observability | Prometheus · Grafana (dashboards + alerts as code → SNS e-mail) · Loki · Alloy · postgres-exporter |
 
 ## Status
 
-Live progress is tracked in [`docs/Docify_Master_Doc.md`](docs/Docify_Master_Doc.md) §1 and §23.
+All 14 phases done (tracker: [`docs/Docify_Master_Doc.md`](docs/Docify_Master_Doc.md) §1, §23).
 
-- ✅ Backend, worker, Lambda, frontend, Docker image, CI — built and tested (140+ backend tests incl. integration on real Postgres/Valkey/SQS).
-- ✅ Terraform, Helm charts, Argo CD apps, dashboards — written and statically validated.
-- ⏳ AWS deployment — waiting on account setup. Until real API keys are added, AI runs in deterministic **fake mode** (`AI_MODE=fake`).
+| Proven | How |
+| --- | --- |
+| Real users, real repos | GitHub + Google login, GitHub App install, docs/changelog regenerate on every push |
+| Scaling | k6 50 VUs × 10 min on prod: 30,668 requests, **0 errors, p95 107 ms**; api HPA 2→3→2; 500-message burst → KEDA workers 0→3→0 |
+| Resilience | 5 chaos tests with incident notes ([`docs/incidents/`](docs/incidents)): pod kill (0 failed requests), worker killed mid-job (finished exactly once), Postgres down 60 s (self-healed), bad release (0 downtime), forced 5xx (alert e-mailed) |
+| Recovery | restore drill: latest S3 backup → verified DB in **20 s** (RTO target 30 min) |
+| Portability | same Helm chart on **EKS + RDS** for one evening (node scale-out 3→5, KEDA, Pod Identity), destroyed the same night |
+| Cost | ≈ $26/month in demo mode, paid from AWS credits, $0 on the card ([`docs/Cost_Report.md`](docs/Cost_Report.md)) |
 
 ## Quick start (local)
 
@@ -66,6 +74,7 @@ docs/         plan, master doc (spec + tracker), screenshots, incident notes
 - [`docs/Docify_Project_Plan.md`](docs/Docify_Project_Plan.md) — the simple plan: why, what, scope and budget.
 - [`docs/Docify_Master_Doc.md`](docs/Docify_Master_Doc.md) — the full technical spec, decision log and live tracker.
 - [`deploy/README.md`](deploy/README.md) · [`infra/README.md`](infra/README.md) — how the platform and AWS pieces fit together.
+- [`docs/Demo_Script.md`](docs/Demo_Script.md) — the 10-minute interviewer walkthrough · [`docs/Cost_Report.md`](docs/Cost_Report.md) · [`docs/Security_Review.md`](docs/Security_Review.md) · [`docs/incidents/`](docs/incidents)
 
 ## Licence
 
