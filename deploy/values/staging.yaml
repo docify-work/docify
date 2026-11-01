@@ -23,8 +23,13 @@ config:
   GITHUB_APP_SLUG: "docify-staging-docify-work"
   GITHUB_CLIENT_ID: "Iv23liSV0lfoz9zOw1On"
   GOOGLE_CLIENT_ID: "224400653695-4jugar068188j8ki98ngl064962amhgm.apps.googleusercontent.com"
-  # Real AI is off until the provider is chosen (Bedrock vs Anthropic, §1). Fake AI = $0.
-  AI_MODE: fake
+  # D61: real AI on Amazon Bedrock (Nova + Titan) - paid from AWS credits, IAM allows only Amazon models.
+  AI_MODE: real
+  AI_PROVIDER: bedrock
+  LLM_MODEL_SUMMARY: apac.amazon.nova-micro-v1:0
+  LLM_MODEL_DOC: apac.amazon.nova-lite-v1:0
+  LLM_MODEL_CHAT: apac.amazon.nova-lite-v1:0
+  EMBED_MODEL: amazon.titan-embed-text-v2:0
 
 api:
   replicas: 1             # staging: no HPA, one pod (§13.3)
