@@ -147,7 +147,7 @@ resource "aws_vpc_security_group_ingress_rule" "https_from_cloudfront" {
 
 resource "aws_vpc_security_group_egress_rule" "all_ipv4" {
   security_group_id = aws_security_group.server.id
-  description       = "All outbound (AWS APIs, GitHub, Anthropic, Voyage, Let's Encrypt)"
+  description       = "All outbound (AWS APIs, GitHub, Anthropic, Voyage, Lets Encrypt)"
   ip_protocol       = "-1"
   cidr_ipv4         = "0.0.0.0/0"
 }

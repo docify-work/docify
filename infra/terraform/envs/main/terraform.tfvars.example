@@ -2,7 +2,7 @@
 # In CI the same values come from TF_VAR_* (see .github/workflows/terraform.yml).
 
 domain        = "docify.work"
-instance_type = "m7i-flex.large" # D30 / Q7
+instance_type = "t4g.large"      # D56 (was m7i-flex.large, D30)
 alert_email   = "you@example.com" # Q8 - SNS sends a confirmation mail first
 
 # Optional
