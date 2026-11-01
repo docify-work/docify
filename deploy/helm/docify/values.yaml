@@ -86,6 +86,7 @@ config:
   FILE_MAX_KB: "200"
   DEMO_WORKSPACE_SLUG: demo
   WORKER_CONCURRENCY: "2"
+  LOADTEST_MESSAGES: "false"
   LOG_LEVEL: INFO
   # Computed when empty (see header comment):
   SQS_QUEUE_URL: ""

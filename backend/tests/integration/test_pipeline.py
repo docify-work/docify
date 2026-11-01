@@ -367,3 +367,24 @@ async def test_retry_and_dead_jobs(outbox: MemorySender, gh: FakeGitHub) -> None
         j = await db.get(Job, jid)
         assert j is not None
         assert j.status == "succeeded"
+
+
+async def test_loadtest_messages_only_when_enabled(outbox: MemorySender) -> None:
+    from docify.config import get_settings
+    from docify.observability.metrics import JOBS
+
+    settings = get_settings()
+    done = JOBS.labels("loadtest", "succeeded")
+    before = done._value.get()
+    for _ in range(3):
+        await get_queue().send({"v": 1, "kind": "loadtest", "work_ms": 10})
+    await drain()  # disabled (default): dropped as unknown, no simulated work
+    assert done._value.get() == before
+    settings.loadtest_messages = True
+    try:
+        for _ in range(3):
+            await get_queue().send({"v": 1, "kind": "loadtest", "work_ms": 10})
+        assert await drain() == 3
+        assert done._value.get() == before + 3
+    finally:
+        settings.loadtest_messages = False

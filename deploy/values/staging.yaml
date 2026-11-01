@@ -30,6 +30,8 @@ config:
   LLM_MODEL_DOC: apac.amazon.nova-lite-v1:0
   LLM_MODEL_CHAT: apac.amazon.nova-lite-v1:0
   EMBED_MODEL: amazon.titan-embed-text-v2:0
+  # P11: accept synthetic `loadtest` queue messages (simulated work, $0 - no AI/GitHub calls).
+  LOADTEST_MESSAGES: "true"
 
 api:
   replicas: 1             # staging: no HPA, one pod (§13.3)

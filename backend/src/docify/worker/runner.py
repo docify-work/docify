@@ -3,6 +3,7 @@
 Message kinds:
 - `github_event`: dedupe + create/coalesce jobs in one transaction, then notify.
 - `job`: claim → repo lease → run handler with heartbeats → finish / retry / dead.
+- `loadtest`: simulated work (P11), only when LOADTEST_MESSAGES=true.
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ HANDLERS: dict[str, Handler] = {
 }
 HEARTBEAT_S = 60
 VISIBILITY_S = 300
+LOADTEST_MAX_MS = 30_000
 
 
 
@@ -61,6 +63,8 @@ class Runner:
             await self._process_event(msg)
         elif kind == "job" and msg.body.get("job_id"):
             await self._process_job(msg)
+        elif kind == "loadtest" and self.settings.loadtest_messages:
+            await self._process_loadtest(msg)
         else:
             log.warning("worker.unknown_message", kind=kind)
             await self.queue.delete(msg.receipt)
@@ -71,6 +75,18 @@ class Runner:
         async with session_scope() as db:
             job_ids = await handle_event(db, msg.body)
         await service.dispatch(job_ids)
+        await self.queue.delete(msg.receipt)
+
+    async def _process_loadtest(self, msg: QueueMessage) -> None:
+        """P11 burst generator: simulated work so KEDA can be shown scaling 0 -> max -> 0 at zero AI cost."""
+        try:
+            work_ms = max(0, min(int(msg.body.get("work_ms", 2000)), LOADTEST_MAX_MS))
+        except (TypeError, ValueError):
+            work_ms = 2000
+        started = time.monotonic()
+        await asyncio.sleep(work_ms / 1000)
+        JOB_DURATION.labels("loadtest").observe(time.monotonic() - started)
+        JOBS.labels("loadtest", "succeeded").inc()
         await self.queue.delete(msg.receipt)
 
     # ------------------------------------------------------------------ jobs

@@ -93,6 +93,9 @@ class Settings(BaseSettings):
 
     demo_workspace_slug: str = "demo"
     worker_concurrency: int = 2
+    # P11: accept synthetic `loadtest` queue messages (simulated work, no AI/GitHub calls). Only principals
+    # that can SendMessage to the queue can inject them.
+    loadtest_messages: bool = False
     worker_heartbeat_file: str = "/tmp/worker-heartbeat"  # noqa: S108 - emptyDir in k8s
     metrics_port: int = 9000
 
