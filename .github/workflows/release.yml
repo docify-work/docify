@@ -252,7 +252,10 @@ jobs:
           git config user.email "${bot_id}+${APP_SLUG}[bot]@users.noreply.github.com"
 
           bump() {
-            yq -i '.image.tag = strenv(SHA) | .image.tag style="double"' "$VALUES_FILE"
+            # Edit only the tag line: `yq -i` would re-format the whole file
+            # (drops blank lines / comment alignment) and cause merge conflicts.
+            sed -i -E "s|^  tag: \"[0-9a-f]{40}\"|  tag: \"${SHA}\"|" "$VALUES_FILE"
+            [ "$(yq -r '.image.tag' "$VALUES_FILE")" = "$SHA" ] || { echo "::error::tag bump failed in $VALUES_FILE"; exit 1; }
           }
 
           bump
