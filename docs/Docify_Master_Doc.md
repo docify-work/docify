@@ -1243,8 +1243,8 @@ Tick tasks `[x]` and acceptance criteria with evidence (PR #, screenshot path, w
 - [ ] P0.1 Answer Q1–Q3, Q7 (§25)
 - [x] P0.2 GitHub: public repo `<gh-owner>/docify`, ruleset, secret scanning + push protection, Dependabot, Actions read-only token, Environments `infra` + `production` — ✅ repo public, ruleset (no force-push/deletion; D38), secret scanning + push protection, Dependabot, read-only token, envs `infra`+`production` with reviewer
 - [x] P0.3 Repo skeleton per §5.0 (README, LICENSE MIT, .gitignore, .editorconfig, PR template, CODEOWNERS, CLAUDE.md) — ✅ commit 6da72e4
-- [ ] P0.4 AWS account (Free Plan); root MFA; record expiry in §1; run `aws ec2 describe-instance-types --filters Name=free-tier-eligible,Values=true --region ap-south-1` and record result in D30; IAM admin user + MFA; `aws login` works
-- [ ] P0.5 Budgets $5/$15/$30 + Cost Anomaly Detection (manual)
+- [x] P0.4 ✅ 2026-11-01: Paid plan + org `Docify-Team`; **root MFA on management account** (authenticator app); CLI via `aws login` (profiles `docify`, `docify-mgmt`); everyday access = Builder ID → AccountFullAccessRole (no IAM user needed). Original text: AWS account (Free Plan); root MFA; record expiry in §1; run `aws ec2 describe-instance-types --filters Name=free-tier-eligible,Values=true --region ap-south-1` and record result in D30; IAM admin user + MFA; `aws login` works
+- [x] P0.5 ✅ 2026-11-01 (mgmt account): budgets `docify-credit-burn` (alerts $1/$50/$150/$180 of $200 credits) + `docify-card-charge` (>$0.01 billed to card) + Cost Anomaly Detection (default monitor, daily email ≥ $1). Replaces the planned $5/$15/$30.
 - [ ] P0.6 Domain + Route 53 hosted zone
 - [ ] P0.7 SES domain identity (DKIM) + production access request
 - [ ] P0.8 Anthropic + Voyage accounts, keys, spend limits $5/mo
