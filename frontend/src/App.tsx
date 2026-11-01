@@ -34,8 +34,13 @@ const Jobs = lazy(() => import("@/pages/workspace/Jobs"));
 const Review = lazy(() => import("@/pages/workspace/Review"));
 const Settings = lazy(() => import("@/pages/workspace/Settings"));
 const Members = lazy(() => import("@/pages/workspace/Members"));
+const Insights = lazy(() => import("@/pages/workspace/Insights"));
+const Checks = lazy(() => import("@/pages/workspace/Checks"));
+const Issues = lazy(() => import("@/pages/workspace/Issues"));
 const DemoRedirect = lazy(() => import("@/pages/DemoRedirect"));
-const UiGallery = import.meta.env.DEV ? lazy(() => import("@/pages/dev/UiGallery")) : null;
+const UiGallery = import.meta.env.DEV
+  ? lazy(() => import("@/pages/dev/UiGallery"))
+  : null;
 
 /** Routes 401s from the API client through the router (and forgets the cached user). */
 function UnauthorizedRedirector() {
@@ -89,9 +94,30 @@ export default function App() {
         </Route>
 
         <Route element={<AppShell />}>
-          <Route path="app" element={<RequireAuth><Home /></RequireAuth>} />
-          <Route path="new" element={<RequireAuth><CreateWorkspace /></RequireAuth>} />
-          <Route path="account" element={<RequireAuth><Account /></RequireAuth>} />
+          <Route
+            path="app"
+            element={
+              <RequireAuth>
+                <Home />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="new"
+            element={
+              <RequireAuth>
+                <CreateWorkspace />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="account"
+            element={
+              <RequireAuth>
+                <Account />
+              </RequireAuth>
+            }
+          />
           <Route path="w/:ws" element={<WorkspaceLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="repos" element={<Repos />} />
@@ -100,10 +126,41 @@ export default function App() {
             <Route path="changelog/:repoId" element={<Changelog />} />
             <Route path="search" element={<Search />} />
             <Route path="chat" element={<Chat />} />
-            <Route path="jobs" element={<RequireMember><Jobs /></RequireMember>} />
-            <Route path="members" element={<RequireMember><Members /></RequireMember>} />
-            <Route path="review" element={<RequireAdmin><Review /></RequireAdmin>} />
-            <Route path="settings" element={<RequireAdmin><Settings /></RequireAdmin>} />
+            <Route path="insights" element={<Insights />} />
+            <Route path="checks" element={<Checks />} />
+            <Route path="issues" element={<Issues />} />
+            <Route
+              path="jobs"
+              element={
+                <RequireMember>
+                  <Jobs />
+                </RequireMember>
+              }
+            />
+            <Route
+              path="members"
+              element={
+                <RequireMember>
+                  <Members />
+                </RequireMember>
+              }
+            />
+            <Route
+              path="review"
+              element={
+                <RequireAdmin>
+                  <Review />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <RequireAdmin>
+                  <Settings />
+                </RequireAdmin>
+              }
+            />
             <Route path="*" element={<NotFound inline />} />
           </Route>
           {UiGallery && <Route path="dev/ui" element={<UiGallery />} />}

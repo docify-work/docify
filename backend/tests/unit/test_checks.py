@@ -85,3 +85,15 @@ def test_health_score_explains_itself() -> None:
     bad = _health(120, 1, 1, 1, {"critical": 2}, 2)
     assert bad["score"] < 50 and len(bad["notes"]) >= 4
     assert _health(None, 0, 0, 0, {}, 0)["grade"] == "n/a"
+
+
+def test_rows_have_uniform_keys_for_multi_row_insert() -> None:
+    # Regression: scan rows with and without blame attribution must render the same INSERT VALUES shape.
+    from docify.checks import _row
+    from docify.db.models import Repository
+
+    repo = Repository(id=uuid.uuid4(), workspace_id=uuid.uuid4())
+    hit = checks.scan_lines([_policy("ai_models")], "a.ts", [(1, "gpt-4o")])[0]
+    with_author = _row(repo, hit, "scan", commit_sha="c" * 40, author_login="grace")
+    without = _row(repo, hit, "scan")
+    assert with_author.keys() == without.keys() and without["author_login"] is None

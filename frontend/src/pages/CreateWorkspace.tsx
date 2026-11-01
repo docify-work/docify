@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { errorMessage, fieldError } from "@/api/client";
 import { qk, workspaces } from "@/api/endpoints";
-import { Button, Callout, Card, Input } from "@/components/ui";
+import { Button, Callout, Card, InfoTip, Input } from "@/components/ui";
 import { useMe } from "@/hooks/useMe";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -41,8 +41,10 @@ export default function CreateWorkspace() {
 
   return (
     <div className="mx-auto max-w-md pt-[6vh]">
-      <h1 className="text-xl font-semibold tracking-tight">{first ? "Create your first workspace" : "New workspace"}</h1>
-      <p className="mt-1 text-sm text-fg-muted">A workspace holds repositories, docs and members.</p>
+      <h1 className="flex items-center gap-1.5 text-xl font-semibold tracking-tight">
+        {first ? "Create your first workspace" : "New workspace"}
+        <InfoTip>A workspace holds repositories, docs, checks, issues and members.</InfoTip>
+      </h1>
       <Card className="mt-5 p-4">
         <form
           className="flex flex-col gap-3"

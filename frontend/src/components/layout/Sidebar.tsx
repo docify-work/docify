@@ -14,14 +14,29 @@ import {
 import { motion } from "motion/react";
 import { NavLink, useLocation, useNavigate } from "react-router";
 import { loginUrl } from "@/api/client";
-import { qk, review, workspaces } from "@/api/endpoints";
+import {
+  findings,
+  issues as issuesApi,
+  qk,
+  review,
+  workspaces,
+} from "@/api/endpoints";
 import { LogoMark } from "@/components/Logo";
-import { ThemeSegmented } from "@/components/ThemeToggle";
-import { Avatar, Badge, DropdownMenu, IconButton, MenuItem, MenuLabel, MenuSeparator, Tooltip } from "@/components/ui";
+import { ThemeSegmented, ThemeToggleButton } from "@/components/ThemeToggle";
+import {
+  Avatar,
+  Badge,
+  DropdownMenu,
+  IconButton,
+  MenuItem,
+  MenuLabel,
+  MenuSeparator,
+  Tooltip,
+} from "@/components/ui";
 import { useLogout, useMe } from "@/hooks/useMe";
 import { cn } from "@/lib/cn";
 import { useAppConfig } from "@/lib/config";
-import { WORKSPACE_NAV, canSee } from "./nav";
+import { NAV_SECTIONS, canSee, type NavItem } from "./nav";
 
 interface SidebarProps {
   slug: string | null;
@@ -31,7 +46,12 @@ interface SidebarProps {
   onNavigate?: () => void;
 }
 
-export function Sidebar({ slug, collapsed, onToggle, onNavigate }: SidebarProps) {
+export function Sidebar({
+  slug,
+  collapsed,
+  onToggle,
+  onNavigate,
+}: SidebarProps) {
   const { me } = useMe();
   const membership = me?.workspaces.find((w) => w.slug === slug);
   const wsQuery = useQuery({
@@ -42,7 +62,8 @@ export function Sidebar({ slug, collapsed, onToggle, onNavigate }: SidebarProps)
   });
   const role = membership?.role ?? wsQuery.data?.role ?? null;
   const name = membership?.name ?? wsQuery.data?.name ?? null;
-  const isDemo = membership?.is_public_demo ?? wsQuery.data?.is_public_demo ?? false;
+  const isDemo =
+    membership?.is_public_demo ?? wsQuery.data?.is_public_demo ?? false;
 
   const reviewQuery = useQuery({
     queryKey: qk.review(slug ?? ""),
@@ -50,82 +71,186 @@ export function Sidebar({ slug, collapsed, onToggle, onNavigate }: SidebarProps)
     enabled: !!slug && role === "admin",
     staleTime: 30_000,
   });
-  const pending = reviewQuery.data?.length ?? 0;
+  const findingsQuery = useQuery({
+    queryKey: qk.findings(slug ?? "", "badge"),
+    queryFn: () => findings.list(slug!, { status: "open", limit: 1 }),
+    enabled: !!slug,
+    staleTime: 60_000,
+  });
+  const issuesQuery = useQuery({
+    queryKey: qk.issues(slug ?? "", "badge"),
+    queryFn: () => issuesApi.list(slug!, { status: "open,in_progress" }),
+    enabled: !!slug,
+    staleTime: 60_000,
+  });
+  const counts: Record<string, number> = {
+    review: reviewQuery.data?.length ?? 0,
+    checks: findingsQuery.data?.counts.open ?? 0,
+    issues: issuesQuery.data?.length ?? 0,
+  };
 
   return (
-    <div className="flex h-full flex-col gap-2 p-2">
-      <WorkspaceSwitcher slug={slug} name={name} isDemo={isDemo} collapsed={collapsed} onNavigate={onNavigate} />
+    <div className="flex h-full flex-col gap-3 p-2">
+      <div className={cn("flex items-center gap-1", collapsed && "flex-col")}>
+        <div className="min-w-0 flex-1">
+          <WorkspaceSwitcher
+            slug={slug}
+            name={name}
+            isDemo={isDemo}
+            collapsed={collapsed}
+            onNavigate={onNavigate}
+          />
+        </div>
+        {onToggle && (
+          <IconButton
+            size="sm"
+            label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            tooltipSide="right"
+            icon={collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+            onClick={onToggle}
+            className="shrink-0 text-fg-subtle"
+          />
+        )}
+      </div>
 
       {slug && (
-        <nav aria-label="Workspace" className="flex flex-col gap-0.5">
-          {WORKSPACE_NAV.filter((n) => canSee(n.access, role)).map((n) => {
-            const Icon = n.icon;
-            const link = (
-              <NavLink
-                key={n.key}
-                to={n.path(slug)}
-                end={n.end}
-                onClick={onNavigate}
-                className={({ isActive }) =>
-                  cn(
-                    "relative flex h-8 items-center gap-2.5 rounded-md px-2 text-sm outline-none transition-colors duration-150 " +
-                      "focus-visible:ring-2 focus-visible:ring-ring",
-                    isActive ? "font-medium text-fg" : "text-fg-muted hover:bg-surface-2 hover:text-fg",
-                    collapsed && "justify-center px-0",
-                  )
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <motion.span
-                        layoutId="nav-active"
-                        className="absolute inset-0 rounded-md bg-surface-2 ring-1 ring-border"
-                        transition={{ type: "spring", duration: 0.3, bounce: 0.12 }}
-                      />
-                    )}
-                    <Icon className={cn("relative size-4 shrink-0", isActive ? "text-accent-text" : undefined)} aria-hidden="true" />
-                    {!collapsed && <span className="relative flex-1 truncate">{n.label}</span>}
-                    {n.key === "review" && pending > 0 && (
-                      <span
-                        className={cn(
-                          "tabular relative grid min-w-4 place-items-center rounded-full bg-accent px-1 text-2xs font-semibold text-accent-fg",
-                          collapsed && "absolute right-1 top-1 h-3.5 min-w-3.5 text-[9px]",
-                        )}
-                      >
-                        {pending}
-                      </span>
-                    )}
-                  </>
-                )}
-              </NavLink>
-            );
-            return collapsed ? (
-              <Tooltip key={n.key} content={n.label} side="right">
-                {link}
-              </Tooltip>
-            ) : (
-              link
+        <nav
+          aria-label="Workspace"
+          className="-mx-0.5 flex flex-1 flex-col gap-3 overflow-y-auto px-0.5"
+        >
+          {NAV_SECTIONS.map((section) => {
+            const items = section.items.filter((n) => canSee(n.access, role));
+            if (!items.length) return null;
+            return (
+              <div key={section.key} className="flex flex-col gap-0.5">
+                {section.label &&
+                  (collapsed ? (
+                    <div
+                      className="mx-2 my-1 h-px bg-border"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <div className="px-2 pb-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-fg-subtle">
+                      {section.label}
+                    </div>
+                  ))}
+                {items.map((n) => (
+                  <NavEntry
+                    key={n.key}
+                    item={n}
+                    slug={slug}
+                    collapsed={collapsed}
+                    count={counts[n.key] ?? 0}
+                    onNavigate={onNavigate}
+                  />
+                ))}
+              </div>
             );
           })}
         </nav>
       )}
 
-      <div className="mt-auto flex flex-col gap-1">
-        {onToggle && (
-          <div className={cn("flex", collapsed ? "justify-center" : "justify-end")}>
-            <IconButton
-              size="sm"
-              label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              tooltipSide="right"
-              icon={collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
-              onClick={onToggle}
-            />
+      <div className="mt-auto flex flex-col gap-1 border-t border-border pt-2">
+        {!me && (
+          <div
+            className={cn(
+              "flex items-center justify-between gap-2 px-1",
+              collapsed && "justify-center",
+            )}
+          >
+            {!collapsed && (
+              <span className="text-xs text-fg-subtle">Theme</span>
+            )}
+            {collapsed ? (
+              <ThemeToggleButton />
+            ) : (
+              <ThemeSegmented className="w-28" />
+            )}
           </div>
         )}
         <UserMenu collapsed={collapsed} onNavigate={onNavigate} />
       </div>
     </div>
+  );
+}
+
+function NavEntry({
+  item: n,
+  slug,
+  collapsed,
+  count,
+  onNavigate,
+}: {
+  item: NavItem;
+  slug: string;
+  collapsed: boolean;
+  count: number;
+  onNavigate?: () => void;
+}) {
+  const Icon = n.icon;
+  const link = (
+    <NavLink
+      to={n.path(slug)}
+      end={n.end}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          "group relative flex h-8 items-center gap-2.5 rounded-lg px-2 text-sm outline-none transition-colors duration-150 " +
+            "focus-visible:ring-2 focus-visible:ring-ring",
+          isActive
+            ? "font-medium text-fg"
+            : "text-fg-muted hover:bg-surface-2/70 hover:text-fg",
+          collapsed && "justify-center px-0",
+        )
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {isActive && (
+            <motion.span
+              layoutId="nav-active"
+              className="absolute inset-0 rounded-lg bg-accent-soft/70 ring-1 ring-accent/15"
+              transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
+            >
+              <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-full bg-accent" />
+            </motion.span>
+          )}
+          <Icon
+            className={cn(
+              "relative size-4 shrink-0 transition-transform duration-200 group-hover:scale-110",
+              isActive ? "text-accent-text" : undefined,
+            )}
+            aria-hidden="true"
+          />
+          {!collapsed && (
+            <span className="relative flex-1 truncate">{n.label}</span>
+          )}
+          {count > 0 && (
+            <motion.span
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              className={cn(
+                "tabular grid min-w-4 place-items-center rounded-full px-1 text-2xs font-semibold",
+                collapsed ? "absolute right-1 top-0.5 h-3.5 min-w-3.5 px-0.5 text-[9px] leading-none" : "relative",
+                n.key === "checks"
+                  ? "bg-warning-soft text-warning"
+                  : "bg-accent text-accent-fg",
+              )}
+            >
+              {count > 99 ? "99+" : count}
+            </motion.span>
+          )}
+        </>
+      )}
+    </NavLink>
+  );
+  return (
+    <Tooltip
+      content={collapsed ? `${n.label} · ${n.hint}` : n.hint}
+      side="right"
+    >
+      {link}
+    </Tooltip>
   );
 }
 
@@ -176,10 +301,19 @@ function WorkspaceSwitcher({
           {!collapsed && (
             <>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold leading-tight">{slug ? label : "Docify"}</span>
-                {isDemo && <span className="block text-2xs leading-tight text-fg-subtle">Public demo</span>}
+                <span className="block truncate text-sm font-semibold leading-tight">
+                  {slug ? label : "Docify"}
+                </span>
+                {isDemo && (
+                  <span className="block text-2xs leading-tight text-fg-subtle">
+                    Public demo
+                  </span>
+                )}
               </span>
-              <ChevronsUpDown className="size-3.5 shrink-0 text-fg-subtle" aria-hidden="true" />
+              <ChevronsUpDown
+                className="size-3.5 shrink-0 text-fg-subtle"
+                aria-hidden="true"
+              />
             </>
           )}
         </button>
@@ -192,8 +326,18 @@ function WorkspaceSwitcher({
             <MenuItem
               key={w.slug}
               onSelect={() => go(`/w/${w.slug}`)}
-              icon={w.slug === slug ? <Check className="text-accent-text" /> : <span className="inline-block size-3.5" />}
-              shortcut={w.role === "admin" ? <Shield className="size-3" aria-label="Admin" /> : undefined}
+              icon={
+                w.slug === slug ? (
+                  <Check className="text-accent-text" />
+                ) : (
+                  <span className="inline-block size-3.5" />
+                )
+              }
+              shortcut={
+                w.role === "admin" ? (
+                  <Shield className="size-3" aria-label="Admin" />
+                ) : undefined
+              }
             >
               {w.name}
             </MenuItem>
@@ -220,7 +364,13 @@ function WorkspaceSwitcher({
   );
 }
 
-function UserMenu({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
+function UserMenu({
+  collapsed,
+  onNavigate,
+}: {
+  collapsed: boolean;
+  onNavigate?: () => void;
+}) {
   const { me } = useMe();
   const logout = useLogout();
   const navigate = useNavigate();
@@ -266,8 +416,12 @@ function UserMenu({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: 
           <Avatar src={me.avatar_url} name={me.name ?? me.email} size={24} />
           {!collapsed && (
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium leading-tight">{me.name ?? me.email.split("@")[0]}</span>
-              <span className="block truncate text-2xs leading-tight text-fg-subtle">{me.email}</span>
+              <span className="block truncate text-sm font-medium leading-tight">
+                {me.name ?? me.email.split("@")[0]}
+              </span>
+              <span className="block truncate text-2xs leading-tight text-fg-subtle">
+                {me.email}
+              </span>
             </span>
           )}
         </button>

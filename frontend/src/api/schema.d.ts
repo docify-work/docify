@@ -4,3419 +4,4715 @@
  */
 
 export interface paths {
-    "/api/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Liveness: the process is up */
-        get: operations["health_api_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+  "/api/health": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/ready": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Readiness: DB reachable (internal only) */
-        get: operations["ready_api_ready_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Liveness: the process is up */
+    get: operations["health_api_health_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/ready": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/version": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Version */
-        get: operations["version_api_version_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Readiness: DB reachable (internal only) */
+    get: operations["ready_api_ready_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/version": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/config": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Feature flags the SPA needs */
-        get: operations["public_config_api_config_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Version */
+    get: operations["version_api_version_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/config": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/demo": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Demo */
-        get: operations["demo_api_demo_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Feature flags the SPA needs */
+    get: operations["public_config_api_config_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/demo": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/signup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Signup */
-        post: operations["signup_api_auth_signup_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Demo */
+    get: operations["demo_api_demo_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/signup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/verify-email": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Verify Email */
-        post: operations["verify_email_api_auth_verify_email_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Signup */
+    post: operations["signup_api_auth_signup_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/verify-email": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/resend-verification": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resend */
-        post: operations["resend_api_auth_resend_verification_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Verify Email */
+    post: operations["verify_email_api_auth_verify_email_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/resend-verification": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login */
-        post: operations["login_api_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Resend */
+    post: operations["resend_api_auth_resend_verification_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/logout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Logout */
-        post: operations["logout_api_auth_logout_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Login */
+    post: operations["login_api_auth_login_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/forgot-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Forgot */
-        post: operations["forgot_api_auth_forgot_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Logout */
+    post: operations["logout_api_auth_logout_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/forgot-password": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/reset-password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reset */
-        post: operations["reset_api_auth_reset_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Forgot */
+    post: operations["forgot_api_auth_forgot_password_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/reset-password": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/{provider}/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Begin OAuth login or account linking (browser redirect) */
-        get: operations["oauth_start_api_auth__provider__start_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reset */
+    post: operations["reset_api_auth_reset_password_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/{provider}/start": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/auth/{provider}/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** OAuth redirect target */
-        get: operations["oauth_callback_api_auth__provider__callback_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Begin OAuth login or account linking (browser redirect) */
+    get: operations["oauth_start_api_auth__provider__start_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/auth/{provider}/callback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Me */
-        get: operations["get_me_api_me_get"];
-        put?: never;
-        post?: never;
-        /** Delete Me */
-        delete: operations["delete_me_api_me_delete"];
-        options?: never;
-        head?: never;
-        /** Patch Me */
-        patch: operations["patch_me_api_me_patch"];
-        trace?: never;
+    /** OAuth redirect target */
+    get: operations["oauth_callback_api_auth__provider__callback_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me/password": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Change Password */
-        post: operations["change_password_api_me_password_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Me */
+    get: operations["get_me_api_me_get"];
+    put?: never;
+    post?: never;
+    /** Delete Me */
+    delete: operations["delete_me_api_me_delete"];
+    options?: never;
+    head?: never;
+    /** Patch Me */
+    patch: operations["patch_me_api_me_patch"];
+    trace?: never;
+  };
+  "/api/me/password": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me/identities": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Identities */
-        get: operations["identities_api_me_identities_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Change Password */
+    post: operations["change_password_api_me_password_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/me/identities": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me/identities/{identity_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Unlink */
-        delete: operations["unlink_api_me_identities__identity_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Identities */
+    get: operations["identities_api_me_identities_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/me/identities/{identity_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me/sessions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Sessions */
-        get: operations["sessions_api_me_sessions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Unlink */
+    delete: operations["unlink_api_me_identities__identity_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/me/sessions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me/sessions/revoke-others": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Revoke Other Sessions */
-        post: operations["revoke_other_sessions_api_me_sessions_revoke_others_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Sessions */
+    get: operations["sessions_api_me_sessions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/me/sessions/revoke-others": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/me/sessions/{session_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revoke Session */
-        delete: operations["revoke_session_api_me_sessions__session_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Revoke Other Sessions */
+    post: operations["revoke_other_sessions_api_me_sessions_revoke_others_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/me/sessions/{session_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Workspaces */
-        get: operations["list_workspaces_api_workspaces_get"];
-        put?: never;
-        /** Create Workspace */
-        post: operations["create_workspace_api_workspaces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Revoke Session */
+    delete: operations["revoke_session_api_me_sessions__session_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Ws */
-        get: operations["get_ws_api_workspaces__ws__get"];
-        put?: never;
-        post?: never;
-        /** Delete Ws */
-        delete: operations["delete_ws_api_workspaces__ws__delete"];
-        options?: never;
-        head?: never;
-        /** Patch Ws */
-        patch: operations["patch_ws_api_workspaces__ws__patch"];
-        trace?: never;
+    /** List Workspaces */
+    get: operations["list_workspaces_api_workspaces_get"];
+    put?: never;
+    /** Create Workspace */
+    post: operations["create_workspace_api_workspaces_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Members */
-        get: operations["members_api_workspaces__ws__members_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Ws */
+    get: operations["get_ws_api_workspaces__ws__get"];
+    put?: never;
+    post?: never;
+    /** Delete Ws */
+    delete: operations["delete_ws_api_workspaces__ws__delete"];
+    options?: never;
+    head?: never;
+    /** Patch Ws */
+    patch: operations["patch_ws_api_workspaces__ws__patch"];
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/members": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/members/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Remove Member */
-        delete: operations["remove_member_api_workspaces__ws__members__user_id__delete"];
-        options?: never;
-        head?: never;
-        /** Change Role */
-        patch: operations["change_role_api_workspaces__ws__members__user_id__patch"];
-        trace?: never;
+    /** Members */
+    get: operations["members_api_workspaces__ws__members_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/members/{user_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/leave": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Leave */
-        post: operations["leave_api_workspaces__ws__leave_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Remove Member */
+    delete: operations["remove_member_api_workspaces__ws__members__user_id__delete"];
+    options?: never;
+    head?: never;
+    /** Change Role */
+    patch: operations["change_role_api_workspaces__ws__members__user_id__patch"];
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/leave": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/invites": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Invites */
-        get: operations["list_invites_api_workspaces__ws__invites_get"];
-        put?: never;
-        /** Create Invite */
-        post: operations["create_invite_api_workspaces__ws__invites_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Leave */
+    post: operations["leave_api_workspaces__ws__leave_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/invites": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/invites/{invite_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /** Revoke Invite */
-        delete: operations["revoke_invite_api_workspaces__ws__invites__invite_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Invites */
+    get: operations["list_invites_api_workspaces__ws__invites_get"];
+    put?: never;
+    /** Create Invite */
+    post: operations["create_invite_api_workspaces__ws__invites_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/invites/{invite_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/invites/{token}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** View Invite */
-        get: operations["view_invite_api_invites__token__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Revoke Invite */
+    delete: operations["revoke_invite_api_workspaces__ws__invites__invite_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/invites/{token}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/invites/{token}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Accept Invite */
-        post: operations["accept_invite_api_invites__token__accept_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** View Invite */
+    get: operations["view_invite_api_invites__token__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/invites/{token}/accept": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/github/install-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Install Url */
-        get: operations["install_url_api_workspaces__ws__github_install_url_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Accept Invite */
+    post: operations["accept_invite_api_invites__token__accept_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/github/install-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/github/setup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GitHub App Setup URL (browser redirect) */
-        get: operations["setup_api_github_setup_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Install Url */
+    get: operations["install_url_api_workspaces__ws__github_install_url_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/github/setup": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/github/installations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Installations */
-        get: operations["installations_api_workspaces__ws__github_installations_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** GitHub App Setup URL (browser redirect) */
+    get: operations["setup_api_github_setup_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/github/installations": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/github/installations/{installation_id}/repos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Attach Repos */
-        post: operations["attach_repos_api_workspaces__ws__github_installations__installation_id__repos_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Installations */
+    get: operations["installations_api_workspaces__ws__github_installations_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/github/installations/{installation_id}/repos": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/repos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Repos */
-        get: operations["list_repos_api_workspaces__ws__repos_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Attach Repos */
+    post: operations["attach_repos_api_workspaces__ws__github_installations__installation_id__repos_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/repos": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/repos/{repo_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Repo */
-        get: operations["get_repo_api_repos__repo_id__get"];
-        put?: never;
-        post?: never;
-        /** Remove Repo */
-        delete: operations["remove_repo_api_repos__repo_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Repos */
+    get: operations["list_repos_api_workspaces__ws__repos_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/repos/{repo_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/repos/{repo_id}/resync": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resync */
-        post: operations["resync_api_repos__repo_id__resync_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Repo */
+    get: operations["get_repo_api_repos__repo_id__get"];
+    put?: never;
+    post?: never;
+    /** Remove Repo */
+    delete: operations["remove_repo_api_repos__repo_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/repos/{repo_id}/resync": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/repos/{repo_id}/reindex": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reindex */
-        post: operations["reindex_api_repos__repo_id__reindex_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Resync */
+    post: operations["resync_api_repos__repo_id__resync_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/repos/{repo_id}/reindex": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/docs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Docs */
-        get: operations["list_docs_api_workspaces__ws__docs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Reindex */
+    post: operations["reindex_api_repos__repo_id__reindex_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/docs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/docs/{doc_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Doc */
-        get: operations["get_doc_api_docs__doc_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Docs */
+    get: operations["list_docs_api_workspaces__ws__docs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/docs/{doc_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/docs/{doc_id}/versions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Doc Versions */
-        get: operations["doc_versions_api_docs__doc_id__versions_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Get Doc */
+    get: operations["get_doc_api_docs__doc_id__get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/docs/{doc_id}/versions": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/repos/{repo_id}/changelog": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Changelog */
-        get: operations["changelog_api_repos__repo_id__changelog_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Doc Versions */
+    get: operations["doc_versions_api_docs__doc_id__versions_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/repos/{repo_id}/changelog": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Review Queue */
-        get: operations["review_queue_api_workspaces__ws__review_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Changelog */
+    get: operations["changelog_api_repos__repo_id__changelog_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/review": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/review/{kind}/{item_id}/{decision}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Review Decide */
-        post: operations["review_decide_api_review__kind___item_id___decision__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Review Queue */
+    get: operations["review_queue_api_workspaces__ws__review_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/review/{kind}/{item_id}/{decision}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Jobs */
-        get: operations["list_jobs_api_workspaces__ws__jobs_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Review Decide */
+    post: operations["review_decide_api_review__kind___item_id___decision__post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/jobs": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/jobs/{job_id}/retry": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Retry */
-        post: operations["retry_api_jobs__job_id__retry_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** List Jobs */
+    get: operations["list_jobs_api_workspaces__ws__jobs_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/jobs/{job_id}/retry": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/search": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Search */
-        get: operations["search_api_workspaces__ws__search_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Retry */
+    post: operations["retry_api_jobs__job_id__retry_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/search": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/chat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ask a question; streams Server-Sent Events */
-        post: operations["chat_api_workspaces__ws__chat_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Search */
+    get: operations["search_api_workspaces__ws__search_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/chat": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/workspaces/{ws}/chat/threads": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Threads */
-        get: operations["threads_api_workspaces__ws__chat_threads_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    get?: never;
+    put?: never;
+    /** Ask a question; streams Server-Sent Events */
+    post: operations["chat_api_workspaces__ws__chat_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/chat/threads": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    "/api/chat/threads/{thread_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Thread */
-        get: operations["get_thread_api_chat_threads__thread_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Thread */
-        delete: operations["delete_thread_api_chat_threads__thread_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
+    /** Threads */
+    get: operations["threads_api_workspaces__ws__chat_threads_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/chat/threads/{thread_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
+    /** Get Thread */
+    get: operations["get_thread_api_chat_threads__thread_id__get"];
+    put?: never;
+    post?: never;
+    /** Delete Thread */
+    delete: operations["delete_thread_api_chat_threads__thread_id__delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/repos/{repo_id}/insights": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Contributors, activity, languages, PRs, health */
+    get: operations["repo_insights_api_repos__repo_id__insights_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/contributors": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Contributors */
+    get: operations["contributors_api_workspaces__ws__contributors_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/policy-templates": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Policy Templates */
+    get: operations["policy_templates_api_policy_templates_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/policies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Policies */
+    get: operations["list_policies_api_workspaces__ws__policies_get"];
+    put?: never;
+    /** Create Policy */
+    post: operations["create_policy_api_workspaces__ws__policies_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/policies/{policy_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** Delete Policy */
+    delete: operations["delete_policy_api_policies__policy_id__delete"];
+    options?: never;
+    head?: never;
+    /** Update Policy */
+    patch: operations["update_policy_api_policies__policy_id__patch"];
+    trace?: never;
+  };
+  "/api/policies/test": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Try a pattern against sample text */
+    post: operations["test_policy_api_policies_test_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/checks/scan": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Scan current code now */
+    post: operations["scan_now_api_workspaces__ws__checks_scan_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/findings": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Findings */
+    get: operations["list_findings_api_workspaces__ws__findings_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/findings/{finding_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /** Update Finding */
+    patch: operations["update_finding_api_findings__finding_id__patch"];
+    trace?: never;
+  };
+  "/api/findings/{finding_id}/issue": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Open an issue for a finding (suspect = the author who added the line) */
+    post: operations["finding_to_issue_api_findings__finding_id__issue_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/issues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Issues */
+    get: operations["list_issues_api_workspaces__ws__issues_get"];
+    put?: never;
+    /** Create Issue */
+    post: operations["create_issue_api_workspaces__ws__issues_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/issues/{issue_id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Issue */
+    get: operations["get_issue_api_issues__issue_id__get"];
+    put?: never;
+    post?: never;
+    /** Delete Issue */
+    delete: operations["delete_issue_api_issues__issue_id__delete"];
+    options?: never;
+    head?: never;
+    /** Update Issue */
+    patch: operations["update_issue_api_issues__issue_id__patch"];
+    trace?: never;
+  };
+  "/api/issues/{issue_id}/analyze": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Re-run responsible-contributor analysis */
+    post: operations["reanalyze_api_issues__issue_id__analyze_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/github-issues": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Github Issues */
+    get: operations["github_issues_api_workspaces__ws__github_issues_get"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/workspaces/{ws}/github-issues/import": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Import Github Issue */
+    post: operations["import_github_issue_api_workspaces__ws__github_issues_import_post"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: {
-        /** AttachReposIn */
-        AttachReposIn: {
-            /** Github Repo Ids */
-            github_repo_ids: number[];
-        };
-        /** ChangePasswordIn */
-        ChangePasswordIn: {
-            /** Current Password */
-            current_password?: string | null;
-            /** New Password */
-            new_password: string;
-        };
-        /** ChangelogOut */
-        ChangelogOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Repo Id
-             * Format: uuid
-             */
-            repo_id: string;
-            /** From Sha */
-            from_sha: string | null;
-            /** To Sha */
-            to_sha: string;
-            /** Content Md */
-            content_md: string;
-            /** Pr Numbers */
-            pr_numbers: number[];
-            /** Status */
-            status: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** ChatIn */
-        ChatIn: {
-            /** Message */
-            message: string;
-            /** Thread Id */
-            thread_id?: string | null;
-            /** Repo Ids */
-            repo_ids?: string[] | null;
-        };
-        /** ChatMessageOut */
-        ChatMessageOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "user" | "assistant";
-            /** Content */
-            content: string;
-            /** Sources */
-            sources: components["schemas"]["ChatSource"][] | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** ChatSource */
-        ChatSource: {
-            /** N */
-            n: number;
-            /**
-             * Kind
-             * @default code
-             * @enum {string}
-             */
-            kind: "code" | "commit";
-            /** Repo */
-            repo: string;
-            /** Commit Sha */
-            commit_sha: string;
-            /** Url */
-            url: string;
-            /** Path */
-            path?: string | null;
-            /** Start Line */
-            start_line?: number | null;
-            /** End Line */
-            end_line?: number | null;
-            /** Title */
-            title?: string | null;
-            /** Author */
-            author?: string | null;
-            /** Date */
-            date?: string | null;
-        };
-        /** DemoOut */
-        DemoOut: {
-            /** Workspace Slug */
-            workspace_slug: string | null;
-            /** Available */
-            available: boolean;
-        };
-        /** DocDetailOut */
-        DocDetailOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Repo Id
-             * Format: uuid
-             */
-            repo_id: string;
-            /** Repo Full Name */
-            repo_full_name: string;
-            /** Kind */
-            kind: string;
-            /** Title */
-            title: string;
-            published: components["schemas"]["VersionBrief"] | null;
-            /** Has Pending Review */
-            has_pending_review: boolean;
-            /** Updated At */
-            updated_at: string | null;
-            /** Content Md */
-            content_md: string | null;
-            /** Source Paths */
-            source_paths: string[];
-            /** Repo Html Url */
-            repo_html_url: string;
-            /** Commit Url */
-            commit_url: string | null;
-        };
-        /** DocOut */
-        DocOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Repo Id
-             * Format: uuid
-             */
-            repo_id: string;
-            /** Repo Full Name */
-            repo_full_name: string;
-            /** Kind */
-            kind: string;
-            /** Title */
-            title: string;
-            published: components["schemas"]["VersionBrief"] | null;
-            /** Has Pending Review */
-            has_pending_review: boolean;
-            /** Updated At */
-            updated_at: string | null;
-        };
-        /** DocVersionOut */
-        DocVersionOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Version */
-            version: number;
-            /** Status */
-            status: string;
-            /** Commit Sha */
-            commit_sha: string;
-            /** Model */
-            model: string | null;
-            /** Partial */
-            partial: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Content Md */
-            content_md: string;
-        };
-        /** EmailIn */
-        EmailIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-        };
-        /** GithubRepoOption */
-        GithubRepoOption: {
-            /** Github Repo Id */
-            github_repo_id: number;
-            /** Full Name */
-            full_name: string;
-            /** Private */
-            private: boolean;
-            /** Default Branch */
-            default_branch: string | null;
-            /** Attached Workspace */
-            attached_workspace: string | null;
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** IdentityOut */
-        IdentityOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Provider */
-            provider: string;
-            /** Login */
-            login: string | null;
-            /** Email */
-            email: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** InstallUrlOut */
-        InstallUrlOut: {
-            /** Url */
-            url: string;
-        };
-        /** InstallationOut */
-        InstallationOut: {
-            /** Installation Id */
-            installation_id: number;
-            /** Account Login */
-            account_login: string;
-            /** Account Type */
-            account_type: string;
-            /** Suspended */
-            suspended: boolean;
-            /** Repos */
-            repos: components["schemas"]["GithubRepoOption"][];
-        };
-        /** InviteIn */
-        InviteIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /**
-             * Role
-             * @default member
-             * @enum {string}
-             */
-            role: "admin" | "member";
-        };
-        /** InviteOut */
-        InviteOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Email */
-            email: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "admin" | "member";
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** InvitePublicOut */
-        InvitePublicOut: {
-            /** Workspace Name */
-            workspace_name: string;
-            /** Workspace Slug */
-            workspace_slug: string;
-            /** Email */
-            email: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "admin" | "member";
-            /** Expired */
-            expired: boolean;
-        };
-        /** JobOut */
-        JobOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Type */
-            type: string;
-            /** Status */
-            status: string;
-            /** Attempts */
-            attempts: number;
-            /** Max Attempts */
-            max_attempts: number;
-            /** Repo Id */
-            repo_id: string | null;
-            /** Repo Full Name */
-            repo_full_name: string | null;
-            /** Error */
-            error: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Started At */
-            started_at: string | null;
-            /** Finished At */
-            finished_at: string | null;
-            /**
-             * Run After
-             * Format: date-time
-             */
-            run_after: string;
-        };
-        /** LoginIn */
-        LoginIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Password */
-            password: string;
-        };
-        /** MeOut */
-        MeOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Email */
-            email: string;
-            /** Name */
-            name: string | null;
-            /** Avatar Url */
-            avatar_url: string | null;
-            /** Email Verified */
-            email_verified: boolean;
-            /** Has Password */
-            has_password: boolean;
-            /** Identities */
-            identities: components["schemas"]["IdentityOut"][];
-            /** Workspaces */
-            workspaces: components["schemas"]["MembershipBrief"][];
-        };
-        /** MemberOut */
-        MemberOut: {
-            /**
-             * User Id
-             * Format: uuid
-             */
-            user_id: string;
-            /** Email */
-            email: string;
-            /** Name */
-            name: string | null;
-            /** Avatar Url */
-            avatar_url: string | null;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "admin" | "member";
-            /**
-             * Joined At
-             * Format: date-time
-             */
-            joined_at: string;
-        };
-        /** MemberPatch */
-        MemberPatch: {
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "admin" | "member";
-        };
-        /** MembershipBrief */
-        MembershipBrief: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Slug */
-            slug: string;
-            /** Name */
-            name: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "admin" | "member";
-            /** Is Public Demo */
-            is_public_demo: boolean;
-        };
-        /** Ok */
-        Ok: {
-            /**
-             * Ok
-             * @default true
-             */
-            ok: boolean;
-            /** Message */
-            message?: string | null;
-        };
-        /** Page[ChangelogOut] */
-        Page_ChangelogOut_: {
-            /** Items */
-            items: components["schemas"]["ChangelogOut"][];
-            /** Next Cursor */
-            next_cursor?: string | null;
-        };
-        /** Page[JobOut] */
-        Page_JobOut_: {
-            /** Items */
-            items: components["schemas"]["JobOut"][];
-            /** Next Cursor */
-            next_cursor?: string | null;
-        };
-        /** PatchMeIn */
-        PatchMeIn: {
-            /** Name */
-            name?: string | null;
-        };
-        /** PublicConfigOut */
-        PublicConfigOut: {
-            /** Env */
-            env: string;
-            /** Version */
-            version: string;
-            /** Github Enabled */
-            github_enabled: boolean;
-            /** Google Enabled */
-            google_enabled: boolean;
-            /** Github App Slug */
-            github_app_slug: string | null;
-            /** Demo Workspace Slug */
-            demo_workspace_slug: string;
-        };
-        /** RepoOut */
-        RepoOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Workspace Id
-             * Format: uuid
-             */
-            workspace_id: string;
-            /** Full Name */
-            full_name: string;
-            /** Owner */
-            owner: string;
-            /** Name */
-            name: string;
-            /** Default Branch */
-            default_branch: string;
-            /** Private */
-            private: boolean;
-            /** Archived */
-            archived: boolean;
-            /** Status */
-            status: string;
-            /** Last Processed Sha */
-            last_processed_sha: string | null;
-            /** Last Synced At */
-            last_synced_at: string | null;
-            /** Error */
-            error: {
-                [key: string]: unknown;
-            } | null;
-            /** Html Url */
-            html_url: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** ResetPasswordIn */
-        ResetPasswordIn: {
-            /** Token */
-            token: string;
-            /** Password */
-            password: string;
-        };
-        /** ReviewItemOut */
-        ReviewItemOut: {
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "doc" | "changelog";
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Repo Id
-             * Format: uuid
-             */
-            repo_id: string;
-            /** Repo Full Name */
-            repo_full_name: string;
-            /** Title */
-            title: string;
-            /** Content Md */
-            content_md: string;
-            /** Base Content Md */
-            base_content_md: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** SearchHitOut */
-        SearchHitOut: {
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "code" | "doc" | "changelog";
-            /**
-             * Repo Id
-             * Format: uuid
-             */
-            repo_id: string;
-            /** Repo Full Name */
-            repo_full_name: string;
-            /** Title */
-            title: string;
-            /** Snippet */
-            snippet: string;
-            /** Url */
-            url: string | null;
-            /** Path */
-            path?: string | null;
-            /** Start Line */
-            start_line?: number | null;
-            /** End Line */
-            end_line?: number | null;
-            /** Doc Id */
-            doc_id?: string | null;
-            /** Changelog Id */
-            changelog_id?: string | null;
-            /** Score */
-            score: number;
-        };
-        /** SearchOut */
-        SearchOut: {
-            /** Query */
-            query: string;
-            /**
-             * Scope
-             * @enum {string}
-             */
-            scope: "code" | "docs";
-            /** Hits */
-            hits: components["schemas"]["SearchHitOut"][];
-        };
-        /** SessionOut */
-        SessionOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Last Seen At
-             * Format: date-time
-             */
-            last_seen_at: string;
-            /** Ip */
-            ip: string | null;
-            /** User Agent */
-            user_agent: string | null;
-            /** Current */
-            current: boolean;
-        };
-        /** SignupIn */
-        SignupIn: {
-            /**
-             * Email
-             * Format: email
-             */
-            email: string;
-            /** Password */
-            password: string;
-            /** Name */
-            name?: string | null;
-        };
-        /** ThreadDetailOut */
-        ThreadDetailOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Title */
-            title: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Messages */
-            messages: components["schemas"]["ChatMessageOut"][];
-        };
-        /** ThreadOut */
-        ThreadOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Title */
-            title: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** TokenIn */
-        TokenIn: {
-            /** Token */
-            token: string;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
-        /** VersionBrief */
-        VersionBrief: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Version */
-            version: number;
-            /** Status */
-            status: string;
-            /** Commit Sha */
-            commit_sha: string;
-            /** Model */
-            model: string | null;
-            /** Partial */
-            partial: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /** VersionOut */
-        VersionOut: {
-            /** Version */
-            version: string;
-            /** Env */
-            env: string;
-        };
-        /** WorkspaceIn */
-        WorkspaceIn: {
-            /** Name */
-            name: string;
-            /** Slug */
-            slug?: string | null;
-        };
-        /** WorkspaceOut */
-        WorkspaceOut: {
-            /**
-             * Id
-             * Format: uuid
-             */
-            id: string;
-            /** Slug */
-            slug: string;
-            /** Name */
-            name: string;
-            /** Role */
-            role: ("admin" | "member") | null;
-            /** Is Public Demo */
-            is_public_demo: boolean;
-            settings: components["schemas"]["WorkspaceSettings"];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Repo Count
-             * @default 0
-             */
-            repo_count: number;
-            /**
-             * Member Count
-             * @default 0
-             */
-            member_count: number;
-        };
-        /** WorkspacePatch */
-        WorkspacePatch: {
-            /** Name */
-            name?: string | null;
-            settings?: components["schemas"]["WorkspaceSettingsPatch"] | null;
-        };
-        /** WorkspaceSettings */
-        WorkspaceSettings: {
-            /**
-             * Auto Publish
-             * @default true
-             */
-            auto_publish: boolean;
-            /**
-             * Chat Enabled
-             * @default true
-             */
-            chat_enabled: boolean;
-        };
-        /** WorkspaceSettingsPatch */
-        WorkspaceSettingsPatch: {
-            /** Auto Publish */
-            auto_publish?: boolean | null;
-            /** Chat Enabled */
-            chat_enabled?: boolean | null;
-        };
+  schemas: {
+    /** AttachReposIn */
+    AttachReposIn: {
+      /** Github Repo Ids */
+      github_repo_ids: number[];
     };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+    /** ChangePasswordIn */
+    ChangePasswordIn: {
+      /** Current Password */
+      current_password?: string | null;
+      /** New Password */
+      new_password: string;
+    };
+    /** ChangelogOut */
+    ChangelogOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /** From Sha */
+      from_sha: string | null;
+      /** To Sha */
+      to_sha: string;
+      /** Content Md */
+      content_md: string;
+      /** Pr Numbers */
+      pr_numbers: number[];
+      /** Status */
+      status: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** ChatIn */
+    ChatIn: {
+      /** Message */
+      message: string;
+      /** Thread Id */
+      thread_id?: string | null;
+      /** Repo Ids */
+      repo_ids?: string[] | null;
+    };
+    /** ChatMessageOut */
+    ChatMessageOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "user" | "assistant";
+      /** Content */
+      content: string;
+      /** Sources */
+      sources: components["schemas"]["ChatSource"][] | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** ChatSource */
+    ChatSource: {
+      /** N */
+      n: number;
+      /**
+       * Kind
+       * @default code
+       * @enum {string}
+       */
+      kind: "code" | "commit";
+      /** Repo */
+      repo: string;
+      /** Commit Sha */
+      commit_sha: string;
+      /** Url */
+      url: string;
+      /** Path */
+      path?: string | null;
+      /** Start Line */
+      start_line?: number | null;
+      /** End Line */
+      end_line?: number | null;
+      /** Title */
+      title?: string | null;
+      /** Author */
+      author?: string | null;
+      /** Date */
+      date?: string | null;
+    };
+    /** ContributorOut */
+    ContributorOut: {
+      /** Login */
+      login: string | null;
+      /** Name */
+      name: string;
+      /** Commits */
+      commits: number;
+      /**
+       * Last Commit
+       * Format: date-time
+       */
+      last_commit: string;
+    };
+    /** DemoOut */
+    DemoOut: {
+      /** Workspace Slug */
+      workspace_slug: string | null;
+      /** Available */
+      available: boolean;
+    };
+    /** DocDetailOut */
+    DocDetailOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /** Repo Full Name */
+      repo_full_name: string;
+      /** Kind */
+      kind: string;
+      /** Title */
+      title: string;
+      published: components["schemas"]["VersionBrief"] | null;
+      /** Has Pending Review */
+      has_pending_review: boolean;
+      /** Updated At */
+      updated_at: string | null;
+      /** Content Md */
+      content_md: string | null;
+      /** Source Paths */
+      source_paths: string[];
+      /** Repo Html Url */
+      repo_html_url: string;
+      /** Commit Url */
+      commit_url: string | null;
+    };
+    /** DocOut */
+    DocOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /** Repo Full Name */
+      repo_full_name: string;
+      /** Kind */
+      kind: string;
+      /** Title */
+      title: string;
+      published: components["schemas"]["VersionBrief"] | null;
+      /** Has Pending Review */
+      has_pending_review: boolean;
+      /** Updated At */
+      updated_at: string | null;
+    };
+    /** DocVersionOut */
+    DocVersionOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Version */
+      version: number;
+      /** Status */
+      status: string;
+      /** Commit Sha */
+      commit_sha: string;
+      /** Model */
+      model: string | null;
+      /** Partial */
+      partial: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Content Md */
+      content_md: string;
+    };
+    /** EmailIn */
+    EmailIn: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+    };
+    /** FindingOut */
+    FindingOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /**
+       * Repo Full Name
+       * @default
+       */
+      repo_full_name: string;
+      /** Policy Id */
+      policy_id: string | null;
+      /** Policy Name */
+      policy_name: string;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "info" | "low" | "medium" | "high" | "critical";
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "open" | "acknowledged" | "resolved" | "false_positive";
+      /** Source */
+      source: string;
+      /** Path */
+      path: string;
+      /** Line */
+      line: number | null;
+      /** Snippet */
+      snippet: string;
+      /** Match */
+      match: string;
+      /** Commit Sha */
+      commit_sha: string | null;
+      /** Commit Message */
+      commit_message: string | null;
+      /** Author Name */
+      author_name: string | null;
+      /** Author Login */
+      author_login: string | null;
+      /** Committed At */
+      committed_at: string | null;
+      /** Pr Number */
+      pr_number: number | null;
+      /** Assignee Login */
+      assignee_login: string | null;
+      /** Note */
+      note: string | null;
+      /** Issue Number */
+      issue_number?: number | null;
+      /** Url */
+      url?: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** FindingPatch */
+    FindingPatch: {
+      /** Status */
+      status?: ("open" | "acknowledged" | "resolved" | "false_positive") | null;
+      /** Assignee Login */
+      assignee_login?: string | null;
+      /** Note */
+      note?: string | null;
+    };
+    /** FindingsOut */
+    FindingsOut: {
+      /** Items */
+      items: components["schemas"]["FindingOut"][];
+      /** Counts */
+      counts: {
+        [key: string]: number;
+      };
+    };
+    /** GithubImportIn */
+    GithubImportIn: {
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /** Number */
+      number: number;
+    };
+    /** GithubIssueOut */
+    GithubIssueOut: {
+      /** Number */
+      number: number;
+      /** Title */
+      title: string;
+      /** State */
+      state: string;
+      /** Author */
+      author: string | null;
+      /** Labels */
+      labels: string[];
+      /** Comments */
+      comments: number;
+      /** Url */
+      url: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Imported Issue Number */
+      imported_issue_number?: number | null;
+    };
+    /** GithubRepoOption */
+    GithubRepoOption: {
+      /** Github Repo Id */
+      github_repo_id: number;
+      /** Full Name */
+      full_name: string;
+      /** Private */
+      private: boolean;
+      /** Default Branch */
+      default_branch: string | null;
+      /** Attached Workspace */
+      attached_workspace: string | null;
+    };
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][];
+    };
+    /** IdentityOut */
+    IdentityOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Provider */
+      provider: string;
+      /** Login */
+      login: string | null;
+      /** Email */
+      email: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** InstallUrlOut */
+    InstallUrlOut: {
+      /** Url */
+      url: string;
+    };
+    /** InstallationOut */
+    InstallationOut: {
+      /** Installation Id */
+      installation_id: number;
+      /** Account Login */
+      account_login: string;
+      /** Account Type */
+      account_type: string;
+      /** Suspended */
+      suspended: boolean;
+      /** Repos */
+      repos: components["schemas"]["GithubRepoOption"][];
+    };
+    /** InviteIn */
+    InviteIn: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /**
+       * Role
+       * @default member
+       * @enum {string}
+       */
+      role: "admin" | "member";
+    };
+    /** InviteOut */
+    InviteOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Email */
+      email: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "admin" | "member";
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** InvitePublicOut */
+    InvitePublicOut: {
+      /** Workspace Name */
+      workspace_name: string;
+      /** Workspace Slug */
+      workspace_slug: string;
+      /** Email */
+      email: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "admin" | "member";
+      /** Expired */
+      expired: boolean;
+    };
+    /** IssueIn */
+    IssueIn: {
+      /** Title */
+      title: string;
+      /** Body */
+      body?: string | null;
+      /** Repo Id */
+      repo_id?: string | null;
+      /**
+       * Severity
+       * @default medium
+       * @enum {string}
+       */
+      severity: "info" | "low" | "medium" | "high" | "critical";
+      /** Paths */
+      paths?: string[];
+    };
+    /** IssueOut */
+    IssueOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Number */
+      number: number;
+      /** Repo Id */
+      repo_id: string | null;
+      /** Repo Full Name */
+      repo_full_name?: string | null;
+      /** Title */
+      title: string;
+      /** Body */
+      body: string | null;
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: "open" | "in_progress" | "resolved" | "closed";
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "info" | "low" | "medium" | "high" | "critical";
+      /**
+       * Source
+       * @enum {string}
+       */
+      source: "docify" | "github" | "finding";
+      /** Paths */
+      paths: string[];
+      /** Github Number */
+      github_number: number | null;
+      /** Github Url */
+      github_url: string | null;
+      /** Github Author */
+      github_author: string | null;
+      /** Finding Id */
+      finding_id: string | null;
+      /** Suspects */
+      suspects: components["schemas"]["Suspect"][];
+      /** Analyzed At */
+      analyzed_at: string | null;
+      /** Assignee Login */
+      assignee_login: string | null;
+      /** Assigned At */
+      assigned_at: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Closed At */
+      closed_at: string | null;
+    };
+    /** IssuePatch */
+    IssuePatch: {
+      /** Title */
+      title?: string | null;
+      /** Body */
+      body?: string | null;
+      /** Status */
+      status?: ("open" | "in_progress" | "resolved" | "closed") | null;
+      /** Severity */
+      severity?: ("info" | "low" | "medium" | "high" | "critical") | null;
+      /** Assignee Login */
+      assignee_login?: string | null;
+      /**
+       * Unassign
+       * @default false
+       */
+      unassign: boolean;
+    };
+    /** JobOut */
+    JobOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Type */
+      type: string;
+      /** Status */
+      status: string;
+      /** Attempts */
+      attempts: number;
+      /** Max Attempts */
+      max_attempts: number;
+      /** Repo Id */
+      repo_id: string | null;
+      /** Repo Full Name */
+      repo_full_name: string | null;
+      /** Error */
+      error: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Started At */
+      started_at: string | null;
+      /** Finished At */
+      finished_at: string | null;
+      /**
+       * Run After
+       * Format: date-time
+       */
+      run_after: string;
+    };
+    /** LoginIn */
+    LoginIn: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Password */
+      password: string;
+    };
+    /** MeOut */
+    MeOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Email */
+      email: string;
+      /** Name */
+      name: string | null;
+      /** Avatar Url */
+      avatar_url: string | null;
+      /** Email Verified */
+      email_verified: boolean;
+      /** Has Password */
+      has_password: boolean;
+      /** Identities */
+      identities: components["schemas"]["IdentityOut"][];
+      /** Workspaces */
+      workspaces: components["schemas"]["MembershipBrief"][];
+    };
+    /** MemberOut */
+    MemberOut: {
+      /**
+       * User Id
+       * Format: uuid
+       */
+      user_id: string;
+      /** Email */
+      email: string;
+      /** Name */
+      name: string | null;
+      /** Avatar Url */
+      avatar_url: string | null;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "admin" | "member";
+      /**
+       * Joined At
+       * Format: date-time
+       */
+      joined_at: string;
+    };
+    /** MemberPatch */
+    MemberPatch: {
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "admin" | "member";
+    };
+    /** MembershipBrief */
+    MembershipBrief: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Slug */
+      slug: string;
+      /** Name */
+      name: string;
+      /**
+       * Role
+       * @enum {string}
+       */
+      role: "admin" | "member";
+      /** Is Public Demo */
+      is_public_demo: boolean;
+    };
+    /** Ok */
+    Ok: {
+      /**
+       * Ok
+       * @default true
+       */
+      ok: boolean;
+      /** Message */
+      message?: string | null;
+    };
+    /** Page[ChangelogOut] */
+    Page_ChangelogOut_: {
+      /** Items */
+      items: components["schemas"]["ChangelogOut"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** Page[JobOut] */
+    Page_JobOut_: {
+      /** Items */
+      items: components["schemas"]["JobOut"][];
+      /** Next Cursor */
+      next_cursor?: string | null;
+    };
+    /** PatchMeIn */
+    PatchMeIn: {
+      /** Name */
+      name?: string | null;
+    };
+    /** PolicyIn */
+    PolicyIn: {
+      /** Name */
+      name: string;
+      /** Description */
+      description?: string | null;
+      /**
+       * Kind
+       * @default terms
+       * @enum {string}
+       */
+      kind: "regex" | "terms";
+      /** Pattern */
+      pattern: string;
+      /**
+       * Severity
+       * @default medium
+       * @enum {string}
+       */
+      severity: "info" | "low" | "medium" | "high" | "critical";
+      /** Paths */
+      paths?: string | null;
+      /**
+       * Enabled
+       * @default true
+       */
+      enabled: boolean;
+    };
+    /** PolicyOut */
+    PolicyOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Name */
+      name: string;
+      /** Description */
+      description: string | null;
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "regex" | "terms";
+      /** Pattern */
+      pattern: string;
+      /**
+       * Severity
+       * @enum {string}
+       */
+      severity: "info" | "low" | "medium" | "high" | "critical";
+      /** Paths */
+      paths: string | null;
+      /** Enabled */
+      enabled: boolean;
+      /** Template */
+      template: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** PolicyPatch */
+    PolicyPatch: {
+      /** Name */
+      name?: string | null;
+      /** Description */
+      description?: string | null;
+      /** Kind */
+      kind?: ("regex" | "terms") | null;
+      /** Pattern */
+      pattern?: string | null;
+      /** Severity */
+      severity?: ("info" | "low" | "medium" | "high" | "critical") | null;
+      /** Paths */
+      paths?: string | null;
+      /** Enabled */
+      enabled?: boolean | null;
+    };
+    /** PolicyTemplateOut */
+    PolicyTemplateOut: {
+      /** Key */
+      key: string;
+      /** Name */
+      name: string;
+      /** Description */
+      description: string;
+      /** Kind */
+      kind: string;
+      /** Severity */
+      severity: string;
+      /** Paths */
+      paths: string;
+      /** Enabled */
+      enabled: boolean;
+    };
+    /** PolicyTestIn */
+    PolicyTestIn: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "regex" | "terms";
+      /** Pattern */
+      pattern: string;
+      /** Sample */
+      sample: string;
+    };
+    /** PolicyTestOut */
+    PolicyTestOut: {
+      /** Ok */
+      ok: boolean;
+      /** Error */
+      error?: string | null;
+      /**
+       * Matches
+       * @default []
+       */
+      matches: {
+        [key: string]: unknown;
+      }[];
+    };
+    /** PublicConfigOut */
+    PublicConfigOut: {
+      /** Env */
+      env: string;
+      /** Version */
+      version: string;
+      /** Github Enabled */
+      github_enabled: boolean;
+      /** Google Enabled */
+      google_enabled: boolean;
+      /** Github App Slug */
+      github_app_slug: string | null;
+      /** Demo Workspace Slug */
+      demo_workspace_slug: string;
+    };
+    /** RepoOut */
+    RepoOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Workspace Id
+       * Format: uuid
+       */
+      workspace_id: string;
+      /** Full Name */
+      full_name: string;
+      /** Owner */
+      owner: string;
+      /** Name */
+      name: string;
+      /** Default Branch */
+      default_branch: string;
+      /** Private */
+      private: boolean;
+      /** Archived */
+      archived: boolean;
+      /** Status */
+      status: string;
+      /** Last Processed Sha */
+      last_processed_sha: string | null;
+      /** Last Synced At */
+      last_synced_at: string | null;
+      /** Error */
+      error: {
+        [key: string]: unknown;
+      } | null;
+      /** Html Url */
+      html_url: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** ResetPasswordIn */
+    ResetPasswordIn: {
+      /** Token */
+      token: string;
+      /** Password */
+      password: string;
+    };
+    /** ReviewItemOut */
+    ReviewItemOut: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "doc" | "changelog";
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /** Repo Full Name */
+      repo_full_name: string;
+      /** Title */
+      title: string;
+      /** Content Md */
+      content_md: string;
+      /** Base Content Md */
+      base_content_md: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** ScanIn */
+    ScanIn: {
+      /** Repo Id */
+      repo_id?: string | null;
+    };
+    /** ScanOut */
+    ScanOut: {
+      /** Repos */
+      repos: number;
+      /** Findings Created */
+      findings_created: number;
+    };
+    /** SearchHitOut */
+    SearchHitOut: {
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: "code" | "doc" | "changelog";
+      /**
+       * Repo Id
+       * Format: uuid
+       */
+      repo_id: string;
+      /** Repo Full Name */
+      repo_full_name: string;
+      /** Title */
+      title: string;
+      /** Snippet */
+      snippet: string;
+      /** Url */
+      url: string | null;
+      /** Path */
+      path?: string | null;
+      /** Start Line */
+      start_line?: number | null;
+      /** End Line */
+      end_line?: number | null;
+      /** Doc Id */
+      doc_id?: string | null;
+      /** Changelog Id */
+      changelog_id?: string | null;
+      /** Score */
+      score: number;
+    };
+    /** SearchOut */
+    SearchOut: {
+      /** Query */
+      query: string;
+      /**
+       * Scope
+       * @enum {string}
+       */
+      scope: "code" | "docs";
+      /** Hits */
+      hits: components["schemas"]["SearchHitOut"][];
+    };
+    /** SessionOut */
+    SessionOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Last Seen At
+       * Format: date-time
+       */
+      last_seen_at: string;
+      /** Ip */
+      ip: string | null;
+      /** User Agent */
+      user_agent: string | null;
+      /** Current */
+      current: boolean;
+    };
+    /** SignupIn */
+    SignupIn: {
+      /**
+       * Email
+       * Format: email
+       */
+      email: string;
+      /** Password */
+      password: string;
+      /** Name */
+      name?: string | null;
+    };
+    /** Suspect */
+    Suspect: {
+      /** Login */
+      login: string | null;
+      /** Name */
+      name: string;
+      /** Score */
+      score: number;
+      /** Confidence */
+      confidence: number;
+      /** Reasons */
+      reasons: components["schemas"]["SuspectReason"][];
+    };
+    /** SuspectReason */
+    SuspectReason: {
+      /** Text */
+      text: string;
+      /** Url */
+      url?: string | null;
+    };
+    /** ThreadDetailOut */
+    ThreadDetailOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Title */
+      title: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /** Messages */
+      messages: components["schemas"]["ChatMessageOut"][];
+    };
+    /** ThreadOut */
+    ThreadOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Title */
+      title: string | null;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** TokenIn */
+    TokenIn: {
+      /** Token */
+      token: string;
+    };
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[];
+      /** Message */
+      msg: string;
+      /** Error Type */
+      type: string;
+      /** Input */
+      input?: unknown;
+      /** Context */
+      ctx?: Record<string, never>;
+    };
+    /** VersionBrief */
+    VersionBrief: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Version */
+      version: number;
+      /** Status */
+      status: string;
+      /** Commit Sha */
+      commit_sha: string;
+      /** Model */
+      model: string | null;
+      /** Partial */
+      partial: boolean;
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+    };
+    /** VersionOut */
+    VersionOut: {
+      /** Version */
+      version: string;
+      /** Env */
+      env: string;
+    };
+    /** WorkspaceIn */
+    WorkspaceIn: {
+      /** Name */
+      name: string;
+      /** Slug */
+      slug?: string | null;
+    };
+    /** WorkspaceOut */
+    WorkspaceOut: {
+      /**
+       * Id
+       * Format: uuid
+       */
+      id: string;
+      /** Slug */
+      slug: string;
+      /** Name */
+      name: string;
+      /** Role */
+      role: ("admin" | "member") | null;
+      /** Is Public Demo */
+      is_public_demo: boolean;
+      settings: components["schemas"]["WorkspaceSettings"];
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string;
+      /**
+       * Repo Count
+       * @default 0
+       */
+      repo_count: number;
+      /**
+       * Member Count
+       * @default 0
+       */
+      member_count: number;
+    };
+    /** WorkspacePatch */
+    WorkspacePatch: {
+      /** Name */
+      name?: string | null;
+      settings?: components["schemas"]["WorkspaceSettingsPatch"] | null;
+    };
+    /** WorkspaceSettings */
+    WorkspaceSettings: {
+      /**
+       * Auto Publish
+       * @default true
+       */
+      auto_publish: boolean;
+      /**
+       * Chat Enabled
+       * @default true
+       */
+      chat_enabled: boolean;
+    };
+    /** WorkspaceSettingsPatch */
+    WorkspaceSettingsPatch: {
+      /** Auto Publish */
+      auto_publish?: boolean | null;
+      /** Chat Enabled */
+      chat_enabled?: boolean | null;
+    };
+  };
+  responses: never;
+  parameters: never;
+  requestBodies: never;
+  headers: never;
+  pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    health_api_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
+  health_api_health_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    ready_api_ready_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
+        content: {
+          "application/json": {
+            [key: string]: string;
+          };
         };
+      };
     };
-    version_api_version_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VersionOut"];
-                };
-            };
-        };
+  };
+  ready_api_ready_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    public_config_api_config_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublicConfigOut"];
-                };
-            };
+        content: {
+          "application/json": unknown;
         };
+      };
     };
-    demo_api_demo_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DemoOut"];
-                };
-            };
-        };
+  };
+  version_api_version_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    signup_api_auth_signup_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SignupIn"];
-            };
+        content: {
+          "application/json": components["schemas"]["VersionOut"];
         };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+      };
     };
-    verify_email_api_auth_verify_email_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TokenIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  public_config_api_config_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    resend_api_auth_resend_verification_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmailIn"];
-            };
+        content: {
+          "application/json": components["schemas"]["PublicConfigOut"];
         };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+      };
     };
-    login_api_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  demo_api_demo_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    logout_api_auth_logout_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["DemoOut"];
         };
+      };
     };
-    forgot_api_auth_forgot_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EmailIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  signup_api_auth_signup_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    reset_api_auth_reset_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResetPasswordIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SignupIn"];
+      };
     };
-    oauth_start_api_auth__provider__start_get: {
-        parameters: {
-            query?: {
-                purpose?: "login" | "link";
-                redirect_to?: string | null;
-            };
-            header?: never;
-            path: {
-                provider: "github" | "google";
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    oauth_callback_api_auth__provider__callback_get: {
-        parameters: {
-            query?: {
-                code?: string | null;
-                state?: string | null;
-                error?: string | null;
-            };
-            header?: never;
-            path: {
-                provider: "github" | "google";
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  verify_email_api_auth_verify_email_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    get_me_api_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MeOut"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TokenIn"];
+      };
     };
-    delete_me_api_me_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    patch_me_api_me_patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PatchMeIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MeOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  resend_api_auth_resend_verification_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    change_password_api_me_password_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChangePasswordIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailIn"];
+      };
     };
-    identities_api_me_identities_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdentityOut"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    unlink_api_me_identities__identity_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                identity_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  login_api_auth_login_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    sessions_api_me_sessions_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SessionOut"][];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LoginIn"];
+      };
     };
-    revoke_other_sessions_api_me_sessions_revoke_others_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    revoke_session_api_me_sessions__session_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                session_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  logout_api_auth_logout_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    list_workspaces_api_workspaces_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceOut"][];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
     };
-    create_workspace_api_workspaces_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorkspaceIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  forgot_api_auth_forgot_password_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    get_ws_api_workspaces__ws__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailIn"];
+      };
     };
-    delete_ws_api_workspaces__ws__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    patch_ws_api_workspaces__ws__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WorkspacePatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  reset_api_auth_reset_password_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    members_api_workspaces__ws__members_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemberOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ResetPasswordIn"];
+      };
     };
-    remove_member_api_workspaces__ws__members__user_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-                user_id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    change_role_api_workspaces__ws__members__user_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MemberPatch"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  oauth_start_api_auth__provider__start_get: {
+    parameters: {
+      query?: {
+        purpose?: "login" | "link";
+        redirect_to?: string | null;
+      };
+      header?: never;
+      path: {
+        provider: "github" | "google";
+      };
+      cookie?: never;
     };
-    leave_api_workspaces__ws__leave_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": unknown;
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    list_invites_api_workspaces__ws__invites_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InviteOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  oauth_callback_api_auth__provider__callback_get: {
+    parameters: {
+      query?: {
+        code?: string | null;
+        state?: string | null;
+        error?: string | null;
+      };
+      header?: never;
+      path: {
+        provider: "github" | "google";
+      };
+      cookie?: never;
     };
-    create_invite_api_workspaces__ws__invites_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["InviteIn"];
-            };
+        content: {
+          "application/json": unknown;
         };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InviteOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    revoke_invite_api_workspaces__ws__invites__invite_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-                invite_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  get_me_api_me_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    view_invite_api_invites__token__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InvitePublicOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["MeOut"];
         };
+      };
     };
-    accept_invite_api_invites__token__accept_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                token: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  delete_me_api_me_delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    install_url_api_workspaces__ws__github_install_url_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InstallUrlOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
     };
-    setup_api_github_setup_get: {
-        parameters: {
-            query?: {
-                installation_id?: number | null;
-                setup_action?: string | null;
-                state?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  patch_me_api_me_patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    installations_api_workspaces__ws__github_installations_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["InstallationOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PatchMeIn"];
+      };
     };
-    attach_repos_api_workspaces__ws__github_installations__installation_id__repos_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-                installation_id: number;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AttachReposIn"];
-            };
+        content: {
+          "application/json": components["schemas"]["MeOut"];
         };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepoOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
         };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    list_repos_api_workspaces__ws__repos_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepoOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  change_password_api_me_password_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    get_repo_api_repos__repo_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                repo_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RepoOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChangePasswordIn"];
+      };
     };
-    remove_repo_api_repos__repo_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                repo_id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    resync_api_repos__repo_id__resync_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                repo_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  identities_api_me_identities_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    reindex_api_repos__repo_id__reindex_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                repo_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["IdentityOut"][];
         };
+      };
     };
-    list_docs_api_workspaces__ws__docs_get: {
-        parameters: {
-            query?: {
-                repo?: string | null;
-            };
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  unlink_api_me_identities__identity_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        identity_id: string;
+      };
+      cookie?: never;
     };
-    get_doc_api_docs__doc_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                doc_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocDetailOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    doc_versions_api_docs__doc_id__versions_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                doc_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocVersionOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  sessions_api_me_sessions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    changelog_api_repos__repo_id__changelog_get: {
-        parameters: {
-            query?: {
-                cursor?: string | null;
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                repo_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Page_ChangelogOut_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["SessionOut"][];
         };
+      };
     };
-    review_queue_api_workspaces__ws__review_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReviewItemOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  revoke_other_sessions_api_me_sessions_revoke_others_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    review_decide_api_review__kind___item_id___decision__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                kind: string;
-                item_id: string;
-                decision: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
     };
-    list_jobs_api_workspaces__ws__jobs_get: {
-        parameters: {
-            query?: {
-                cursor?: string | null;
-                limit?: number;
-                status?: string | null;
-            };
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Page_JobOut_"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  revoke_session_api_me_sessions__session_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        session_id: string;
+      };
+      cookie?: never;
     };
-    retry_api_jobs__job_id__retry_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                job_id: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["Ok"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
-    search_api_workspaces__ws__search_get: {
-        parameters: {
-            query: {
-                q: string;
-                scope?: "code" | "docs";
-                repo?: string | null;
-            };
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SearchOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  list_workspaces_api_workspaces_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    chat_api_workspaces__ws__chat_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ChatIn"];
-            };
+        content: {
+          "application/json": components["schemas"]["WorkspaceOut"][];
         };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                    "text/event-stream": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+      };
     };
-    threads_api_workspaces__ws__chat_threads_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ws: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThreadOut"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+  };
+  create_workspace_api_workspaces_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
     };
-    get_thread_api_chat_threads__thread_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thread_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThreadDetailOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WorkspaceIn"];
+      };
     };
-    delete_thread_api_chat_threads__thread_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                thread_id: string;
-            };
-            cookie?: never;
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
         };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Ok"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
+        content: {
+          "application/json": components["schemas"]["WorkspaceOut"];
         };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
     };
+  };
+  get_ws_api_workspaces__ws__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkspaceOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_ws_api_workspaces__ws__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  patch_ws_api_workspaces__ws__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WorkspacePatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkspaceOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  members_api_workspaces__ws__members_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MemberOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  remove_member_api_workspaces__ws__members__user_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  change_role_api_workspaces__ws__members__user_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+        user_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MemberPatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  leave_api_workspaces__ws__leave_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_invites_api_workspaces__ws__invites_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InviteOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_invite_api_workspaces__ws__invites_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["InviteIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InviteOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  revoke_invite_api_workspaces__ws__invites__invite_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+        invite_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  view_invite_api_invites__token__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvitePublicOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  accept_invite_api_invites__token__accept_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["WorkspaceOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  install_url_api_workspaces__ws__github_install_url_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InstallUrlOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  setup_api_github_setup_get: {
+    parameters: {
+      query?: {
+        installation_id?: number | null;
+        setup_action?: string | null;
+        state?: string | null;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  installations_api_workspaces__ws__github_installations_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InstallationOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  attach_repos_api_workspaces__ws__github_installations__installation_id__repos_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+        installation_id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AttachReposIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RepoOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_repos_api_workspaces__ws__repos_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RepoOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_repo_api_repos__repo_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        repo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RepoOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  remove_repo_api_repos__repo_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        repo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  resync_api_repos__repo_id__resync_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        repo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reindex_api_repos__repo_id__reindex_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        repo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_docs_api_workspaces__ws__docs_get: {
+    parameters: {
+      query?: {
+        repo?: string | null;
+      };
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DocOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_doc_api_docs__doc_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        doc_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DocDetailOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  doc_versions_api_docs__doc_id__versions_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        doc_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["DocVersionOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  changelog_api_repos__repo_id__changelog_get: {
+    parameters: {
+      query?: {
+        cursor?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        repo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_ChangelogOut_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  review_queue_api_workspaces__ws__review_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewItemOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  review_decide_api_review__kind___item_id___decision__post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        kind: string;
+        item_id: string;
+        decision: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_jobs_api_workspaces__ws__jobs_get: {
+    parameters: {
+      query?: {
+        cursor?: string | null;
+        limit?: number;
+        status?: string | null;
+      };
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Page_JobOut_"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  retry_api_jobs__job_id__retry_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        job_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  search_api_workspaces__ws__search_get: {
+    parameters: {
+      query: {
+        q: string;
+        scope?: "code" | "docs";
+        repo?: string | null;
+      };
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SearchOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  chat_api_workspaces__ws__chat_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ChatIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": unknown;
+          "text/event-stream": unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  threads_api_workspaces__ws__chat_threads_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThreadOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_thread_api_chat_threads__thread_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        thread_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ThreadDetailOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_thread_api_chat_threads__thread_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        thread_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  repo_insights_api_repos__repo_id__insights_get: {
+    parameters: {
+      query?: {
+        refresh?: boolean;
+      };
+      header?: never;
+      path: {
+        repo_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  contributors_api_workspaces__ws__contributors_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ContributorOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  policy_templates_api_policy_templates_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyTemplateOut"][];
+        };
+      };
+    };
+  };
+  list_policies_api_workspaces__ws__policies_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_policy_api_workspaces__ws__policies_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PolicyIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_policy_api_policies__policy_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_policy_api_policies__policy_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        policy_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PolicyPatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  test_policy_api_policies_test_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PolicyTestIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PolicyTestOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  scan_now_api_workspaces__ws__checks_scan_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ScanIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ScanOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_findings_api_workspaces__ws__findings_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        severity?: string | null;
+        repo?: string | null;
+        author?: string | null;
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingsOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_finding_api_findings__finding_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        finding_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FindingPatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FindingOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  finding_to_issue_api_findings__finding_id__issue_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        finding_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  list_issues_api_workspaces__ws__issues_get: {
+    parameters: {
+      query?: {
+        status?: string | null;
+        assignee?: string | null;
+      };
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  create_issue_api_workspaces__ws__issues_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IssueIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  get_issue_api_issues__issue_id__get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        issue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  delete_issue_api_issues__issue_id__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        issue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Ok"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  update_issue_api_issues__issue_id__patch: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        issue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IssuePatch"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  reanalyze_api_issues__issue_id__analyze_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        issue_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  github_issues_api_workspaces__ws__github_issues_get: {
+    parameters: {
+      query: {
+        repo_id: string;
+        state?: string;
+      };
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["GithubIssueOut"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  import_github_issue_api_workspaces__ws__github_issues_import_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ws: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GithubImportIn"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["IssueOut"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
 }

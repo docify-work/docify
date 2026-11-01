@@ -216,7 +216,12 @@ async def _store(db: AsyncSession, repo: Repository, rows: list[dict[str, Any]])
     return len(res.all())
 
 
+_ATTRIB_KEYS = ("commit_sha", "commit_message", "author_name", "author_login", "committed_at", "pr_number", "note")
+
+
 def _row(repo: Repository, h: Hit, source: str, **attrib: Any) -> dict[str, Any]:
+    # Every row needs the same keys: a multi-row INSERT renders one VALUES shape.
+    attrib = {k: attrib.get(k) for k in _ATTRIB_KEYS}
     return {"workspace_id": repo.workspace_id, "repo_id": repo.id, "policy_id": h.policy.id,
             "policy_name": h.policy.name, "severity": h.policy.severity, "status": "open", "source": source,
             "fingerprint": fingerprint(h.policy.id, h.path, h.snippet), "path": h.path, "line": h.line,

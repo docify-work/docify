@@ -28,33 +28,77 @@ import type {
   ThreadDetail,
   Workspace,
   WorkspacePatch,
+  Contributor,
+  Finding,
+  FindingPatch,
+  FindingsOut,
+  GithubIssue,
+  Insights,
+  Issue,
+  IssueIn,
+  IssuePatch,
+  Policy,
+  PolicyIn,
+  PolicyPatch,
+  PolicyTemplate,
+  PolicyTestOut,
 } from "./types";
 
 const enc = encodeURIComponent;
 
 // ------------------------------------------------------------------ public
-export const getPublicConfig = () => request<PublicConfig>("/config", { skipAuthRedirect: true });
+export const getPublicConfig = () =>
+  request<PublicConfig>("/config", { skipAuthRedirect: true });
 export const getDemo = () => request<Demo>("/demo", { skipAuthRedirect: true });
 
 // ------------------------------------------------------------------ auth
 export const auth = {
   signup: (body: { email: string; password: string; name?: string | null }) =>
-    request<Ok>("/auth/signup", { method: "POST", body, skipAuthRedirect: true }),
+    request<Ok>("/auth/signup", {
+      method: "POST",
+      body,
+      skipAuthRedirect: true,
+    }),
   login: (body: { email: string; password: string }) =>
-    request<Ok>("/auth/login", { method: "POST", body, skipAuthRedirect: true }),
-  logout: () => request<Ok>("/auth/logout", { method: "POST", skipAuthRedirect: true }),
+    request<Ok>("/auth/login", {
+      method: "POST",
+      body,
+      skipAuthRedirect: true,
+    }),
+  logout: () =>
+    request<Ok>("/auth/logout", { method: "POST", skipAuthRedirect: true }),
   verifyEmail: (token: string) =>
-    request<Ok>("/auth/verify-email", { method: "POST", body: { token }, skipAuthRedirect: true }),
+    request<Ok>("/auth/verify-email", {
+      method: "POST",
+      body: { token },
+      skipAuthRedirect: true,
+    }),
   resendVerification: (email: string) =>
-    request<Ok>("/auth/resend-verification", { method: "POST", body: { email }, skipAuthRedirect: true }),
+    request<Ok>("/auth/resend-verification", {
+      method: "POST",
+      body: { email },
+      skipAuthRedirect: true,
+    }),
   forgotPassword: (email: string) =>
-    request<Ok>("/auth/forgot-password", { method: "POST", body: { email }, skipAuthRedirect: true }),
+    request<Ok>("/auth/forgot-password", {
+      method: "POST",
+      body: { email },
+      skipAuthRedirect: true,
+    }),
   resetPassword: (token: string, password: string) =>
-    request<Ok>("/auth/reset-password", { method: "POST", body: { token, password }, skipAuthRedirect: true }),
+    request<Ok>("/auth/reset-password", {
+      method: "POST",
+      body: { token, password },
+      skipAuthRedirect: true,
+    }),
 };
 
 /** Browser navigation target for OAuth (not fetch — it's a redirect chain). */
-export function oauthStartUrl(provider: "github" | "google", purpose: "login" | "link", redirectTo?: string): string {
+export function oauthStartUrl(
+  provider: "github" | "google",
+  purpose: "login" | "link",
+  redirectTo?: string,
+): string {
   const params = new URLSearchParams({ purpose });
   if (redirectTo) params.set("redirect_to", redirectTo);
   return `/api/auth/${provider}/start?${params.toString()}`;
@@ -71,15 +115,21 @@ export async function getMe(): Promise<Me | null> {
   }
 }
 export const me = {
-  update: (name: string | null) => request<Me>("/me", { method: "PATCH", body: { name } }),
+  update: (name: string | null) =>
+    request<Me>("/me", { method: "PATCH", body: { name } }),
   remove: () => request<Ok>("/me", { method: "DELETE" }),
-  changePassword: (body: { current_password?: string | null; new_password: string }) =>
-    request<Ok>("/me/password", { method: "POST", body }),
+  changePassword: (body: {
+    current_password?: string | null;
+    new_password: string;
+  }) => request<Ok>("/me/password", { method: "POST", body }),
   identities: () => request<Identity[]>("/me/identities"),
-  unlink: (id: string) => request<Ok>(`/me/identities/${enc(id)}`, { method: "DELETE" }),
+  unlink: (id: string) =>
+    request<Ok>(`/me/identities/${enc(id)}`, { method: "DELETE" }),
   sessions: () => request<Session[]>("/me/sessions"),
-  revokeSession: (id: string) => request<Ok>(`/me/sessions/${enc(id)}`, { method: "DELETE" }),
-  revokeOtherSessions: () => request<Ok>("/me/sessions/revoke-others", { method: "POST" }),
+  revokeSession: (id: string) =>
+    request<Ok>(`/me/sessions/${enc(id)}`, { method: "DELETE" }),
+  revokeOtherSessions: () =>
+    request<Ok>("/me/sessions/revoke-others", { method: "POST" }),
 };
 
 // ------------------------------------------------------------------ workspaces
@@ -90,75 +140,114 @@ export const workspaces = {
   get: (ws: string) => request<Workspace>(`/workspaces/${enc(ws)}`),
   update: (ws: string, body: WorkspacePatch) =>
     request<Workspace>(`/workspaces/${enc(ws)}`, { method: "PATCH", body }),
-  remove: (ws: string) => request<Ok>(`/workspaces/${enc(ws)}`, { method: "DELETE" }),
+  remove: (ws: string) =>
+    request<Ok>(`/workspaces/${enc(ws)}`, { method: "DELETE" }),
   members: (ws: string) => request<Member[]>(`/workspaces/${enc(ws)}/members`),
   setRole: (ws: string, userId: string, role: Role) =>
-    request<Ok>(`/workspaces/${enc(ws)}/members/${enc(userId)}`, { method: "PATCH", body: { role } }),
+    request<Ok>(`/workspaces/${enc(ws)}/members/${enc(userId)}`, {
+      method: "PATCH",
+      body: { role },
+    }),
   removeMember: (ws: string, userId: string) =>
-    request<Ok>(`/workspaces/${enc(ws)}/members/${enc(userId)}`, { method: "DELETE" }),
-  leave: (ws: string) => request<Ok>(`/workspaces/${enc(ws)}/leave`, { method: "POST" }),
+    request<Ok>(`/workspaces/${enc(ws)}/members/${enc(userId)}`, {
+      method: "DELETE",
+    }),
+  leave: (ws: string) =>
+    request<Ok>(`/workspaces/${enc(ws)}/leave`, { method: "POST" }),
   invites: (ws: string) => request<Invite[]>(`/workspaces/${enc(ws)}/invites`),
   invite: (ws: string, body: { email: string; role: Role }) =>
     request<Invite>(`/workspaces/${enc(ws)}/invites`, { method: "POST", body }),
   revokeInvite: (ws: string, id: string) =>
-    request<Ok>(`/workspaces/${enc(ws)}/invites/${enc(id)}`, { method: "DELETE" }),
+    request<Ok>(`/workspaces/${enc(ws)}/invites/${enc(id)}`, {
+      method: "DELETE",
+    }),
 };
 
 export const invites = {
-  get: (token: string) => request<InvitePublic>(`/invites/${enc(token)}`, { skipAuthRedirect: true }),
-  accept: (token: string) => request<Workspace>(`/invites/${enc(token)}/accept`, { method: "POST" }),
+  get: (token: string) =>
+    request<InvitePublic>(`/invites/${enc(token)}`, { skipAuthRedirect: true }),
+  accept: (token: string) =>
+    request<Workspace>(`/invites/${enc(token)}/accept`, { method: "POST" }),
 };
 
 // ------------------------------------------------------------------ github
 export const github = {
-  installUrl: (ws: string) => request<{ url: string }>(`/workspaces/${enc(ws)}/github/install-url`),
-  installations: (ws: string) => request<Installation[]>(`/workspaces/${enc(ws)}/github/installations`),
+  installUrl: (ws: string) =>
+    request<{ url: string }>(`/workspaces/${enc(ws)}/github/install-url`),
+  installations: (ws: string) =>
+    request<Installation[]>(`/workspaces/${enc(ws)}/github/installations`),
   attach: (ws: string, installationId: number, ids: number[]) =>
-    request<Repo[]>(`/workspaces/${enc(ws)}/github/installations/${installationId}/repos`, {
-      method: "POST",
-      body: { github_repo_ids: ids },
-    }),
+    request<Repo[]>(
+      `/workspaces/${enc(ws)}/github/installations/${installationId}/repos`,
+      {
+        method: "POST",
+        body: { github_repo_ids: ids },
+      },
+    ),
 };
 
 // ------------------------------------------------------------------ repos & docs
 export const repos = {
   list: (ws: string) => request<Repo[]>(`/workspaces/${enc(ws)}/repos`),
   get: (id: string) => request<Repo>(`/repos/${enc(id)}`),
-  resync: (id: string) => request<Ok>(`/repos/${enc(id)}/resync`, { method: "POST" }),
-  reindex: (id: string) => request<Ok>(`/repos/${enc(id)}/reindex`, { method: "POST" }),
-  remove: (id: string) => request<Ok>(`/repos/${enc(id)}`, { method: "DELETE" }),
+  resync: (id: string) =>
+    request<Ok>(`/repos/${enc(id)}/resync`, { method: "POST" }),
+  reindex: (id: string) =>
+    request<Ok>(`/repos/${enc(id)}/reindex`, { method: "POST" }),
+  remove: (id: string) =>
+    request<Ok>(`/repos/${enc(id)}`, { method: "DELETE" }),
   changelog: (id: string, cursor?: string | null) =>
-    request<Page<Changelog>>(`/repos/${enc(id)}/changelog`, { query: { cursor, limit: 20 } }),
+    request<Page<Changelog>>(`/repos/${enc(id)}/changelog`, {
+      query: { cursor, limit: 20 },
+    }),
 };
 
 export const docs = {
-  list: (ws: string, repo?: string) => request<Doc[]>(`/workspaces/${enc(ws)}/docs`, { query: { repo } }),
+  list: (ws: string, repo?: string) =>
+    request<Doc[]>(`/workspaces/${enc(ws)}/docs`, { query: { repo } }),
   get: (id: string) => request<DocDetail>(`/docs/${enc(id)}`),
   versions: (id: string) => request<DocVersion[]>(`/docs/${enc(id)}/versions`),
 };
 
 export const review = {
   list: (ws: string) => request<ReviewItem[]>(`/workspaces/${enc(ws)}/review`),
-  decide: (kind: "doc" | "changelog", id: string, decision: "approve" | "reject") =>
+  decide: (
+    kind: "doc" | "changelog",
+    id: string,
+    decision: "approve" | "reject",
+  ) =>
     request<Ok>(`/review/${kind}/${enc(id)}/${decision}`, { method: "POST" }),
 };
 
 export const jobs = {
-  list: (ws: string, opts: { cursor?: string | null; status?: string; limit?: number } = {}) =>
+  list: (
+    ws: string,
+    opts: { cursor?: string | null; status?: string; limit?: number } = {},
+  ) =>
     request<Page<Job>>(`/workspaces/${enc(ws)}/jobs`, {
       query: { cursor: opts.cursor, status: opts.status, limit: opts.limit },
     }),
-  retry: (id: string) => request<Ok>(`/jobs/${enc(id)}/retry`, { method: "POST" }),
+  retry: (id: string) =>
+    request<Ok>(`/jobs/${enc(id)}/retry`, { method: "POST" }),
 };
 
 // ------------------------------------------------------------------ search & chat
-export const search = (ws: string, q: string, scope: "code" | "docs", repo?: string) =>
-  request<SearchOut>(`/workspaces/${enc(ws)}/search`, { query: { q, scope, repo } });
+export const search = (
+  ws: string,
+  q: string,
+  scope: "code" | "docs",
+  repo?: string,
+) =>
+  request<SearchOut>(`/workspaces/${enc(ws)}/search`, {
+    query: { q, scope, repo },
+  });
 
 export const threads = {
-  list: (ws: string) => request<Thread[]>(`/workspaces/${enc(ws)}/chat/threads`),
+  list: (ws: string) =>
+    request<Thread[]>(`/workspaces/${enc(ws)}/chat/threads`),
   get: (id: string) => request<ThreadDetail>(`/chat/threads/${enc(id)}`),
-  remove: (id: string) => request<Ok>(`/chat/threads/${enc(id)}`, { method: "DELETE" }),
+  remove: (id: string) =>
+    request<Ok>(`/chat/threads/${enc(id)}`, { method: "DELETE" }),
 };
 
 export interface ChatHandlers {
@@ -170,7 +259,12 @@ export interface ChatHandlers {
 }
 
 /** POST /workspaces/{ws}/chat and consume the SSE stream. Throws ApiError if the request itself fails. */
-export async function streamChat(ws: string, body: ChatIn, handlers: ChatHandlers, signal?: AbortSignal) {
+export async function streamChat(
+  ws: string,
+  body: ChatIn,
+  handlers: ChatHandlers,
+  signal?: AbortSignal,
+) {
   const res = await apiFetch(`/workspaces/${enc(ws)}/chat`, {
     method: "POST",
     body,
@@ -193,7 +287,9 @@ export async function streamChat(ws: string, body: ChatIn, handlers: ChatHandler
         handlers.onToken(String(p.text ?? ""));
         break;
       case "sources":
-        handlers.onSources?.(Array.isArray(payload) ? (payload as ChatSource[]) : []);
+        handlers.onSources?.(
+          Array.isArray(payload) ? (payload as ChatSource[]) : [],
+        );
         break;
       case "error":
         handlers.onError?.(String(p.message ?? "Something went wrong."));
@@ -208,6 +304,84 @@ export async function streamChat(ws: string, body: ChatIn, handlers: ChatHandler
 }
 
 // ------------------------------------------------------------------ query keys
+// ------------------------------------------------------------------ insights, checks, issues (D66)
+export const insights = {
+  repo: (id: string, refresh = false) =>
+    request<Insights>(`/repos/${enc(id)}/insights`, {
+      query: { refresh: refresh || undefined },
+    }),
+  contributors: (ws: string) =>
+    request<Contributor[]>(`/workspaces/${enc(ws)}/contributors`),
+};
+
+export const policies = {
+  list: (ws: string) => request<Policy[]>(`/workspaces/${enc(ws)}/policies`),
+  templates: () => request<PolicyTemplate[]>("/policy-templates"),
+  create: (ws: string, body: PolicyIn) =>
+    request<Policy>(`/workspaces/${enc(ws)}/policies`, {
+      method: "POST",
+      body,
+    }),
+  update: (id: string, body: PolicyPatch) =>
+    request<Policy>(`/policies/${enc(id)}`, { method: "PATCH", body }),
+  remove: (id: string) =>
+    request<Ok>(`/policies/${enc(id)}`, { method: "DELETE" }),
+  test: (body: { kind: "regex" | "terms"; pattern: string; sample: string }) =>
+    request<PolicyTestOut>("/policies/test", { method: "POST", body }),
+  scan: (ws: string, repoId?: string) =>
+    request<{ repos: number; findings_created: number }>(
+      `/workspaces/${enc(ws)}/checks/scan`,
+      {
+        method: "POST",
+        body: { repo_id: repoId ?? null },
+      },
+    ),
+};
+
+export const findings = {
+  list: (
+    ws: string,
+    query: {
+      status?: string;
+      severity?: string;
+      repo?: string;
+      author?: string;
+      limit?: number;
+    } = {},
+  ) => request<FindingsOut>(`/workspaces/${enc(ws)}/findings`, { query }),
+  update: (id: string, body: FindingPatch) =>
+    request<Finding>(`/findings/${enc(id)}`, { method: "PATCH", body }),
+  toIssue: (id: string) =>
+    request<Issue>(`/findings/${enc(id)}/issue`, { method: "POST" }),
+};
+
+export const issues = {
+  list: (ws: string, query: { status?: string; assignee?: string } = {}) =>
+    request<Issue[]>(`/workspaces/${enc(ws)}/issues`, { query }),
+  get: (id: string) => request<Issue>(`/issues/${enc(id)}`),
+  create: (ws: string, body: IssueIn) =>
+    request<Issue>(`/workspaces/${enc(ws)}/issues`, { method: "POST", body }),
+  update: (id: string, body: IssuePatch) =>
+    request<Issue>(`/issues/${enc(id)}`, { method: "PATCH", body }),
+  analyze: (id: string) =>
+    request<Issue>(`/issues/${enc(id)}/analyze`, { method: "POST" }),
+  remove: (id: string) =>
+    request<Ok>(`/issues/${enc(id)}`, { method: "DELETE" }),
+  github: (
+    ws: string,
+    repoId: string,
+    state: "open" | "closed" | "all" = "open",
+  ) =>
+    request<GithubIssue[]>(`/workspaces/${enc(ws)}/github-issues`, {
+      query: { repo_id: repoId, state },
+    }),
+  importGithub: (ws: string, repoId: string, number: number) =>
+    request<Issue>(`/workspaces/${enc(ws)}/github-issues/import`, {
+      method: "POST",
+      body: { repo_id: repoId, number },
+    }),
+};
+
 export const qk = {
   me: ["me"] as const,
   config: ["config"] as const,
@@ -215,18 +389,31 @@ export const qk = {
   repos: (ws: string) => ["ws", ws, "repos"] as const,
   repo: (id: string) => ["repo", id] as const,
   installations: (ws: string) => ["ws", ws, "installations"] as const,
-  docs: (ws: string, repo?: string) => ["ws", ws, "docs", repo ?? "all"] as const,
+  docs: (ws: string, repo?: string) =>
+    ["ws", ws, "docs", repo ?? "all"] as const,
   doc: (id: string) => ["doc", id] as const,
   docVersions: (id: string) => ["doc", id, "versions"] as const,
   changelog: (id: string) => ["repo", id, "changelog"] as const,
   review: (ws: string) => ["ws", ws, "review"] as const,
-  jobs: (ws: string, status?: string) => ["ws", ws, "jobs", status ?? "all"] as const,
+  jobs: (ws: string, status?: string) =>
+    ["ws", ws, "jobs", status ?? "all"] as const,
   members: (ws: string) => ["ws", ws, "members"] as const,
   invites: (ws: string) => ["ws", ws, "invites"] as const,
   invite: (token: string) => ["invite", token] as const,
   threads: (ws: string) => ["ws", ws, "threads"] as const,
   thread: (id: string) => ["thread", id] as const,
-  search: (ws: string, q: string, scope: string, repo?: string) => ["ws", ws, "search", q, scope, repo ?? ""] as const,
+  search: (ws: string, q: string, scope: string, repo?: string) =>
+    ["ws", ws, "search", q, scope, repo ?? ""] as const,
+  insights: (repoId: string) => ["repo", repoId, "insights"] as const,
+  contributors: (ws: string) => ["ws", ws, "contributors"] as const,
+  policies: (ws: string) => ["ws", ws, "policies"] as const,
+  findings: (ws: string, filters?: string) =>
+    ["ws", ws, "findings", filters ?? ""] as const,
+  issues: (ws: string, filters?: string) =>
+    ["ws", ws, "issues", filters ?? ""] as const,
+  issue: (id: string) => ["issue", id] as const,
+  githubIssues: (ws: string, repoId: string, state: string) =>
+    ["ws", ws, "github-issues", repoId, state] as const,
   identities: ["me", "identities"] as const,
   sessions: ["me", "sessions"] as const,
 };

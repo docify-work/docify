@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  BarChart3,
   ExternalLink,
   FolderGit2,
   GitBranch,
@@ -316,6 +317,7 @@ export function RepoActions({ repo, variant = "menu", onRemoved }: { repo: Repo;
   const qc = useQueryClient();
   const toast = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const navigate = useNavigate();
   const inactive = repo.status === "disconnected" || repo.status === "suspended";
 
   const refresh = () =>
@@ -394,6 +396,9 @@ export function RepoActions({ repo, variant = "menu", onRemoved }: { repo: Repo;
         </MenuItem>
         <MenuItem icon={<RotateCcw />} disabled={inactive} onSelect={() => reindex.mutate()}>
           Full re-index
+        </MenuItem>
+        <MenuItem icon={<BarChart3 />} onSelect={() => navigate(`/w/${slug}/insights?repo=${repo.id}`)}>
+          Insights
         </MenuItem>
         <MenuItem icon={<ExternalLink />} onSelect={() => window.open(repo.html_url, "_blank", "noopener,noreferrer")}>
           Open on GitHub

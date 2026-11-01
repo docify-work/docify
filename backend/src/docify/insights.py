@@ -45,6 +45,10 @@ async def refresh_github_stats(db: AsyncSession, repo: Repository, *, force: boo
         pulls = await gh.list_pulls(repo.full_name)
     except Exception as exc:  # insights must render even when GitHub is unreachable
         log.info("insights.github_failed", error=type(exc).__name__)
+        # Back off for STATS_TTL (keep the old snapshot) instead of retrying on every page view.
+        now = datetime.now(UTC)
+        await db.execute(update(Repository).where(Repository.id == repo.id).values(github_stats_at=now))
+        repo.github_stats_at = now
         return
     finally:
         await app.aclose()
