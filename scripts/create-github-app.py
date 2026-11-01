@@ -66,8 +66,9 @@ def manifest(env: str, base_url: str, webhook_url: str, owner: str) -> dict:
         "setup_on_update": True,
         # OFF: with it ON GitHub ignores the Setup URL (§9.1).
         "request_oauth_on_install": False,
-        # "Only on this account" (D21): strangers can't install it and burn the AI budget.
-        "public": False,
+        # D59: the prod App is public (any account can install it; AI spend is capped by
+        # AI_DAILY_BUDGET_USD / AI_WS_MONTHLY_BUDGET_USD). dev + staging stay private (D21).
+        "public": env == "prod",
         "default_permissions": {
             "contents": "read",
             "metadata": "read",
