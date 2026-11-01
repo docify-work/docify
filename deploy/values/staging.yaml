@@ -12,7 +12,7 @@ image:
   # Built as <aws.accountId>.dkr.ecr.ap-south-1.amazonaws.com/docify/backend
   ecrRepository: docify/backend
   # Bumped by release.yml (bot commit) on every merge to main. Do not edit by hand.
-  tag: "f587708edb24373a1f9e4fd3538f191eafe87be2"
+  tag: "d197f2cc1188e8955d004c2094a342cb05362faf"
 
 config:
   PUBLIC_BASE_URL: "https://staging.docify.work"
