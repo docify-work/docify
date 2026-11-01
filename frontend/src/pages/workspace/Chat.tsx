@@ -1,5 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, FileCode2, History, MessageSquare, MessageSquareOff, Plus, Square, Trash2 } from "lucide-react";
+import {
+  ArrowUp,
+  FileCode2,
+  GitCommitHorizontal,
+  History,
+  MessageSquare,
+  MessageSquareOff,
+  Plus,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useSearchParams } from "react-router";
@@ -42,7 +52,11 @@ interface UIMessage {
 }
 
 const MAX_LEN = 2000;
-const SUGGESTIONS = ["How do I run this project locally?", "Where is authentication handled?", "Which HTTP endpoints exist?"];
+const SUGGESTIONS = [
+  "How do I run this project locally?",
+  "Where is authentication handled?",
+  "Which HTTP endpoints exist?",
+];
 
 let seq = 0;
 const uid = () => `m${Date.now().toString(36)}${(seq++).toString(36)}`;
@@ -68,7 +82,11 @@ export default function Chat() {
   const stickRef = useRef(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const threadsQ = useQuery({ queryKey: qk.threads(slug), queryFn: () => threads.list(slug), enabled: isMember });
+  const threadsQ = useQuery({
+    queryKey: qk.threads(slug),
+    queryFn: () => threads.list(slug),
+    enabled: isMember,
+  });
 
   // Stop any in-flight stream when leaving the page.
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -86,7 +104,11 @@ export default function Chat() {
     const text = raw.trim();
     if (!text || streaming) return;
     const asstId = uid();
-    setMessages((ms) => [...ms, { id: uid(), role: "user", content: text }, { id: asstId, role: "assistant", content: "", streaming: true }]);
+    setMessages((ms) => [
+      ...ms,
+      { id: uid(), role: "user", content: text },
+      { id: asstId, role: "assistant", content: "", streaming: true },
+    ]);
     setInput("");
     stickRef.current = true;
     const ctrl = new AbortController();
@@ -124,8 +146,19 @@ export default function Chat() {
     setHistoryOpen(false);
     setLoadingThread(t.id);
     try {
-      const detail = await qc.fetchQuery({ queryKey: qk.thread(t.id), queryFn: () => threads.get(t.id), staleTime: 0 });
-      setMessages(detail.messages.map((m) => ({ id: m.id, role: m.role, content: m.content, sources: m.sources })));
+      const detail = await qc.fetchQuery({
+        queryKey: qk.thread(t.id),
+        queryFn: () => threads.get(t.id),
+        staleTime: 0,
+      });
+      setMessages(
+        detail.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          sources: m.sources,
+        })),
+      );
       setThreadId(detail.id);
       stickRef.current = true;
     } catch (err) {
@@ -146,7 +179,11 @@ export default function Chat() {
   if (!ws.settings.chat_enabled) {
     return (
       <Card>
-        <EmptyState icon={<MessageSquareOff />} title="Chat is turned off for this workspace" info="An admin can enable it in Settings." />
+        <EmptyState
+          icon={<MessageSquareOff />}
+          title="Chat is turned off for this workspace"
+          info="An admin can enable it in Settings."
+        />
       </Card>
     );
   }
@@ -168,7 +205,12 @@ export default function Chat() {
     <div className="flex h-[calc(100dvh-8.5rem)] min-h-[440px] gap-4">
       {isMember && (
         <aside className="hidden w-56 shrink-0 flex-col lg:flex">
-          <Button size="sm" icon={<Plus />} onClick={newChat} className="mb-2 w-full justify-start">
+          <Button
+            size="sm"
+            icon={<Plus />}
+            onClick={newChat}
+            className="mb-2 w-full justify-start"
+          >
             New chat
           </Button>
           <div className="min-h-0 flex-1 overflow-auto">{threadList}</div>
@@ -177,9 +219,15 @@ export default function Chat() {
 
       <Card className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <div className="flex h-10 shrink-0 items-center gap-2 border-b border-border px-3">
-          <MessageSquare className="size-3.5 text-fg-subtle" aria-hidden="true" />
+          <MessageSquare
+            className="size-3.5 text-fg-subtle"
+            aria-hidden="true"
+          />
           <h1 className="text-sm font-semibold">Ask about the code</h1>
-          <InfoTip>Answers come only from indexed code and cite sources as [n]. Sources open the exact lines on GitHub.</InfoTip>
+          <InfoTip>
+            Answers come only from indexed code and cite sources as [n]. Sources
+            open the exact lines on GitHub.
+          </InfoTip>
           {!me && (
             <Badge tone="accent" className="ml-1">
               Demo · limited
@@ -192,12 +240,28 @@ export default function Chat() {
               className="w-44"
               value={repo}
               onChange={(e) => setRepo(e.target.value)}
-              options={[{ value: "", label: "All repositories" }, ...(reposQ.data ?? []).map((r) => ({ value: r.id, label: r.full_name }))]}
+              options={[
+                { value: "", label: "All repositories" },
+                ...(reposQ.data ?? []).map((r) => ({
+                  value: r.id,
+                  label: r.full_name,
+                })),
+              ]}
             />
             {isMember && (
               <>
-                <IconButton className="lg:hidden" label="History" icon={<History />} onClick={() => setHistoryOpen(true)} />
-                <IconButton className="lg:hidden" label="New chat" icon={<Plus />} onClick={newChat} />
+                <IconButton
+                  className="lg:hidden"
+                  label="History"
+                  icon={<History />}
+                  onClick={() => setHistoryOpen(true)}
+                />
+                <IconButton
+                  className="lg:hidden"
+                  label="New chat"
+                  icon={<Plus />}
+                  onClick={newChat}
+                />
               </>
             )}
           </div>
@@ -207,7 +271,8 @@ export default function Chat() {
           ref={scrollRef}
           onScroll={(e) => {
             const el = e.currentTarget;
-            stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+            stickRef.current =
+              el.scrollHeight - el.scrollTop - el.clientHeight < 48;
           }}
           className="min-h-0 flex-1 overflow-y-auto"
           aria-live="polite"
@@ -245,7 +310,11 @@ export default function Chat() {
                         <div className="max-w-[85%] whitespace-pre-wrap rounded-lg rounded-tr-sm bg-accent-soft px-3 py-2 text-sm text-fg">
                           {m.content}
                         </div>
-                        <Avatar src={me?.avatar_url} name={me?.name ?? me?.email ?? "You"} size={24} />
+                        <Avatar
+                          src={me?.avatar_url}
+                          name={me?.name ?? me?.email ?? "You"}
+                          size={24}
+                        />
                       </div>
                     ) : (
                       <AssistantMessage m={m} />
@@ -273,7 +342,11 @@ export default function Chat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e: KeyboardEvent<HTMLTextAreaElement>) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing
+                ) {
                   e.preventDefault();
                   void send(input);
                 }
@@ -281,11 +354,28 @@ export default function Chat() {
               placeholder="Ask a question…"
               className="max-h-40 min-h-7 flex-1 resize-none bg-transparent py-1 text-sm leading-5 outline-none [field-sizing:content] placeholder:text-fg-subtle"
             />
-            {input.length > MAX_LEN - 200 && <span className="tabular pb-1.5 text-2xs text-fg-subtle">{MAX_LEN - input.length}</span>}
+            {input.length > MAX_LEN - 200 && (
+              <span className="tabular pb-1.5 text-2xs text-fg-subtle">
+                {MAX_LEN - input.length}
+              </span>
+            )}
             {streaming ? (
-              <IconButton size="sm" variant="secondary" label="Stop" icon={<Square className="fill-current" />} onClick={() => abortRef.current?.abort()} />
+              <IconButton
+                size="sm"
+                variant="secondary"
+                label="Stop"
+                icon={<Square className="fill-current" />}
+                onClick={() => abortRef.current?.abort()}
+              />
             ) : (
-              <IconButton size="sm" variant="primary" type="submit" label="Send" icon={<ArrowUp />} disabled={!input.trim()} />
+              <IconButton
+                size="sm"
+                variant="primary"
+                type="submit"
+                label="Send"
+                icon={<ArrowUp />}
+                disabled={!input.trim()}
+              />
             )}
           </div>
           <p className="mt-1 hidden px-1 text-2xs text-fg-subtle sm:block">
@@ -295,7 +385,12 @@ export default function Chat() {
       </Card>
 
       {isMember && (
-        <Drawer open={historyOpen} onOpenChange={setHistoryOpen} title="Conversations" side="right">
+        <Drawer
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          title="Conversations"
+          side="right"
+        >
           <div className="p-2">{threadList}</div>
         </Drawer>
       )}
@@ -314,10 +409,16 @@ function AssistantMessage({ m }: { m: UIMessage }) {
             <Markdown compact>{text}</Markdown>
           </div>
         ) : m.streaming ? (
-          <span className="ui-caret text-sm text-fg-subtle" aria-label="Thinking" />
+          <span
+            className="ui-caret text-sm text-fg-subtle"
+            aria-label="Thinking"
+          />
         ) : null}
         {m.error && (
-          <Callout tone={m.error === "Stopped." ? "info" : "danger"} className="mt-2">
+          <Callout
+            tone={m.error === "Stopped." ? "info" : "danger"}
+            className="mt-2"
+          >
             {m.error}
           </Callout>
         )}
@@ -336,23 +437,36 @@ function Sources({ sources }: { sources: ChatSource[] }) {
       aria-label="Sources"
       className="mt-3 flex flex-wrap gap-1.5"
     >
-      {sources.map((s) => (
-        <li key={s.n}>
-          <a
-            href={s.url}
-            target="_blank"
-            rel="nofollow noopener noreferrer"
-            title={`${s.repo}/${s.path}:${s.start_line}-${s.end_line} @ ${s.commit_sha.slice(0, 7)}`}
-            className="group inline-flex h-6 max-w-72 items-center gap-1.5 rounded-md border border-border bg-surface-2/60 pl-1 pr-2 text-2xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
-          >
-            <span className="tabular grid h-4 min-w-4 place-items-center rounded-sm bg-accent-soft px-1 font-semibold text-accent-text">{s.n}</span>
-            <FileCode2 className="size-3 shrink-0 text-fg-subtle" aria-hidden="true" />
-            <span className="truncate font-mono">
-              {s.path}:{s.start_line}-{s.end_line}
-            </span>
-          </a>
-        </li>
-      ))}
+      {sources.map((s) => {
+        const commit = s.kind === "commit";
+        const label = commit
+          ? `${s.commit_sha.slice(0, 7)} ${s.title ?? ""}`
+          : `${s.path}:${s.start_line}-${s.end_line}`;
+        const tip = commit
+          ? `${s.repo}@${s.commit_sha.slice(0, 7)} · ${s.author ?? "unknown"}${s.date ? ` · ${new Date(s.date).toLocaleString()}` : ""}`
+          : `${s.repo}/${s.path}:${s.start_line}-${s.end_line} @ ${s.commit_sha.slice(0, 7)}`;
+        const Icon = commit ? GitCommitHorizontal : FileCode2;
+        return (
+          <li key={s.n}>
+            <a
+              href={s.url}
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+              title={tip}
+              className="group inline-flex h-6 max-w-72 items-center gap-1.5 rounded-md border border-border bg-surface-2/60 pl-1 pr-2 text-2xs text-fg-muted transition-colors hover:border-border-strong hover:text-fg"
+            >
+              <span className="tabular grid h-4 min-w-4 place-items-center rounded-sm bg-accent-soft px-1 font-semibold text-accent-text">
+                {s.n}
+              </span>
+              <Icon
+                className="size-3 shrink-0 text-fg-subtle"
+                aria-hidden="true"
+              />
+              <span className="truncate font-mono">{label}</span>
+            </a>
+          </li>
+        );
+      })}
     </motion.ol>
   );
 }
@@ -383,28 +497,46 @@ function ThreadList({
       onDeleted(id);
       void qc.invalidateQueries({ queryKey: qk.threads(slug) });
     },
-    onError: (e) => toast.error("Couldn't delete conversation", errorMessage(e)),
+    onError: (e) =>
+      toast.error("Couldn't delete conversation", errorMessage(e)),
   });
 
   if (loading) return <SkeletonRows rows={4} />;
-  if (!items?.length) return <p className="px-2 py-3 text-xs text-fg-subtle">No conversations yet.</p>;
+  if (!items?.length)
+    return (
+      <p className="px-2 py-3 text-xs text-fg-subtle">No conversations yet.</p>
+    );
   return (
     <>
-      <ul className="ui-stagger flex flex-col gap-0.5" aria-label="Conversations">
+      <ul
+        className="ui-stagger flex flex-col gap-0.5"
+        aria-label="Conversations"
+      >
         {items.map((t, i) => (
-          <li key={t.id} style={{ ["--i" as string]: Math.min(i, 12) }} className="group relative">
+          <li
+            key={t.id}
+            style={{ ["--i" as string]: Math.min(i, 12) }}
+            className="group relative"
+          >
             <button
               type="button"
               onClick={() => onOpen(t)}
               aria-current={t.id === activeId ? "true" : undefined}
               className={cn(
                 "flex w-full flex-col rounded-md px-2 py-1.5 pr-8 text-left transition-colors duration-150",
-                t.id === activeId ? "bg-surface-2 text-fg ring-1 ring-border" : "text-fg-muted hover:bg-surface-2/70 hover:text-fg",
+                t.id === activeId
+                  ? "bg-surface-2 text-fg ring-1 ring-border"
+                  : "text-fg-muted hover:bg-surface-2/70 hover:text-fg",
                 loadingId === t.id && "animate-pulse",
               )}
             >
-              <span className="truncate text-xs font-medium">{t.title || "Untitled"}</span>
-              <RelativeTime iso={t.created_at} className="text-2xs text-fg-subtle" />
+              <span className="truncate text-xs font-medium">
+                {t.title || "Untitled"}
+              </span>
+              <RelativeTime
+                iso={t.created_at}
+                className="text-2xs text-fg-subtle"
+              />
             </button>
             <IconButton
               size="xs"

@@ -35,6 +35,12 @@ def fixture_files() -> dict[str, bytes]:
     return {p.relative_to(FIXTURE).as_posix(): p.read_bytes() for p in FIXTURE.rglob("*") if p.is_file()}
 
 
+def fake_commit(sha: str, name: str, login: str, date: str, message: str, files: list[str]) -> dict[str, Any]:
+    return {"sha": sha, "author": {"login": login},
+            "commit": {"message": message, "author": {"name": name, "email": f"{login}@example.com", "date": date}},
+            "files": [{"filename": f} for f in files], "stats": {"additions": 10, "deletions": 1}}
+
+
 class FakeGitHub:
     """Stateful fake for one installation with one repo. Tests mutate `files`, `head`, `compare`."""
 
@@ -46,6 +52,12 @@ class FakeGitHub:
         self.head = "a" * 40
         self.files = fixture_files()
         self.compare: dict[str, Any] | None = None
+        self.history: list[dict[str, Any]] = [
+            fake_commit("a" * 40, "Ada Lovelace", "ada", "2026-10-01T10:00:00Z", "Initial commit",
+                        ["README.md", "app/main.py"]),
+            fake_commit("c" * 40, "Grace Hopper", "grace", "2026-10-05T12:30:00Z",
+                        "Add password hashing with bcrypt (#3)", ["app/auth.py"]),
+        ]
         self.user_installations = [installation_id]
         self.github_user = {"id": 777, "login": "octo", "name": "Octo Cat", "avatar_url": None}
         self.emails = [{"email": "octo@example.com", "primary": True, "verified": True}]
@@ -71,8 +83,8 @@ class FakeGitHub:
         m.get(f"{API}/repos/{self.full_name}").mock(side_effect=lambda req: httpx.Response(200, json=self.repo_json()))
         m.get(f"{API}/repositories/{self.repo_id}").mock(
             side_effect=lambda req: httpx.Response(200, json=self.repo_json()))
-        m.get(url__regex=rf"{API}/repos/{self.full_name}/commits/[^/]+$").mock(
-            side_effect=lambda req: httpx.Response(200, json={"sha": self.head}))
+        m.get(url__regex=rf"{API}/repos/{self.full_name}/commits(\?.*)?$").mock(side_effect=self._list_commits)
+        m.get(url__regex=rf"{API}/repos/{self.full_name}/commits/[^/?]+$").mock(side_effect=self._commit)
         m.get(url__regex=rf"{API}/repos/{self.full_name}/commits/[^/]+/pulls").mock(
             return_value=httpx.Response(200, json=[]))
         m.get(url__regex=rf"{API}/repos/{self.full_name}/tarball/.+").mock(side_effect=self._tarball)
@@ -88,6 +100,18 @@ class FakeGitHub:
                 self.repo_json()] if self.user_sees_repo else []}))
         m.get(url__startswith=f"{API}/user/installations").mock(side_effect=lambda req: httpx.Response(
             200, json={"installations": [{"id": i} for i in self.user_installations]}))
+
+    def _list_commits(self, request: httpx.Request) -> httpx.Response:
+        self.calls.append("list_commits")
+        page = int(request.url.params.get("page", "1"))
+        items = sorted(self.history, key=lambda c: c["commit"]["author"]["date"], reverse=True)
+        return httpx.Response(200, json=[{k: v for k, v in c.items() if k != "files"} for c in items]
+                              if page == 1 else [])
+
+    def _commit(self, request: httpx.Request) -> httpx.Response:
+        ref = request.url.path.rsplit("/", 1)[1]
+        found = next((c for c in self.history if c["sha"] == ref), None)
+        return httpx.Response(200, json=found if found else {"sha": self.head})
 
     def _tarball(self, request: httpx.Request) -> httpx.Response:
         self.calls.append("tarball")

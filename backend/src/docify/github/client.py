@@ -176,6 +176,30 @@ class InstallationClient:
         r.raise_for_status()
         return r.content
 
+    async def list_commits(self, full_name: str, sha: str, *, max_commits: int = 200) -> list[dict[str, Any]]:
+        """Newest-first history reachable from `sha` (no per-commit file lists - see `get_commit`)."""
+        out: list[dict[str, Any]] = []
+        page = 1
+        while len(out) < max_commits:
+            r = await self._get(f"/repos/{full_name}/commits", params={"sha": sha, "per_page": 100, "page": page},
+                                allow_404=True)
+            if r.status_code != 200:
+                break
+            batch = r.json()
+            if not isinstance(batch, list) or not batch:
+                break
+            out.extend(batch)
+            if len(batch) < 100:
+                break
+            page += 1
+        return out[:max_commits]
+
+    async def get_commit(self, full_name: str, sha: str) -> dict[str, Any] | None:
+        r = await self._get(f"/repos/{full_name}/commits/{sha}", allow_404=True)
+        if r.status_code != 200:
+            return None
+        return dict(r.json())
+
     async def pulls_for_commit(self, full_name: str, sha: str) -> list[dict[str, Any]]:
         r = await self._get(f"/repos/{full_name}/commits/{sha}/pulls", allow_404=True)
         if r.status_code != 200:

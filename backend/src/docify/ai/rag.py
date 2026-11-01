@@ -50,7 +50,7 @@ class Hit:
         return permalink(self.repo_full_name, self.commit_sha, self.path, self.start_line, self.end_line)
 
     def as_source(self, n: int) -> dict[str, Any]:
-        return {"n": n, "repo_id": str(self.repo_id), "repo": self.repo_full_name, "path": self.path,
+        return {"n": n, "kind": "code", "repo_id": str(self.repo_id), "repo": self.repo_full_name, "path": self.path,
                 "start_line": self.start_line, "end_line": self.end_line, "commit_sha": self.commit_sha,
                 "url": self.url}
 

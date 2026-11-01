@@ -2831,21 +2831,18 @@
       "type": "integer",
       "title": "N"
      },
+     "kind": {
+      "type": "string",
+      "enum": [
+       "code",
+       "commit"
+      ],
+      "title": "Kind",
+      "default": "code"
+     },
      "repo": {
       "type": "string",
       "title": "Repo"
-     },
-     "path": {
-      "type": "string",
-      "title": "Path"
-     },
-     "start_line": {
-      "type": "integer",
-      "title": "Start Line"
-     },
-     "end_line": {
-      "type": "integer",
-      "title": "End Line"
      },
      "commit_sha": {
       "type": "string",
@@ -2854,15 +2851,79 @@
      "url": {
       "type": "string",
       "title": "Url"
+     },
+     "path": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Path"
+     },
+     "start_line": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Start Line"
+     },
+     "end_line": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "End Line"
+     },
+     "title": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Title"
+     },
+     "author": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Author"
+     },
+     "date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date-time"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Date"
      }
     },
     "type": "object",
     "required": [
      "n",
      "repo",
-     "path",
-     "start_line",
-     "end_line",
      "commit_sha",
      "url"
     ],

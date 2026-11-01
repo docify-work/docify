@@ -6,13 +6,23 @@ import { Markdown } from "./Markdown";
 
 describe("<Markdown> sanitisation", () => {
   it("never renders images", () => {
-    const { container } = render(<Markdown>{"Logo: ![alt text](https://example.com/x.png) and ![ref][r]\n\n[r]: https://example.com/y.png"}</Markdown>);
+    const { container } = render(
+      <Markdown>
+        {
+          "Logo: ![alt text](https://example.com/x.png) and ![ref][r]\n\n[r]: https://example.com/y.png"
+        }
+      </Markdown>,
+    );
     expect(container.querySelector("img")).toBeNull();
   });
 
   it("skips raw HTML entirely", () => {
     const { container } = render(
-      <Markdown>{'Hi <script>alert(1)</script><img src=x onerror=alert(1)> <b>bold</b>\n\n<div onclick="x()">block</div>'}</Markdown>,
+      <Markdown>
+        {
+          'Hi <script>alert(1)</script><img src=x onerror=alert(1)> <b>bold</b>\n\n<div onclick="x()">block</div>'
+        }
+      </Markdown>,
     );
     expect(container.querySelector("script, img, b, div[onclick]")).toBeNull();
     expect(container.innerHTML).not.toMatch(/onerror|onclick|<script/i);
@@ -20,7 +30,11 @@ describe("<Markdown> sanitisation", () => {
 
   it("drops non-http(s) link targets", () => {
     render(
-      <Markdown>{"[js](javascript:alert(1)) [data](data:text/html;base64,xx) [mail](mailto:a@b.c) [vb](vbscript:x)"}</Markdown>,
+      <Markdown>
+        {
+          "[js](javascript:alert(1)) [data](data:text/html;base64,xx) [mail](mailto:a@b.c) [vb](vbscript:x)"
+        }
+      </Markdown>,
     );
     for (const name of ["js", "data", "mail", "vb"]) {
       expect(screen.getByText(name).closest("a")).toBeNull();
@@ -28,15 +42,26 @@ describe("<Markdown> sanitisation", () => {
   });
 
   it("opens external links in a new tab with safe rel", () => {
-    render(<Markdown>{"[gh](https://github.com/acme/api/blob/abc/x.py#L1-L9)"}</Markdown>);
+    render(
+      <Markdown>
+        {"[gh](https://github.com/acme/api/blob/abc/x.py#L1-L9)"}
+      </Markdown>,
+    );
     const a = screen.getByRole("link", { name: "gh" });
-    expect(a).toHaveAttribute("href", "https://github.com/acme/api/blob/abc/x.py#L1-L9");
+    expect(a).toHaveAttribute(
+      "href",
+      "https://github.com/acme/api/blob/abc/x.py#L1-L9",
+    );
     expect(a).toHaveAttribute("target", "_blank");
     expect(a).toHaveAttribute("rel", "nofollow noopener noreferrer");
   });
 
   it("keeps relative links in the same tab (still with rel)", () => {
-    render(<Markdown>{"[setup](./setup.md) [anchor](#install) [abs](/w/acme)"}</Markdown>);
+    render(
+      <Markdown>
+        {"[setup](./setup.md) [anchor](#install) [abs](/w/acme)"}
+      </Markdown>,
+    );
     for (const name of ["setup", "anchor", "abs"]) {
       const a = screen.getByRole("link", { name });
       expect(a).not.toHaveAttribute("target");
@@ -45,9 +70,15 @@ describe("<Markdown> sanitisation", () => {
   });
 
   it("renders GFM tables and code blocks", () => {
-    const { container } = render(<Markdown>{"| a | b |\n|---|---|\n| 1 | 2 |\n\n```py\nprint(1)\n```"}</Markdown>);
+    const { container } = render(
+      <Markdown>
+        {"| a | b |\n|---|---|\n| 1 | 2 |\n\n```py\nprint(1)\n```"}
+      </Markdown>,
+    );
     expect(container.querySelector("table")).not.toBeNull();
-    expect(container.querySelector("pre code")?.textContent).toContain("print(1)");
+    expect(container.querySelector("pre code")?.textContent).toContain(
+      "print(1)",
+    );
   });
 });
 
@@ -65,9 +96,22 @@ describe("markdown helpers", () => {
   });
 
   it("links [n] citation markers to sources, but not inside code fences", () => {
-    const sources = [{ n: 1, repo: "acme/api", path: "a.py", start_line: 1, end_line: 5, commit_sha: "abc", url: "https://github.com/acme/api/blob/abc/a.py#L1-L5" }];
+    const sources = [
+      {
+        n: 1,
+        kind: "code" as const,
+        repo: "acme/api",
+        path: "a.py",
+        start_line: 1,
+        end_line: 5,
+        commit_sha: "abc",
+        url: "https://github.com/acme/api/blob/abc/a.py#L1-L5",
+      },
+    ];
     const out = linkCitations("See [1] and [2].\n\n```\narr[1]\n```", sources);
-    expect(out).toContain('[1](https://github.com/acme/api/blob/abc/a.py#L1-L5 "docify-cite")');
+    expect(out).toContain(
+      '[1](https://github.com/acme/api/blob/abc/a.py#L1-L5 "docify-cite")',
+    );
     expect(out).toContain("[2]");
     expect(out).toContain("arr[1]\n```");
     render(<Markdown>{out}</Markdown>);

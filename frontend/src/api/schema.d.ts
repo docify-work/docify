@@ -942,18 +942,30 @@ export interface components {
         ChatSource: {
             /** N */
             n: number;
+            /**
+             * Kind
+             * @default code
+             * @enum {string}
+             */
+            kind: "code" | "commit";
             /** Repo */
             repo: string;
-            /** Path */
-            path: string;
-            /** Start Line */
-            start_line: number;
-            /** End Line */
-            end_line: number;
             /** Commit Sha */
             commit_sha: string;
             /** Url */
             url: string;
+            /** Path */
+            path?: string | null;
+            /** Start Line */
+            start_line?: number | null;
+            /** End Line */
+            end_line?: number | null;
+            /** Title */
+            title?: string | null;
+            /** Author */
+            author?: string | null;
+            /** Date */
+            date?: string | null;
         };
         /** DemoOut */
         DemoOut: {

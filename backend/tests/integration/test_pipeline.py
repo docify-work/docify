@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from docify.db.models import (
     ChangelogEntry,
     Chunk,
+    Commit,
     Document,
     DocumentVersion,
     File,
@@ -235,6 +236,56 @@ async def test_search_and_chat(outbox: MemorySender, gh: FakeGitHub) -> None:
                         json={"message": "Kubernetes autoscaler replicas?"}) as resp:
         body = "".join([chunk async for chunk in resp.aiter_text()])
     assert "couldn't find this in the indexed code" in body
+
+
+async def _ask(c: httpx.AsyncClient, slug: str, message: str, thread_id: str | None = None) -> tuple[str, list]:  # type: ignore[type-arg]
+    payload: dict = {"message": message}  # type: ignore[type-arg]
+    if thread_id:
+        payload["thread_id"] = thread_id
+    async with c.stream("POST", f"/api/workspaces/{slug}/chat", json=payload) as resp:
+        assert resp.status_code == 200
+        body = "".join([chunk async for chunk in resp.aiter_text()])
+    events = [e for e in body.split("\n\n") if e.strip()]
+    tid =json.loads(events[0].split("data: ", 1)[1])["thread_id"]
+    src = next((e for e in events if e.startswith("event: sources")), None)
+    return tid, json.loads(src.split("data: ", 1)[1]) if src else []
+
+
+async def test_chat_answers_who_and_when_from_git_history(outbox: MemorySender, gh: FakeGitHub) -> None:
+    # D63: "who created this feature?" used to answer "couldn't find this" - chat only saw code.
+    c, ws, repo_id = await setup_repo(outbox, gh)
+    async with session_scope() as db:
+        rows = (await db.execute(select(Commit).where(Commit.repo_id == repo_id)
+                                 .order_by(Commit.committed_at))).scalars().all()
+    assert [r.author_login for r in rows] == ["ada", "grace"]
+    assert rows[1].files == ["app/auth.py"] and rows[1].pr_number == 3
+    tid, sources = await _ask(c, ws["slug"], "How are passwords hashed?")
+    assert all(s["kind"] == "code" for s in sources)  # not a history question -> no commits
+    # Follow-up without a topic of its own resolves to the previous turn (app/auth.py -> Grace's commit).
+    _, sources = await _ask(c, ws["slug"], "who created this feature and when?", tid)
+    commits = [s for s in sources if s["kind"] == "commit"]
+    assert commits and commits[0]["author"] == "Grace Hopper (@grace)"
+    assert commits[0]["url"] == f"https://github.com/acme/taskly/commit/{'c' * 40}"
+    assert commits[0]["date"].startswith("2026-10-05")
+    # A push records the new commits incrementally (no full re-listing).
+    from tests.helpers.github import fake_commit
+    old = gh.head
+    gh.head = "f" * 40
+    gh.files["app/main.py"] += b"\n# reset\n"
+    new = fake_commit(gh.head, "Linus", "linus", "2026-10-09T08:00:00Z", "Add reset endpoint (#4)", ["app/main.py"])
+    gh.history.append(new)
+    gh.compare = {"status": "ahead", "commits": [{k: v for k, v in new.items() if k != "files"}],
+                  "files": [{"filename": "app/main.py", "status": "modified", "sha": "x"}]}
+    await get_queue().send({"v": 1, "kind": "github_event", "delivery_id": "h1", "event": "push",
+                            "installation_id": gh.installation_id, "repo_id": gh.repo_id, "before": old,
+                            "after": gh.head, "forced": False})
+    gh.calls.clear()
+    await drain()
+    assert "list_commits" not in gh.calls
+    async with session_scope() as db:
+        latest = (await db.execute(select(Commit).where(Commit.repo_id == repo_id)
+                                   .order_by(Commit.committed_at.desc()).limit(1))).scalar_one()
+    assert latest.author_login == "linus" and latest.files == ["app/main.py"] and latest.pr_number == 4
 
 
 async def test_review_queue_when_approval_required(outbox: MemorySender, gh: FakeGitHub) -> None:

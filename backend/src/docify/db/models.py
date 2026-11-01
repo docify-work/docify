@@ -215,6 +215,7 @@ class Repository(IdMixin, TimestampMixin, Base):
     last_full_index_sha: Mapped[str | None] = mapped_column(String(40))
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     size_kb: Mapped[int | None] = mapped_column(Integer)
+    github_created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     error: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     sync_lease_owner: Mapped[str | None] = mapped_column(String(100))
     sync_lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -323,6 +324,31 @@ class ChangelogEntry(IdMixin, TimestampMixin, Base):
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     tsv: Mapped[Any] = mapped_column(TSVECTOR, Computed("to_tsvector('english', content_md)", persisted=True))
+
+
+class Commit(IdMixin, TimestampMixin, Base):
+    """Git history of the default branch, so chat can answer "who added X / when" (D63).
+    No author e-mails are stored: name + GitHub login only."""
+
+    __tablename__ = "commits"
+    __table_args__ = (
+        UniqueConstraint("repo_id", "sha"),
+        Index("ix_commits_repo_date", "repo_id", text("committed_at DESC")),
+        Index("ix_commits_files", "files", postgresql_using="gin"),
+        Index("ix_commits_tsv", "tsv", postgresql_using="gin"),
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"), index=True)
+    repo_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("repositories.id", ondelete="CASCADE"))
+    sha: Mapped[str] = mapped_column(String(40))
+    author_name: Mapped[str] = mapped_column(String(200))
+    author_login: Mapped[str | None] = mapped_column(String(100))
+    committed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    message: Mapped[str] = mapped_column(Text)
+    pr_number: Mapped[int | None] = mapped_column(Integer)
+    files: Mapped[list[str]] = mapped_column(ARRAY(Text), server_default=text("'{}'"))
+    additions: Mapped[int | None] = mapped_column(Integer)
+    deletions: Mapped[int | None] = mapped_column(Integer)
+    tsv: Mapped[Any] = mapped_column(TSVECTOR, Computed("to_tsvector('english', message)", persisted=True))
 
 
 # ----------------------------------------------------------------------------- jobs

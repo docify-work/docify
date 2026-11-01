@@ -319,12 +319,18 @@ class ChatIn(BaseModel):
 
 class ChatSource(Out):
     n: int
+    kind: Literal["code", "commit"] = "code"
     repo: str
-    path: str
-    start_line: int
-    end_line: int
     commit_sha: str
     url: str
+    # kind=code
+    path: str | None = None
+    start_line: int | None = None
+    end_line: int | None = None
+    # kind=commit
+    title: str | None = None
+    author: str | None = None
+    date: datetime | None = None
 
 
 class ChatMessageOut(Out):

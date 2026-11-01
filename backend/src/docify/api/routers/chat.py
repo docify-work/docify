@@ -13,11 +13,12 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy import select, text
 
+from docify.ai import history as git_history
 from docify.ai.budget import check_budget, estimate_tokens, record_embedding, record_llm
 from docify.ai.embeddings import get_embedder
 from docify.ai.llm import LLMRefusal, Usage, get_llm
 from docify.ai.prompts import CHAT_SYSTEM
-from docify.ai.rag import build_sources_block, retrieve
+from docify.ai.rag import _terms, build_sources_block, retrieve
 from docify.api.deps import DB, CurrentPrincipal, Principal, UserPrincipal, get_workspace, load_for_user
 from docify.api.errors import Problem, not_found
 from docify.api.schemas import ChatIn, ChatMessageOut, Ok, SearchHitOut, SearchOut, ThreadDetailOut, ThreadOut
@@ -155,17 +156,30 @@ async def chat(ws: str, body: ChatIn, db: DB, principal: CurrentPrincipal) -> St
     user_msg = ChatMessage(workspace_id=w.id, thread_id=thread.id, role="user", content=body.message.strip())
     db.add(user_msg)
     repo_ids = await _repo_ids(db, w, body.repo_ids)
+    question = body.message.strip()
+    # Follow-ups ("who created this feature?") carry no topic of their own: retrieve with the previous
+    # user turn prepended so "this feature" resolves to what was just discussed.
+    prev_user = next((m.content for m in history_rows if m.role == "user"), None)
+    followup = prev_user is not None and git_history.is_followup(question, len(_terms(question)))
+    query = f"{prev_user}\n{question}" if followup else question
     embedder = get_embedder()
     qvec = None
     try:
-        vectors, tokens = await embedder.embed([body.message], input_type="query")
+        vectors, tokens = await embedder.embed([query], input_type="query")
         qvec = vectors[0]
         record_embedding(db, workspace_id=w.id, job_id=None, model=embedder.model, tokens=tokens,
                          purpose="chat_embed")
     except Exception as exc:  # F22: FTS-only
         log.info("chat.embed_failed", error=type(exc).__name__)
-    hits, has_context = await retrieve(db, workspace_id=w.id, repo_ids=repo_ids, query=body.message,
+    hits, has_context = await retrieve(db, workspace_id=w.id, repo_ids=repo_ids, query=query,
                                        embedder=embedder, query_vector=qvec)
+    commits: list[git_history.CommitHit] = []
+    facts = ""
+    if git_history.is_history_question(question):
+        commits = await git_history.relevant_commits(db, workspace_id=w.id, repo_ids=repo_ids, query=query,
+                                                     paths=[h.path for h in hits])
+        facts = await git_history.repo_facts(db, repo_ids)
+        has_context = has_context or bool(commits)
     await db.commit()  # thread + user message persist even if streaming fails
 
     history: list[dict[str, Any]] = []
@@ -178,6 +192,9 @@ async def chat(ws: str, body: ChatIn, db: DB, principal: CurrentPrincipal) -> St
     history.reverse()  # chronological order for the model
     thread_id, ws_id = thread.id, w.id
     sources = [h.as_source(i) for i, h in enumerate(hits, 1)]
+    sources += [c.as_source(len(hits) + i) for i, c in enumerate(commits, 1)]
+    commit_blocks = "\n\n".join(c.block(len(hits) + i) for i, c in enumerate(commits, 1))
+    context = "\n\n".join(p for p in (facts, build_sources_block(hits), commit_blocks) if p)
 
     async def events() -> AsyncIterator[bytes]:
         yield _sse("meta", {"thread_id": str(thread_id)})
@@ -187,7 +204,7 @@ async def chat(ws: str, body: ChatIn, db: DB, principal: CurrentPrincipal) -> St
             await _save_answer(ws_id, thread_id, NO_CONTEXT, [], None, None)
             yield _sse("done", {"thread_id": str(thread_id)})
             return
-        prompt = f"{build_sources_block(hits)}\n\nQuestion: {body.message.strip()}"
+        prompt = f"{context}\n\nQuestion: {question}"
         usage = Usage()
         answer: list[str] = []
         queue: asyncio.Queue[tuple[str, Any]] = asyncio.Queue()

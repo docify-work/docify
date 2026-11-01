@@ -9,7 +9,7 @@ from typing import Any
 
 from sqlalchemy import delete, select, update
 
-from docify.ai import docgen, indexer
+from docify.ai import docgen, history, indexer
 from docify.ai.budget import TokenMeter
 from docify.db.models import Document, File, Job, Repository
 from docify.github.client import GitHubNotFound, InstallationClient
@@ -52,7 +52,8 @@ async def _refresh_metadata(ctx: JobContext, gh: InstallationClient, repo: Repos
     await _set_repo(ctx, repo, full_name=meta["full_name"], owner=owner, name=meta["name"],
                     default_branch=meta.get("default_branch") or repo.default_branch,
                     private=bool(meta.get("private")), archived=bool(meta.get("archived")),
-                    size_kb=int(meta.get("size") or 0))
+                    size_kb=int(meta.get("size") or 0),
+                    github_created_at=history.parse_ts(meta.get("created_at")))
     return meta
 
 
@@ -108,6 +109,7 @@ async def full_index(ctx: JobContext, gh: InstallationClient, repo: Repository, 
     await indexer.summarise(ctx, repo)
     for kind in docgen.DOC_KINDS:
         await docgen.generate_doc(ctx, repo, kind, head)
+    await history.record_commits(ctx, gh, repo, head)
     await _set_repo(ctx, repo, status="ready", last_processed_sha=head, last_full_index_sha=head,
                     indexed_branch=repo.default_branch, last_synced_at=_now(), error=None)
 
@@ -131,6 +133,7 @@ async def handle_repo_sync(ctx: JobContext) -> None:
         await _set_repo(ctx, repo, status="empty", last_synced_at=_now())
         return
     if head == repo.last_processed_sha:
+        await history.record_commits(ctx, gh, repo, head, listed=[])  # backfills repos indexed before D63
         await _set_repo(ctx, repo, last_synced_at=_now())
         return
     cmp = await gh.compare(repo.full_name, repo.last_processed_sha, head)
@@ -211,6 +214,7 @@ async def incremental(ctx: JobContext, gh: InstallationClient, repo: Repository,
     for kind in kinds:
         await docgen.generate_doc(ctx, repo, kind, head, change_note=note if kind in docs else None)
     commits = cmp.get("commits") or []
+    await history.record_commits(ctx, gh, repo, head, listed=commits)
     if commits or changed or removed:
         await docgen.write_changelog(ctx, repo, from_sha=repo.last_processed_sha, to_sha=head, commits=commits,
                                      changed=sorted(set(changed) | removed))
