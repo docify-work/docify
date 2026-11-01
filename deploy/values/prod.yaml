@@ -9,7 +9,7 @@ env: prod
 
 image:
   ecrRepository: docify/backend
-  tag: "743963f89ccf3cd8c75d66efe79cd794893c3481"
+  tag: "bf324edac6f83e5227a5d7b3925aac36b2e113cc"
 
 config:
   PUBLIC_BASE_URL: "https://docify.work"
