@@ -12,6 +12,15 @@ This script does everything else:
 Usage (stdlib only):
   python scripts/create-github-app.py --env dev --webhook-url https://smee.io/<channel>
   python scripts/create-github-app.py --env staging --base-url https://staging.docify.work --webhook-url <lambda url>
+  python scripts/create-github-app.py --env prod --base-url https://docify.work --webhook-url <lambda url>
+  python scripts/create-github-app.py --env ci-bot          # docify-ci-bot (D34): contents write, no webhook
+
+Where the credentials go (never printed, never committed):
+  dev      -> .env (local backend)
+  staging/prod -> .secrets/<env>/github/{app_private_key,client_secret,webhook_secret}
+              (git-ignored; feed them to SSM with scripts/init-params.sh --from-dir .secrets).
+              Public ids (app id, slug, client id) are printed for deploy/values/<env>.yaml.
+  ci-bot   -> .secrets/ci-bot/{client_id,private_key.pem} -> GitHub secrets CI_BOT_APP_ID / CI_BOT_PRIVATE_KEY
 """
 
 from __future__ import annotations
@@ -33,6 +42,17 @@ STATE = secrets.token_urlsafe(16)
 
 
 def manifest(env: str, base_url: str, webhook_url: str, owner: str) -> dict:
+    if env == "ci-bot":
+        # Release bot (D34): pushes the image-tag bump commits to main (ruleset bypass actor).
+        return {
+            "name": f"docify-ci-bot ({owner})"[:34],
+            "url": "https://github.com/docify-work/docify",
+            "description": "Docify release bot: commits image-tag bumps to main.",
+            "redirect_url": f"http://localhost:{PORT}/callback",
+            "public": False,
+            "default_permissions": {"contents": "write", "metadata": "read"},
+            "default_events": [],
+        }
     name = {"dev": "Docify Dev", "staging": "Docify Staging", "prod": "Docify"}[env]
     return {
         # App names are global on GitHub; suffix with the owner to avoid clashes.
@@ -67,8 +87,7 @@ code{{background:#f2f4f7;padding:2px 6px;border-radius:4px}} .muted{{color:#656d
 <b>Create GitHub App</b> on the GitHub page.</p>
 <form action="https://github.com/settings/apps/new?state={state}" method="post">
 <input type="hidden" name="manifest" value="{manifest}"><button type="submit">Continue on GitHub →</button></form>
-<p class="muted">Permissions: contents, metadata, pull requests, email addresses — all <b>read-only</b>.<br>
-Events: push, repository. Installable only on this account.</p></body></html>"""
+<p class="muted">{perms}</p></body></html>"""
 
 DONE = """<!doctype html><html><head><meta charset="utf-8"><title>Done</title>
 <style>body{{font:15px system-ui;max-width:560px;margin:80px auto;color:#1f2328}}</style></head>
@@ -86,18 +105,32 @@ def set_env_values(values: dict[str, str]) -> None:
     path.write_text("\n".join(kept) + "\n", encoding="utf-8")
 
 
+def write_secret_files(folder: Path, files: dict[str, str]) -> None:
+    """Write each value to folder/<name> (git-ignored .secrets/). Never printed."""
+    for rel, value in files.items():
+        f = folder / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(value, encoding="utf-8", newline="\n")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--env", choices=["dev", "staging", "prod"], default="dev")
+    ap.add_argument("--env", choices=["dev", "staging", "prod", "ci-bot"], default="dev")
     ap.add_argument("--base-url", default="http://localhost:5173", help="where the SPA + /api are served")
-    ap.add_argument("--webhook-url", required=True, help="smee.io channel (dev) or the env's Lambda URL")
+    ap.add_argument("--webhook-url", default="", help="smee.io channel (dev) or the env's Lambda URL (not for ci-bot)")
     ap.add_argument("--owner", default="docify-work")
     ap.add_argument("--no-browser", action="store_true")
     args = ap.parse_args()
+    if args.env != "ci-bot" and not args.webhook_url:
+        ap.error("--webhook-url is required for dev/staging/prod")
 
     m = manifest(args.env, args.base_url.rstrip("/"), args.webhook_url, args.owner)
+    perms = ("Permissions: contents <b>write</b>, metadata read. No webhook, no events. Only on this account."
+             if args.env == "ci-bot" else
+             "Permissions: contents, metadata, pull requests, email addresses — all <b>read-only</b>.<br>"
+             "Events: push, repository. Installable only on this account.")
     page = PAGE.format(name=html.escape(m["name"]), owner=html.escape(args.owner), state=STATE,
-                       manifest=html.escape(json.dumps(m)))
+                       manifest=html.escape(json.dumps(m)), perms=perms)
     done = threading.Event()
 
     class Handler(BaseHTTPRequestHandler):
@@ -130,19 +163,36 @@ def main() -> None:
                 headers={"Accept": "application/vnd.github+json", "User-Agent": "docify-setup"})
             with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 - fixed https URL
                 app = json.load(resp)
-            set_env_values({
-                "GITHUB_APP_ID": str(app["id"]),
-                "GITHUB_APP_SLUG": app["slug"],
-                "GITHUB_CLIENT_ID": app["client_id"],
-                "GITHUB_CLIENT_SECRET": app["client_secret"],
-                "GITHUB_WEBHOOK_SECRET": app.get("webhook_secret") or "",
-                "GITHUB_APP_PRIVATE_KEY": app["pem"],
-            })
-            print(f"Created GitHub App '{app['name']}' (slug {app['slug']}, id {app['id']}).")
-            print("Credentials saved to .env (git-ignored). Install it here:")
+            if args.env == "dev":
+                set_env_values({
+                    "GITHUB_APP_ID": str(app["id"]),
+                    "GITHUB_APP_SLUG": app["slug"],
+                    "GITHUB_CLIENT_ID": app["client_id"],
+                    "GITHUB_CLIENT_SECRET": app["client_secret"],
+                    "GITHUB_WEBHOOK_SECRET": app.get("webhook_secret") or "",
+                    "GITHUB_APP_PRIVATE_KEY": app["pem"],
+                })
+                where = ".env"
+            elif args.env == "ci-bot":
+                write_secret_files(ROOT / ".secrets" / "ci-bot", {
+                    "client_id": app["client_id"],
+                    "private_key.pem": app["pem"],
+                })
+                where = ".secrets/ci-bot/"
+            else:
+                write_secret_files(ROOT / ".secrets" / args.env / "github", {
+                    "app_private_key": app["pem"],
+                    "client_secret": app["client_secret"],
+                    "webhook_secret": app.get("webhook_secret") or "",
+                })
+                where = f".secrets/{args.env}/github/"
+            # Ids below are public (they appear in install URLs); secrets are only in the files.
+            print(f"Created GitHub App '{app['name']}' (slug {app['slug']}, id {app['id']}, "
+                  f"client id {app['client_id']}).")
+            print(f"Credentials saved to {where} (git-ignored). Install it here:")
             print(f"  {app['html_url']}/installations/new")
             self._send(DONE.format(title=f"“{html.escape(app['name'])}” created",
-                                   body="Credentials were saved to your local <code>.env</code>."))
+                                   body=f"Credentials were saved to your local <code>{html.escape(where)}</code>."))
             done.set()
 
     server = HTTPServer(("127.0.0.1", PORT), Handler)

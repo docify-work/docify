@@ -19,10 +19,12 @@ config:
   EMAIL_FROM: "Docify Staging <no-reply@docify.work>"
   # Filled in P9.4 when the "Docify Staging" GitHub App + Google client exist
   # (ids are not secret).
-  GITHUB_APP_ID: ""
-  GITHUB_APP_SLUG: ""
-  GITHUB_CLIENT_ID: ""
-  GOOGLE_CLIENT_ID: ""
+  GITHUB_APP_ID: "5565791"
+  GITHUB_APP_SLUG: "docify-staging-docify-work"
+  GITHUB_CLIENT_ID: "Iv23liSV0lfoz9zOw1On"
+  GOOGLE_CLIENT_ID: "224400653695-4jugar068188j8ki98ngl064962amhgm.apps.googleusercontent.com"
+  # Real AI is off until the provider is chosen (Bedrock vs Anthropic, §1). Fake AI = $0.
+  AI_MODE: fake
 
 api:
   replicas: 1             # staging: no HPA, one pod (§13.3)
@@ -52,6 +54,6 @@ serviceMonitor:
 # Read by release.yml to build the SPA's config.json (not by the chart).
 frontend:
   env: staging
-  githubAppSlug: ""
+  githubAppSlug: "docify-staging-docify-work"
   googleEnabled: true
   demoWorkspaceSlug: demo

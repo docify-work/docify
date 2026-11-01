@@ -75,7 +75,7 @@ apps:
     valueFiles: [deploy/values/platform/external-secrets.yaml]
 
   keda:
-    enabled: false              # P9
+    enabled: true               # P9 (2026-11-01)
     wave: -5
     namespace: keda
     repoURL: https://kedacore.github.io/charts
@@ -122,7 +122,7 @@ apps:
 
   # ---------------------------------------------------------------- wave 5
   data:
-    enabled: false              # P9
+    enabled: true               # P9 (2026-11-01)
     wave: 5
     namespace: data
     path: deploy/helm/data
@@ -130,7 +130,7 @@ apps:
 
   # ---------------------------------------------------------------- wave 10
   docifyStaging:
-    enabled: false              # P9
+    enabled: true               # P9 (2026-11-01)
     wave: 10
     namespace: docify-staging
     path: deploy/helm/docify

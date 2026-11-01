@@ -15,10 +15,12 @@ config:
   PUBLIC_BASE_URL: "https://docify.work"
   EMAIL_FROM: "Docify <no-reply@docify.work>"
   # Filled in P9.4 (prod GitHub App "Docify" + Google client).
-  GITHUB_APP_ID: ""
-  GITHUB_APP_SLUG: ""
-  GITHUB_CLIENT_ID: ""
-  GOOGLE_CLIENT_ID: ""
+  GITHUB_APP_ID: "5565794"
+  GITHUB_APP_SLUG: "docify-docify-work"
+  GITHUB_CLIENT_ID: "Iv23liD0WedmnS8tX2vG"
+  GOOGLE_CLIENT_ID: "224400653695-9n63cof8mr6psjpds22a3rnevqa0tv7s.apps.googleusercontent.com"
+  # Real AI is off until the provider is chosen (Bedrock vs Anthropic, §1). Fake AI = $0.
+  AI_MODE: fake
 
 api:
   autoscaling:
@@ -49,6 +51,6 @@ serviceMonitor:
 
 frontend:
   env: prod
-  githubAppSlug: ""
+  githubAppSlug: "docify-docify-work"
   googleEnabled: true
   demoWorkspaceSlug: demo
