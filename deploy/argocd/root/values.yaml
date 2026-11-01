@@ -137,7 +137,7 @@ apps:
     valueFiles: [deploy/values/staging.yaml]
 
   docifyProd:
-    enabled: false              # P9
+    enabled: true               # P9 (2026-11-01)
     wave: 10
     namespace: docify-prod
     path: deploy/helm/docify
