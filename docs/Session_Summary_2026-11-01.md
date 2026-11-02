@@ -146,7 +146,7 @@ Technical details live in `docs/Docify_Master_Doc.md` (decisions D56–D66, sess
 2. ~~AWS CLI login expired~~ — done 2 Nov.
 3. **Check billing on 2–3 Nov:** Billing → Credits and Cost Explorer should show EC2/Bedrock/EKS/RDS covered by
    credits and **$0.00 net** (Cost Explorer is ~24 h behind).
-4. **Record the demo video** using `docs/Demo_Script.md` (I can't record video).
+4. ~~Record the demo video~~ — dropped by Ganesh (2 Nov). `docs/Demo_Script.md` stays as a walkthrough.
 5. **Optional — give the GitHub App the "Issues: read" permission** (GitHub App settings → Permissions). Then the
    installer approves it. This makes GitHub issue import work for **private** repos (public repos already work).
    Later "Issues: write" + "Checks: write" would let Docify post findings back to PRs.
