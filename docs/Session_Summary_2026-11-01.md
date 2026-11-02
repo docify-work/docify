@@ -123,14 +123,27 @@ Technical details live in `docs/Docify_Master_Doc.md` (decisions D56–D66, sess
 - Backend tests: **201 passing**. Frontend tests: **48 passing**. CI green.
 - Prod + staging healthy (10/10 Argo apps). Card charges: **$0**.
 
+## 7. Health check on 2 Nov evening (after AWS login was restored)
+
+- AWS logins: both profiles work again (`docify-mgmt` needed its region set).
+- Billing: **$0 on the card**; $0.05 of credits used so far (Cost Explorer is 1–2 days behind).
+  Budgets, anomaly alerts and the 90 % auto-stop action are all armed. Note: each Cost Explorer query costs $0.01.
+- Prod + staging: 10/10 Argo apps Synced/Healthy, sites answer, no CloudWatch alarms, DLQs empty,
+  nightly backups in S3, 23:00 auto-stop enabled, nothing left over from the EKS lab.
+- **Bug found and fixed:** KEDA only woke a worker when **2+** jobs were waiting, so a single job (e.g. one webhook)
+  could wait up to 15 min. Now it wakes on the first job (`activationQueueLength: 0`); verified on prod (11 s).
+- Cleaned up 4 failed pods left over from the database chaos test.
+- New report: `docs/Load_and_Scaling_Report.md`.
+- Dependabot: 1 moderate alert (`minimatch`, ReDoS) in **dev-only** tools (eslint, openapi-typescript);
+  not in the shipped app. The openapi tool needs an old version, so it can't be fully fixed until it updates.
+
 ---
 
 # What's left (needs you)
 
 1. **SES production access was denied.** Reply/appeal from the AWS console (Support → the SES case) or re-apply
    later. Until then, sign-up e-mails only reach verified addresses.
-2. **AWS CLI login expired** during the night. Run `aws login --profile docify` (and `docify-mgmt`) when you're
-   back so I can use AWS again.
+2. ~~AWS CLI login expired~~ — done 2 Nov.
 3. **Check billing on 2–3 Nov:** Billing → Credits and Cost Explorer should show EC2/Bedrock/EKS/RDS covered by
    credits and **$0.00 net** (Cost Explorer is ~24 h behind).
 4. **Record the demo video** using `docs/Demo_Script.md` (I can't record video).
