@@ -200,7 +200,9 @@ keda:
   maxReplicas: 1
   # queueLength = messages per replica = WORKER_CONCURRENCY.
   queueLength: 2
-  activationQueueLength: 1
+  # Wake from 0 on the FIRST message (KEDA activates when value > activationQueueLength).
+  # It was 1, so a lone job waited until a second message arrived (up to 15 min; found 2026-11-02).
+  activationQueueLength: 0
   scaleOnInFlight: true
   pollingInterval: 30
   cooldownPeriod: 300
