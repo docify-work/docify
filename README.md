@@ -75,7 +75,7 @@ docs/         plan, master doc (spec + tracker), screenshots, incident notes
 - [`docs/Docify_Project_Plan.md`](docs/Docify_Project_Plan.md) — the simple plan: why, what, scope and budget.
 - [`docs/Docify_Master_Doc.md`](docs/Docify_Master_Doc.md) — the full technical spec, decision log and live tracker.
 - [`deploy/README.md`](deploy/README.md) · [`infra/README.md`](infra/README.md) — how the platform and AWS pieces fit together.
-- [`docs/Demo_Script.md`](docs/Demo_Script.md) — the 10-minute interviewer walkthrough · [`docs/Cost_Report.md`](docs/Cost_Report.md) · [`docs/Security_Review.md`](docs/Security_Review.md) · [`docs/incidents/`](docs/incidents)
+- [`docs/Demo_Script.md`](docs/Demo_Script.md) — the 10-minute interviewer walkthrough · [`docs/Load_and_Scaling_Report.md`](docs/Load_and_Scaling_Report.md) · [`docs/Cost_Report.md`](docs/Cost_Report.md) · [`docs/Security_Review.md`](docs/Security_Review.md) · [`docs/incidents/`](docs/incidents)
 
 ## Licence
 
